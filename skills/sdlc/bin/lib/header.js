@@ -8,13 +8,17 @@ function stripFrontmatter(lines) {
   const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
   return end > 0 ? lines.slice(end + 1) : lines;
 }
+function headerLines(text) {   // a leading UTF-8 BOM would hide a frontmatter fence or a first-line header
+  return stripFrontmatter(String(text || '').replace(/^\uFEFF/, '').split(/\r?\n/)).slice(0, HEADER_LINES);
+}
 function parseHeader(text) {
-  const lines = stripFrontmatter(String(text || '').split(/\r?\n/)).slice(0, HEADER_LINES);
   let phase = null, status = null;
-  for (const line of lines) {
+  for (const line of headerLines(text)) {
     let m = PHASE_RE.exec(line);  if (m && phase === null) phase = m[1].toLowerCase();
     m = STATUS_RE.exec(line);     if (m && status === null) status = m[1].toLowerCase();
   }
   return { phase: PHASES.includes(phase) ? phase : null, status: STATUSES.includes(status) ? status : 'draft' };
 }
-module.exports = { parseHeader, PHASES, STATUSES };
+// True when the header zone has a `Phase:` or `Status:` line at all (any value).
+function hasHeaderLine(text) { return headerLines(text).some(l => PHASE_RE.test(l) || STATUS_RE.test(l)); }
+module.exports = { parseHeader, hasHeaderLine, PHASES, STATUSES };

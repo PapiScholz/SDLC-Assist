@@ -1,5 +1,5 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader } = require('./header'); const { countTasks } = require('./todo');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
 const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|conftest\.py|manage\.py|gulpfile\.js|gruntfile\.js|karma\.conf\.js|knexfile\.js)$/i;
@@ -45,29 +45,57 @@ function releaseWorkflow(root) {
 
 const { execFileSync, spawnSync } = require('child_process');
 function cleanEnv() { const e = { ...process.env }; delete e.GIT_DIR; delete e.GIT_WORK_TREE; delete e.GIT_INDEX_FILE; e.GIT_PAGER = 'cat'; e.GIT_OPTIONAL_LOCKS = '0'; return e; }
+const GIT_OPTS = ['-c', 'core.quotepath=off', '-c', 'core.fsmonitor=false', '--literal-pathspecs'];
 function git(root, args) {
-  try { return execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: cleanEnv(), windowsHide: true }); }
+  try { return execFileSync('git', [...GIT_OPTS, ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: cleanEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }); }
   catch { return null; }
 }
 const lines = out => (out || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 const toInt = s => (s && /^\d+$/.test(s) ? parseInt(s, 10) : null);
-function isRepo(root) {
-  if ((git(root, ['rev-parse', '--is-inside-work-tree']) || '').trim() !== 'true') return false;
-  const top = (git(root, ['rev-parse', '--show-toplevel']) || '').trim();
-  try { return fs.realpathSync.native(top) === fs.realpathSync.native(root); } catch { return false; }
+const toSlash = p => p.split(path.sep).join('/');
+// Only rev-parse captures stderr: it is where git reports a repo it refuses to read.
+function repoInfo(root, notes) {
+  const r = spawnSync('git', [...GIT_OPTS, 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: cleanEnv(), windowsHide: true });
+  if (r.error || r.status !== 0 || (r.stdout || '').trim() !== 'true') {
+    if (/dubious ownership/i.test(r.stderr || '')) notes.push('git refused this repo (dubious ownership): git signals skipped; the user can run git config --global --add safe.directory <repo>');
+    return { isRepo: false, toplevel: null };
+  }
+  let top = null;
+  try { top = fs.realpathSync.native((git(root, ['rev-parse', '--show-toplevel']) || '').trim()); } catch { return { isRepo: false, toplevel: null }; }
+  if (top === fs.realpathSync.native(root)) return { isRepo: true, toplevel: toSlash(top) };
+  notes.push('not the repo root; run with --root ' + toSlash(top));
+  return { isRepo: false, toplevel: toSlash(top) };
 }
 function branch(root) {
   if (!git(root, ['rev-parse', '--verify', 'HEAD'])) return null;          // no commits
   const b = (git(root, ['symbolic-ref', '--short', 'HEAD']) || '').trim();  // detached => null
   return b || null;
 }
-function fileDates(root, rel) {
-  const mtime = mtimeSec(path.join(root, rel));
-  const tracked = lines(git(root, ['ls-files', '--', rel])).length > 0;
-  if (!tracked) return { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime };
-  const all = lines(git(root, ['log', '--format=%ct', '--', rel]));   // newest first
-  return { tracked: true, firstCommit: toInt(all[all.length - 1]), lastCommit: toInt(all[0]),
-           dirty: lines(git(root, ['status', '--porcelain', '--', rel])).length > 0, mtime };
+// Three git spawns for all spec paths plus the plan, whatever their number; returns rel => dates.
+function fileDatesBatch(root, rels) {
+  const out = new Map();
+  if (!rels.length) return out;
+  const tracked = new Set((git(root, ['ls-files', '-z', '--', ...rels]) || '').split('\0').filter(Boolean));
+  const first = new Map(), last = new Map(); let ct = null;
+  for (const line of (git(root, ['log', '--format=@@%ct', '--name-only', '--', ...rels]) || '').split(/\r?\n/)) {   // newest first
+    if (line.startsWith('@@')) { ct = toInt(line.slice(2).trim()); continue; }
+    if (!line || ct === null) continue;
+    if (!last.has(line)) last.set(line, ct);
+    first.set(line, ct);
+  }
+  const dirty = new Set(); const st = (git(root, ['status', '--porcelain', '-z', '--', ...rels]) || '').split('\0');
+  for (let i = 0; i < st.length; i++) {
+    if (st[i].length < 4) continue;
+    dirty.add(st[i].slice(3));
+    if (/[RC]/.test(st[i].slice(0, 2))) i++;   // rename/copy: the next entry is the source path
+  }
+  for (const rel of rels) {
+    const mtime = mtimeSec(path.join(root, rel));
+    out.set(rel, tracked.has(rel)
+      ? { tracked: true, firstCommit: first.has(rel) ? first.get(rel) : null, lastCommit: last.has(rel) ? last.get(rel) : null, dirty: dirty.has(rel), mtime }
+      : { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime });
+  }
+  return out;
 }
 function recentCommits(root) {
   const out = git(root, ['log', '-10', '--name-only', '--format=@@%H%x09%ct%x09%s']); const commits = [];
@@ -86,12 +114,13 @@ function lastSemverTag(root) {
   if (!tags.length) return null;
   return { name: tags[0].name, sha: (git(root, ['rev-list', '-n', '1', tags[0].name]) || '').trim() };
 }
-function collectGit(root) {
-  if (!isRepo(root)) return { isRepo: false, branch: null, commits: [], lastSemverTag: null, tagOnHead: false, commitsAfterTag: null };
+function collectGit(root, notes) {
+  const info = repoInfo(root, notes);
+  if (!info.isRepo) return { isRepo: false, toplevel: info.toplevel, branch: null, commits: [], lastSemverTag: null, tagOnHead: false, commitsAfterTag: null };
   const tag = lastSemverTag(root);
   const tagOnHead = !!tag && lines(git(root, ['tag', '--points-at', 'HEAD'])).includes(tag.name);
   const commitsAfterTag = tag ? toInt((git(root, ['rev-list', '--count', tag.name + '..HEAD']) || '').trim()) : null;
-  return { isRepo: true, branch: branch(root), commits: recentCommits(root), lastSemverTag: tag, tagOnHead, commitsAfterTag };
+  return { isRepo: true, toplevel: info.toplevel, branch: branch(root), commits: recentCommits(root), lastSemverTag: tag, tagOnHead, commitsAfterTag };
 }
 function runTests(root, runner) {
   if (!runner.kind) return { status: 'no-runner', exitCode: null, tail: [] };
@@ -104,13 +133,22 @@ function runTests(root, runner) {
 function collectSignals(repoRoot, opts) {
   const options = opts || {};
   const abs = fs.realpathSync.native(repoRoot);
-  const root = abs.split(path.sep).join('/');
-  const gitInfo = collectGit(abs);
-  const dates = rel => gitInfo.isRepo ? fileDates(abs, rel) : { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime: mtimeSec(path.join(abs, rel)) };
-  const specs = findSpecs(abs).map(rel => ({ path: rel, header: parseHeader(readText(path.join(abs, rel))), ...dates(rel) }));
+  const root = toSlash(abs);
+  const notes = [];
+  const gitInfo = collectGit(abs, notes);
+  // Capability map proxy (v1): with 2+ root SPEC-*.md, only those carrying a Phase:/Status: line are cycles;
+  // the headerless ones are module specs, listed in `modules` and kept out of active ranking.
+  const found = findSpecs(abs).map(rel => ({ rel, text: readText(path.join(abs, rel)) }));
+  const rootSpecs = found.filter(f => /^SPEC-.*\.md$/i.test(f.rel));
+  const modules = rootSpecs.length >= 2 ? rootSpecs.filter(f => !hasHeaderLine(f.text)).map(f => f.rel) : [];
+  const cycleFiles = found.filter(f => !modules.includes(f.rel));
   const planPath = 'tasks/plan.md', todoPath = 'tasks/todo.md';
+  const planExists = fs.existsSync(path.join(abs, planPath));
+  const batch = gitInfo.isRepo ? fileDatesBatch(abs, [...cycleFiles.map(f => f.rel), ...(planExists ? [planPath] : [])]) : new Map();
+  const dates = rel => batch.get(rel) || { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime: mtimeSec(path.join(abs, rel)) };
+  const specs = cycleFiles.map(f => ({ path: f.rel, header: parseHeader(f.text), ...dates(f.rel) }));
   let plan = { exists: false, path: planPath };
-  if (fs.existsSync(path.join(abs, planPath))) {
+  if (planExists) {
     const d = dates(planPath);
     plan = { exists: true, path: planPath, tracked: d.tracked, lastCommit: d.lastCommit, dirty: d.dirty, mtime: d.mtime };
   }
@@ -125,9 +163,9 @@ function collectSignals(repoRoot, opts) {
   const rw = releaseWorkflow(abs);
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   return {
-    root, specs, plan, todo, git: gitInfo, changelog,
+    root, specs, modules, plan, todo, git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
-    testRunner, tests, inProduction,
+    testRunner, tests, inProduction, notes,
   };
 }
 module.exports = { collectSignals, SOURCE_EXTENSIONS, EXCLUDED_DIRS };

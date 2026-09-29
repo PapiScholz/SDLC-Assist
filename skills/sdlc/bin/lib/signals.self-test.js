@@ -128,6 +128,42 @@ check('inProduction: tag + changelog, tag + workflow, tag alone is false', () =>
   const r3 = initRepo(); write(r3, 'a.js', ''); commit(r3, 'c', T1); run(['tag', 'v1.0.0'], r3);
   assert.strictEqual(collectSignals(r3, {}).inProduction, false);
 });
+check('subdirectory of a repo: isRepo false, toplevel set, notes tell to pass --root', () => {
+  const root = initRepo(); write(root, 'pkg/a.js', ''); commit(root, 'one', T1);
+  const s = collectSignals(path.join(root, 'pkg'), {});
+  const top = fs.realpathSync.native(root).split(path.sep).join('/');
+  assert.strictEqual(s.git.isRepo, false); assert.strictEqual(s.git.toplevel, top);
+  assert.strictEqual(s.notes.length, 1); assert(s.notes[0].includes('--root ' + top), s.notes[0]);
+  const atRoot = collectSignals(root, {});
+  assert.strictEqual(atRoot.git.isRepo, true); assert.strictEqual(atRoot.git.toplevel, top); assert.deepStrictEqual(atRoot.notes, []);
+});
+check('capability map: 3 headerless SPEC-*.md are modules, the headed one is the only cycle and active', () => {
+  const root = tmpDir();
+  write(root, 'SPEC-app.md', '# App\n\nPhase: planning\nStatus: approved\n');
+  for (const m of ['auth', 'billing', 'ui']) write(root, `SPEC-${m}.md`, `# ${m}\n\nModule text.\n`);
+  const s = collectSignals(root, {});
+  assert.deepStrictEqual(s.specs.map(x => x.path), ['SPEC-app.md']);
+  assert.deepStrictEqual(s.modules, ['SPEC-auth.md', 'SPEC-billing.md', 'SPEC-ui.md']);
+  const { infer } = require('./infer');
+  const r = infer(s, { message: '', type: 'unknown' });
+  assert.strictEqual(r.active.path, 'SPEC-app.md'); assert.deepStrictEqual(r.cycles.map(c => c.path), ['SPEC-app.md']);
+});
+check('inversion: a single headerless SPEC-*.md is still a cycle; docs/specs never become modules', () => {
+  const root = tmpDir(); write(root, 'SPEC-only.md', '# Only\n'); write(root, 'docs/specs/x.md', '# X\n');
+  const s = collectSignals(root, {});
+  assert.deepStrictEqual(s.modules, []); assert.deepStrictEqual(s.specs.map(x => x.path), ['SPEC-only.md', 'docs/specs/x.md']);
+});
+check('batched dates: two specs + plan, one edited later, one dirty; rename-free porcelain parsing', () => {
+  const root = initRepo();
+  write(root, 'docs/specs/a.md', '# A\n'); write(root, 'docs/specs/b c.md', '# B\n'); write(root, 'tasks/plan.md', '# P\n'); commit(root, 'one', T1);
+  write(root, 'docs/specs/a.md', '# A2\n'); commit(root, 'two', T2);
+  write(root, 'docs/specs/b c.md', '# B dirty\n');
+  const s = collectSignals(root, {});
+  const a = s.specs.find(x => x.path === 'docs/specs/a.md'), b = s.specs.find(x => x.path === 'docs/specs/b c.md');
+  assert.deepStrictEqual([a.firstCommit, a.lastCommit, a.dirty], [S1, S2, false]);
+  assert.deepStrictEqual([b.tracked, b.firstCommit, b.lastCommit, b.dirty], [true, S1, S1, true]);
+  assert.deepStrictEqual([s.plan.lastCommit, s.plan.dirty], [S1, false]);
+});
 check('non-ASCII spec path is tracked and listed unquoted', () => {
   const root = initRepo(); write(root, 'docs/specs/diseño.md', '# D\n'); commit(root, 'one', T1);
   const s = collectSignals(root, {});

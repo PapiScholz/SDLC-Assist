@@ -32,6 +32,7 @@ const market = load('marketplace.json');
 if (market) {
   if (!str(market.name)) errors.push('marketplace.json: missing field name');
   if (!market.owner || !str(market.owner.name)) errors.push('marketplace.json: missing field owner.name');
+  if (market.description !== undefined && !str(market.description)) errors.push('marketplace.json: field description must be a non-empty string');
   const p0 = Array.isArray(market.plugins) ? market.plugins[0] : null;
   if (!p0) errors.push('marketplace.json: field plugins must have at least one entry');
   else {

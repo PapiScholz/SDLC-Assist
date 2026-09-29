@@ -11,9 +11,13 @@ const cases = [
   ['quiero agregar soporte para X', 'feature'], ['tengo una idea para X', 'idea'],
   ['continue', 'unknown'], ['', 'unknown'], [undefined, 'unknown'],
   ['El LOGIN SE ROMPIÓ', 'bug'], ['la función falla', 'bug'], ['address book feature', 'feature'],
+  ['el cliente se queja de un typo', 'complaint'], ['please fix the export', 'bug'], ['there is an issue with login', 'bug'],
+  ['something is wrong with totals', 'bug'], ['problem saving the form', 'bug'], ['hay que arreglar el login', 'bug'],
+  ['no me deja entrar', 'bug'], ['el servidor se cayó', 'bug'], ['tengo un problema con el pago', 'bug'],
+  ['quick fix for the header', 'hotfix'], ['prefix option for ids', 'unknown'],
 ];
 for (const [msg, want] of cases) check(JSON.stringify(msg) + ' -> ' + want, () => assert.strictEqual(classifyRequest(msg), want));
-check('precedence order is fixed', () => assert.deepStrictEqual(PRECEDENCE, ['hotfix', 'complaint', 'bug', 'feature', 'idea']));
+check('precedence order is fixed (complaint first)', () => assert.deepStrictEqual(PRECEDENCE, ['complaint', 'hotfix', 'bug', 'feature', 'idea']));
 check('every type has en and es lists', () => {
   for (const t of PRECEDENCE) { assert(KEYWORDS.en[t].length > 0, t + ' en'); assert(KEYWORDS.es[t].length > 0, t + ' es'); }
 });

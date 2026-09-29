@@ -31,29 +31,34 @@ Codex and Cursor get the skill by intent only in v1; native command files for th
 Overwrite and duplicate notes:
 
 - skills.sh overwrites same-named skills already in `~/.agents/skills`. Back up local edits first.
-- Installing both the plugin and a user-scope copy registers the same skill twice. Keep one; `node skills/sdlc/bin/which.js --verbose` lists the duplicates.
+- Installing both the plugin and a user-scope copy registers the same skill twice. Keep one; `which.js --verbose` lists the duplicates (without `--verbose` the JSON has `duplicates: []` and `duplicatesOmitted: true`). Run it from where the skill is installed: `node ~/.agents/skills/sdlc/bin/which.js --verbose` (skills.sh), `node "${CLAUDE_PLUGIN_ROOT}/skills/sdlc/bin/which.js" --verbose` (plugin), or `node ~/.claude/skills/sdlc/bin/which.js --verbose` (manual copy).
 - Find other skills with `npx skills find <term>`.
 
 ## Usage
 
-Describe the work, or say "where are we". Example:
+Describe the work, or say "where are we". The router writes your request to a temp file and runs `where.js`. A real run on a scratch repo (two source files, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD, no spec), with the request "customer complains about X":
 
 ```
-You:    A customer says the receipt total shows 12.5 instead of 12.50.
-Agent:  Phase: analysis - a complaint with no spec yet
-        Evidence: no spec in docs/specs; tasks/todo.md has no open tasks
-        Warnings: none
-        Options: [confirm analysis] [new cycle: analysis]
-You:    confirm
-Agent:  Who asks: <who reported it?> Where: <which screen?> Urgency: <blocking / this week / whenever?>
-You:    Ana, shop owner. Checkout receipt preview. This week.
-Agent:  Who asks:      Ana, shop owner
-        What happens:  The receipt total shows 12.5 instead of 12.50
-        Expected:      Two decimals, always
-        Where:         Checkout screen, receipt preview
-        Urgency:       this week
-        Next: spec-driven-development turns this card into a short spec.
+$ node skills/sdlc/bin/where.js --root <scratch repo> --message-file <temp file>
 ```
+
+Output, trimmed to the keys the router reads:
+
+```json
+{
+  "inferred": "analysis",
+  "evidence": [
+    "fallback: analysis (candidates: analysis)",
+    "tests not run (no --run-tests)",
+    "in production: tag v1.2.0"
+  ],
+  "alternatives": [],
+  "warnings": [],
+  "request": { "message": "customer complains about X", "type": "complaint" }
+}
+```
+
+The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). A complaint then goes through the request card (who asks, what happens, expected, where, urgency) and spec-driven-development turns the card into a short spec with `Phase: analysis`, `Status: draft`. `inProduction` adds the note "keep the running version safe".
 
 Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
 
@@ -81,11 +86,11 @@ Slugs are the six above; `Status` is `draft`, `approved` or `closed`. Specs alwa
 | testing | `Phase: deployment` |
 | deployment | `Status: closed` |
 
-It never touches the CHANGELOG and never runs state-changing git commands.
+It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
 
 ## Missing-skill protocol
 
-If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question with four options: install a known one, search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `skills/sdlc/references/missing-skill.md`.
+If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `skills/sdlc/references/missing-skill.md`.
 
 ## Bundled skills
 

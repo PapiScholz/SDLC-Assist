@@ -30,6 +30,14 @@ check('valid pair => exit 0', () => {
   const r = run(plugin(), market());
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
 });
+check('marketplace top-level description accepted; empty or non-string => exit 1', () => {
+  const m = market(); m.description = 'Skills by X.';
+  assert.strictEqual(run(plugin(), m).status, 0);
+  m.description = '';
+  const r = run(plugin(), m);
+  assert.strictEqual(r.status, 1); assert.ok(/description/.test(r.stdout + r.stderr));
+  m.description = 3; assert.strictEqual(run(plugin(), m).status, 1);
+});
 check('plugin.json without name => exit 1 naming the field', () => {
   const p = plugin(); delete p.name;
   const r = run(p, market());

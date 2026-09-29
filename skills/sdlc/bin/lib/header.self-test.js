@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const assert = require('assert');
-const { parseHeader, PHASES } = require('./header');
+const { parseHeader, hasHeaderLine, PHASES } = require('./header');
 let passed = 0, failed = 0;
 function check(label, fn) {
   try { fn(); console.log('  ok   ' + label); passed++; }
@@ -42,6 +42,16 @@ check('empty text', () => { assert.deepStrictEqual(parseHeader(''), { phase: nul
 check('bold forms **Phase:** x and **Phase**: x both parse', () => {
   assert.deepStrictEqual(parseHeader('# T\n**Phase:** development\n**Status:** approved\n'), { phase: 'development', status: 'approved' });
   assert.deepStrictEqual(parseHeader('**Phase**: testing\n__Status__: closed\n'), { phase: 'testing', status: 'closed' });
+});
+check('leading UTF-8 BOM is stripped (first line and frontmatter fence still parse)', () => {
+  const BOM = String.fromCharCode(0xFEFF);
+  assert.deepStrictEqual(parseHeader(BOM + 'Phase: testing\nStatus: approved\n'), { phase: 'testing', status: 'approved' });
+  assert.deepStrictEqual(parseHeader(BOM + '---\nPhase: analysis\n---\n# T\nPhase: planning\n'), { phase: 'planning', status: 'draft' });
+});
+check('hasHeaderLine: true with Phase or Status line, false without', () => {
+  assert.strictEqual(hasHeaderLine('# T\nStatus: draft\n'), true);
+  assert.strictEqual(hasHeaderLine('# T\n**Phase:** whatever\n'), true);
+  assert.strictEqual(hasHeaderLine('# Module\n\nJust text.\n'), false);
 });
 check('PHASES is the six slugs in cycle order', () => {
   assert.deepStrictEqual(PHASES, ['initial', 'analysis', 'planning', 'development', 'testing', 'deployment']);

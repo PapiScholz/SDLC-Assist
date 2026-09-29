@@ -95,9 +95,11 @@ fallback evidence is also a warning, never silently resolved.
 ## Cycle identity and header
 
 - A cycle is a spec file: `docs/specs/*.md`, root `spec.md`, or root
-  `SPEC-*.md` (upstream SDD Phase 0 convention). With several `SPEC-*.md`
-  from one capability map, the map's parent spec is the cycle; module
-  specs are listed but not tracked in v1.
+  `SPEC-*.md` (upstream SDD Phase 0 convention). With two or more root
+  `SPEC-*.md` (a capability map), v1 uses a proxy for the map's parent:
+  only those with a `Phase:` or `Status:` header line are cycles; the
+  headerless ones are module specs, listed in `signals.modules` and
+  excluded from active-cycle ranking.
 - Header lines: `Phase: <slug>` and `Status: draft | approved | closed`,
   placed immediately after the H1 title (or at the top when there is no
   H1), scanned within the first 15 lines after any YAML frontmatter.
@@ -130,8 +132,9 @@ only read):
 
 ## Inference protocol
 
-1. **Collect and infer.** `bin/where.js --message "<user request>"`
-   (Node, zero dependencies) runs at the user's repo root and prints JSON:
+1. **Collect and infer.** `bin/where.js --message-file <temp file>`
+   (also `--message "<text>"` or `--message -` for stdin; Node, zero
+   dependencies) runs at the user's repo root and prints JSON:
    `{ signals, cycles, active, inferred, evidence, alternatives, warnings, request }`.
    - Artifacts: every spec with `Phase:`/`Status:`, plan present and
      current, todo counts (`[ ]`, `[-]`, `[~]` open; `[x]` or `[X]` done;
@@ -244,7 +247,7 @@ owner.
 Self-test:      node bin/where.self-test.js
                 node bin/which.self-test.js
                 node bin/sync-vendored.self-test.js
-Infer:          node bin/where.js --message "<request>" [--run-tests]
+Infer:          node bin/where.js --message-file <temp file> [--run-tests] [--root <dir>]
 Vendor check:   node bin/sync-vendored.js --check
 Vendor update:  node bin/sync-vendored.js --fix
 Installed?:     node bin/which.js [--verbose]

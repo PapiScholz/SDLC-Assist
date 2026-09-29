@@ -65,6 +65,22 @@ check('--message= form and missing --message', () => {
   const r2 = spawnSync(process.execPath, [WHERE, '--root', tmpDir()], { encoding: 'utf8' });
   assert.deepStrictEqual(JSON.parse(r2.stdout).request, { message: '', type: 'unknown' });
 });
+check('--message-file (BOM, apostrophe, non-ASCII) and --message - (stdin) => bug', () => {
+  const msg = "the login doesn't work — se rompió";
+  const file = path.join(tmpDir(), 'request.txt');
+  fs.writeFileSync(file, Buffer.concat([Buffer.from([0xEF, 0xBB, 0xBF]), Buffer.from(msg, 'utf8')]));
+  const r = spawnSync(process.execPath, [WHERE, '--root', tmpDir(), '--message-file', file], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.deepStrictEqual(JSON.parse(r.stdout).request, { message: msg, type: 'bug' });
+  const s = spawnSync(process.execPath, [WHERE, '--root', tmpDir(), '--message', '-'], { encoding: 'utf8', input: msg });
+  assert.strictEqual(s.status, 0, s.stderr); assert.strictEqual(JSON.parse(s.stdout).request.message, msg);
+});
+check('run from a repo subdirectory: warning tells to pass --root <toplevel>', () => {
+  const root = initRepo(tmpDir()); write(root, 'pkg/a.js', 'x\n'); commit(root, 'one', T1);
+  const r = runWhere(path.join(root, 'pkg'), 'continue');
+  assert.strictEqual(r.signals.git.isRepo, false);
+  assert(r.warnings.some(w => w.startsWith('not the repo root; run with --root ')), r.warnings.join('|'));
+});
 console.log('fixture 1: empty dir, no git');
 check('idea => initial', () => {
   const r = runWhere(tmpDir(), 'I have an idea for X');

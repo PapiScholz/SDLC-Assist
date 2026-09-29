@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 // Collects repo signals and infers the SDLC phase. Prints one JSON object to stdout.
-//   node bin/where.js --message "<request>" [--run-tests] [--root <dir>]
+//   node bin/where.js [--message "<request>" | --message-file <path> | --message -] [--run-tests] [--root <dir>]
+// --message-file reads UTF-8 (a leading BOM is dropped); `--message -` reads stdin.
 // Exit 0 on success (warnings included); exit 2 on unexpected error, message on stderr.
 // Read-only: the only child processes are git queries and, with --run-tests, the test runner.
 const fs = require('fs');
 const { collectSignals } = require('./lib/signals');
 const { infer } = require('./lib/infer');
 const { classifyRequest } = require('./lib/keywords');
+const readMessage = file => fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
 function parseArgs(argv) {
   const args = { message: '', runTests: false, root: process.cwd() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    if (a === '--message' && argv[i + 1] === '-') { args.message = readMessage(0); i++; continue; }
     if (a === '--message') { args.message = argv[++i] || ''; continue; }
     if (a.startsWith('--message=')) { args.message = a.slice(10); continue; }
+    if (a === '--message-file') { args.message = readMessage(argv[++i]); continue; }
+    if (a.startsWith('--message-file=')) { args.message = readMessage(a.slice(15)); continue; }
     if (a === '--run-tests') { args.runTests = true; continue; }
     if (a === '--root') { args.root = argv[++i]; continue; }
     if (a.startsWith('--root=')) { args.root = a.slice(7); continue; }
@@ -26,7 +31,7 @@ function main() {
   const signals = collectSignals(args.root, { runTests: args.runTests });
   const request = { message: args.message, type: classifyRequest(args.message) };
   const r = infer(signals, request);
-  const out = { signals, cycles: r.cycles, active: r.active, inferred: r.inferred, evidence: r.evidence, alternatives: r.alternatives, warnings: r.warnings, request };
+  const out = { signals, cycles: r.cycles, active: r.active, inferred: r.inferred, evidence: r.evidence, alternatives: r.alternatives, warnings: [...r.warnings, ...signals.notes], request };
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
   return 0;
 }

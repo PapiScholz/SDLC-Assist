@@ -27,4 +27,14 @@ fs.writeFileSync(path.join(local, 'spec-driven-development', 'VENDORED.md'), 'ch
 // VENDORED.md and LICENSE are excluded from comparison: restore SKILL.md and expect 0
 run(['--fix']);
 assert.strictEqual(run(['--check']).code, 0);
+// LICENSE or VENDORED.md missing => exit 1 naming the file
+for (const f of ['LICENSE', 'VENDORED.md']) {
+  fs.rmSync(path.join(local, 'spec-driven-development', f));
+  const r = run(['--check']);
+  assert.strictEqual(r.code, 1, f + ' missing must fail');
+  assert.ok(r.out.includes('missing: skills/spec-driven-development/' + f), r.out);
+  run(['--fix']);
+  assert.strictEqual(run(['--check']).code, 0, 'restored ' + f);
+}
+fs.rmSync(tmp, { recursive: true, force: true });
 console.log('sync-vendored self-test OK');

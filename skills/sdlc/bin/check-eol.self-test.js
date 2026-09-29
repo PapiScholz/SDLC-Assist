@@ -39,6 +39,13 @@ check('extensionless file (LICENSE) is checked', () => {
   assert.strictEqual(r.status, 1);
   assert.ok((r.stderr + r.stdout).includes('LICENSE'));
 });
+check('leading UTF-8 BOM exits 1 and is named; BOM bytes mid-file are not flagged', () => {
+  const BOM = String.fromCharCode(0xFEFF);
+  const r = run(tree({ 'bom.md': BOM + '# x\n', 'mid.md': 'x ' + BOM + '\n' }));
+  assert.strictEqual(r.status, 1);
+  assert.ok((r.stderr + r.stdout).includes('BOM in bom.md'), r.stderr);
+  assert.ok(!(r.stderr + r.stdout).includes('mid.md'));
+});
 check('excluded dirs (.git, node_modules, .superpowers, .sdlc-fixtures) are skipped', () => {
   const r = run(tree({ '.git/x.md': 'a\r\n', 'node_modules/y.js': 'a\r\n', '.superpowers/z.md': 'a\r\n', '.sdlc-fixtures/w.txt': 'a\r\n' }));
   assert.strictEqual(r.status, 0);

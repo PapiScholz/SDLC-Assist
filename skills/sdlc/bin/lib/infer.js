@@ -42,13 +42,15 @@ function infer(signals, request) {
   const fallback = candidates[0] || 'analysis';
   if (!candidates.length) evidence.push(EVIDENCE.NO_RULE);
   if (approved && planCurrent && todo.total === 0) evidence.push(EVIDENCE.NO_TASKS);
-  if (fallback === 'testing' && signals.git.tagOnHead) evidence.push(EVIDENCE.DEPLOY_HEADER_ONLY);
+  const headerPhase = active && active.phase;
+  const deployTie = headerPhase === 'deployment' && fallback === 'testing';   // deployment is header-only: testing is its expected fallback
+  if (deployTie || (fallback === 'testing' && !headerPhase)) evidence.push(EVIDENCE.DEPLOY_HEADER_ONLY);
   evidence.push(`fallback: ${fallback} (candidates: ${candidates.join(', ') || 'none'})`);
   let inferred = fallback;
   if (active && active.phase) {
     inferred = active.phase;
     evidence.unshift(`header Phase: ${active.phase}, Status: ${active.status} (${active.path})`);
-    if (active.phase !== fallback) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
+    if (active.phase !== fallback && !deployTie) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
     if (['development', 'testing', 'deployment'].includes(active.phase) && !approved) warnings.push(`header ${active.phase} without an approved spec`);
     if (active.phase === 'deployment' && signals.git.tagOnHead) evidence.push(EVIDENCE.CLOSE_CYCLE);
   }

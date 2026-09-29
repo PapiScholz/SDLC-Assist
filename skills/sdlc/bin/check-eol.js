@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Flags CRLF in text files (.md .js .json .yml .yaml .txt, or no extension).
+// Flags CRLF and a leading UTF-8 BOM in text files (.md .js .json .yml .yaml .txt, or no extension).
 // Usage: check-eol.js [--root <dir>]
 const fs = require('fs');
 const path = require('path');
@@ -16,11 +16,14 @@ const bad = [];
     const p = path.join(dir, e.name);
     if (e.isDirectory()) { if (!SKIP.has(e.name)) walk(p); continue; }
     if (!e.isFile() || !EXT.has(path.extname(e.name).toLowerCase())) continue;
-    if (fs.readFileSync(p).includes('\r\n')) bad.push(path.relative(root, p).split(path.sep).join('/'));
+    const buf = fs.readFileSync(p);
+    const rel = path.relative(root, p).split(path.sep).join('/');
+    if (buf.includes('\r\n')) bad.push('CRLF in ' + rel);
+    if (buf.length >= 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) bad.push('BOM in ' + rel);
   }
 })(root);
 if (bad.length) {
-  for (const f of bad) console.error('check-eol: CRLF in ' + f);
+  for (const f of bad) console.error('check-eol: ' + f);
   process.exit(1);
 }
-console.log('check-eol: no CRLF found');
+console.log('check-eol: no CRLF or BOM found');

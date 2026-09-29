@@ -21,14 +21,14 @@ It exists to stop two habits: coding before the work is framed (no spec, no plan
 
 If none exists, say so, and read the artifacts by hand with the same rules (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git queries, tests only if asked).
 
-Run from the user's repo root:
+Run from the user's repo root, or pass `--root "$(git rev-parse --show-toplevel)"`; from a subdirectory the git signals are off and `warnings` says so:
 
 ```
-node "<dir>/bin/where.js" --message "<the user's request>"
+node "<dir>/bin/where.js" --message-file "<temp file>"
 node "<dir>/bin/which.js" --phase <slug>
 ```
 
-Write the request text to a temp file or single-quote it; never paste third-party text containing quotes, `$(...)` or backticks into a double-quoted argument. If `where.js` exits non-zero, or Node is missing or older than 20, report that in one line and continue by hand with the same rules; never block.
+Pass the request through a file: write the user's text with your file tool to the OS temp dir (`$TMPDIR` or `/tmp`; `%TEMP%` on Windows), never inside the analysed repo, and pass `--message-file <path>`. Never put the request text on the command line, quoted or not. If `where.js` exits non-zero, or Node is missing or older than 20, report that in one line and continue by hand with the same rules; never block.
 
 ## Protocol
 
@@ -38,7 +38,7 @@ Write the request text to a temp file or single-quote it; never paste third-part
    - (a) If `request.type` is `complaint`, `bug` or `feature` and an active cycle exists, the question offers "continue active cycle" and "new cycle in analysis". Only one planned cycle at a time: `tasks/plan.md` and `tasks/todo.md` are shared, so a new cycle's planning waits until the active one closes or the user says to switch; offer that choice.
    - (b) If `request.type` is `hotfix`, apply the Hotfix threshold below and downgrade to `analysis` when it fails, saying which condition failed.
 4. **Ask ONE question** using the template below.
-5. **Run** `which.js --phase <slug>` for the confirmed phase and read `phases.<slug>` in its JSON. Ask the second question (the only exception to the one-question rule) only when none of `phases.<slug>.recommends` appears in `phases.<slug>.installed` and no `phases.<slug>.alternatives` entry appears in `installed` either. When a phase recommends two skills (development), a single installed one is enough to skip the question; name the missing one in the recommendation instead. Do not use `missing` alone: it also lists uninstalled alternatives. The second question offers exactly four options, following `references/missing-skill.md`: install a known one, search (`npx skills find <term>` or the `find-skills` skill), create it along the way, continue without it. The second question, and a "continue without it" answer, never block. "Continue" is announced once and not asked again for that skill in this context. Print the skill name in the `form` that is invocable on this host.
+5. **Run** `which.js --phase <slug>` for the confirmed phase and read `phases.<slug>` in its JSON. Ask the second question (the only exception to the one-question rule) only when none of `phases.<slug>.recommends` appears in `phases.<slug>.installed` and no `phases.<slug>.alternatives` entry appears in `installed` either. When a phase recommends two skills (development), a single installed one is enough to skip the question; name the missing one in the recommendation instead. Do not use `missing` alone: it also lists uninstalled alternatives. The second question offers the options in `references/missing-skill.md`: install a known one (only when its install table has a command for that skill; otherwise leave this option out), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, continue without it. The second question, and a "continue without it" answer, never block. "Continue" is announced once and not asked again for that skill in this context. Print the skill name in the `form` that is invocable on this host.
 6. **Read** `references/phases/<slug>.md` and state the next step: what the phase produces, which skill, the concrete action, where design happens. Sheets: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`. Entry rules by request type: `references/entry-points.md`.
 
 ## Question template
@@ -50,7 +50,7 @@ Warnings: <lines or "none">
 Options: [confirm <inferred>] [<alternative 1>] [<alternative 2>] [new cycle: analysis]
 ```
 
-Up to three alternatives (other candidates, continue active cycle, new cycle). A header that disagrees with the fallback evidence, development without an approved spec, or deployment without testing are warnings inside this question, never blocks. State which phase was skipped and why.
+List `[new cycle: analysis]` only when `alternatives` has an entry with `kind: new-cycle`. Up to three alternatives (other candidates, continue active cycle, new cycle). A header that disagrees with the fallback evidence, development without an approved spec, or deployment without testing are warnings inside this question, never blocks. State which phase was skipped and why.
 
 ## Complaints and the request card
 
@@ -80,7 +80,7 @@ Triggered by `/sdlc:phase close` or "sdlc close" by intent (also from session-cl
 | testing | `Phase: deployment` |
 | deployment | `Status: closed` |
 
-Only edit the spec whose `Phase` equals the confirmed phase. A headerless spec gets the header with the phase that follows the confirmed one. After a hotfix in the same context, update nothing and recommend the QA step. Name the next phase and its skill. Never touch CHANGELOG; that belongs to the release skill.
+Edit the active spec only (`active.path` in the `where.js` output), advancing from the phase the user confirmed even when its header said otherwise. When there is no spec (`active` is null), write nothing and say so. A headerless spec gets the header with the phase that follows the confirmed one. After a hotfix in the same context, update nothing and recommend the QA step. Name the next phase and its skill. Never touch CHANGELOG; that belongs to the release skill.
 
 ## Hotfix threshold
 

@@ -87,6 +87,17 @@ check('header deployment + tag on HEAD => evidence recommends closing', () => {
     git: { isRepo: true, branch: 'main', commits: [], lastSemverTag: { name: 'v1.0.0', sha: 'x' }, tagOnHead: true, commitsAfterTag: 0 } }), req('unknown'));
   assert.strictEqual(r.inferred, 'deployment'); assert(r.evidence.some(e => e.includes(EVIDENCE.CLOSE_CYCLE)));
 });
+check('header deployment, all tasks done => no warning, no fallback alt, DEPLOY_HEADER_ONLY (no tag needed)', () => {
+  const r = infer(sig({ sourceFiles: src, specs: [spec('s.md', 'deployment', 'approved')], plan: plan(), todo: todo(0, 7) }), req('unknown'));
+  assert.strictEqual(r.inferred, 'deployment'); assert.strictEqual(r.fallback, 'testing');
+  assert.deepStrictEqual(r.warnings, []); assert(!r.alternatives.some(a => a.kind === 'fallback'), JSON.stringify(r.alternatives));
+  assert(r.evidence.some(e => e.includes(EVIDENCE.DEPLOY_HEADER_ONLY)), r.evidence.join('|'));
+});
+check('inversion: header deployment with one open task => warning names development', () => {
+  const r = infer(sig({ sourceFiles: src, specs: [spec('s.md', 'deployment', 'approved')], plan: plan(), todo: todo(1, 6) }), req('unknown'));
+  assert.strictEqual(r.inferred, 'deployment'); assert.strictEqual(r.warnings.length, 1); assert(/development/.test(r.warnings[0]), r.warnings[0]);
+  assert(hasAlt(r, 'development', 'fallback')); assert(!r.evidence.some(e => e.includes(EVIDENCE.DEPLOY_HEADER_ONLY)));
+});
 console.log('cycle selection');
 check('active = most recent non-closed spec by effective date', () => {
   const r = infer(sig({ sourceFiles: src, specs: [
@@ -113,6 +124,13 @@ check('10 inv: new spec approved, plan committed after it, todo reset => plannin
     spec('new.md', null, 'approved', { firstCommit: 300, lastCommit: 300, mtime: 300 }) ], plan: plan({ lastCommit: 400 }), todo: todo(0, 0) }), req('unknown'));
   assert.strictEqual(r.inferred, 'planning'); assert(!r.evidence.some(e => e.includes(EVIDENCE.PLAN_STALE)));
 });
+check('dirty tracked spec newer than a committed one becomes active (through infer)', () => {
+  const specs = dirty => [
+    spec('committed.md', null, 'approved', { firstCommit: 100, lastCommit: 500, dirty: false, mtime: 500 }),
+    spec('edited.md', null, 'draft', { firstCommit: 50, lastCommit: 100, dirty, mtime: 900 }) ];
+  assert.strictEqual(infer(sig({ sourceFiles: src, specs: specs(true) }), req('unknown')).active.path, 'edited.md');
+  assert.strictEqual(infer(sig({ sourceFiles: src, specs: specs(false) }), req('unknown')).active.path, 'committed.md');
+});
 console.log('request rule (a) and misc evidence');
 check('5: bug/complaint/feature with active cycle => alt new-cycle; unknown/hotfix => none', () => {
   const s = sig({ sourceFiles: src, specs: [spec('s.md', 'development', 'approved')], plan: plan(), todo: todo(4, 3) });
@@ -126,6 +144,22 @@ check('2: no spec, in production, complaint => analysis, no new-cycle alt', () =
 check('tests unknown and missing todo are stated in evidence', () => {
   const r = infer(sig({ sourceFiles: src, specs: [spec('s.md', null, 'approved')], plan: plan() }), req('unknown'));
   assert(r.evidence.some(e => e.includes(EVIDENCE.TESTS_NOT_RUN))); assert(r.evidence.some(e => e.includes(EVIDENCE.NO_TODO)));
+});
+check('plan present, no specs => NO_PLAN_CYCLE evidence; no plan => none', () => {
+  const r = infer(sig({ sourceFiles: src, plan: plan(), todo: todo(2, 1) }), req('unknown'));
+  assert(r.evidence.some(e => e.includes(EVIDENCE.NO_PLAN_CYCLE)), r.evidence.join('|'));
+  assert(!infer(sig({ sourceFiles: src }), req('unknown')).evidence.some(e => e.includes(EVIDENCE.NO_PLAN_CYCLE)));
+});
+check('alternatives capped at 3: max reachable case hits the cap, sweep never exceeds it', () => {
+  const max = infer(sig({ sourceFiles: src, specs: [spec('s.md', 'deployment', 'draft')], plan: plan(), todo: todo(2, 1) }), req('bug'));
+  assert.deepStrictEqual(max.alternatives.map(a => a.kind), ['fallback', 'new-cycle', 'candidate'], JSON.stringify(max.alternatives));
+  for (const phase of [null, 'analysis', 'planning', 'development', 'testing', 'deployment'])
+    for (const status of ['draft', 'approved'])
+      for (const t of [todo(0, 0), todo(2, 1), todo(0, 3)])
+        for (const type of ['bug', 'unknown']) {
+          const r = infer(sig({ sourceFiles: src, specs: [spec('s.md', phase, status)], plan: plan(), todo: t }), req(type));
+          assert(r.alternatives.length <= 3, JSON.stringify(r.alternatives));
+        }
 });
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

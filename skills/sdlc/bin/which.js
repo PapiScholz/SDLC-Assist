@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { candidateDirs, pluginSkillDirs, subdirs, normalizeName } = require('./lib/skilldirs');
+const { PHASES } = require('./lib/header');
 
 function parseList(v) {
   return v.replace(/^\[|\]$/g, '').split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
@@ -59,6 +60,10 @@ function scan(home, cwd) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.phase !== null && !PHASES.includes(args.phase)) {
+    process.stderr.write(`which.js: unknown --phase "${args.phase}" (expected one of: ${PHASES.join(', ')})\n`);
+    return 1;
+  }
   const home = args.root || os.homedir();
   const sheetsDir = args.sheetsDir || path.join(__dirname, '..', 'references', 'phases');
   const found = scan(home, process.cwd());
@@ -90,7 +95,9 @@ function main() {
   const duplicates = [];
   for (const [name, list] of byName) if (list.length > 1) duplicates.push({ name, paths: list.map(l => l.path) });
 
-  process.stdout.write(JSON.stringify({ phases, duplicates }, null, 2) + '\n');
+  // Duplicates are diagnostics for the user, not routing input: listed only with --verbose.
+  const out = args.verbose ? { phases, duplicates } : { phases, duplicates: [], duplicatesOmitted: true };
+  process.stdout.write(JSON.stringify(out, null, 2) + '\n');
   if (args.verbose) {
     const lines = ['phase\tinstalled\tmissing'];
     for (const [slug, p] of Object.entries(phases))
@@ -98,7 +105,8 @@ function main() {
     for (const d of duplicates) lines.push(`duplicate\t${d.name}\t${d.paths.join(' | ')}`);
     process.stderr.write(lines.join('\n') + '\n');
   }
+  return 0;
 }
 
-try { main(); process.exit(0); }
-catch (err) { process.stderr.write('which.js: ' + (err && err.stack || err) + '\n'); process.exit(2); }
+try { process.exitCode = main(); }
+catch (err) { process.stderr.write('which.js: ' + (err && err.stack || err) + '\n'); process.exitCode = 2; }

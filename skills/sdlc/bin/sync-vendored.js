@@ -21,9 +21,11 @@ function main(){ const a=parseArgs(process.argv.slice(2)); const up=fetchUpstrea
   for(const name of a.names){ const src=path.join(up,'skills',name,'SKILL.md'); const dstDir=path.join(a.skillsDir,name); const dst=path.join(dstDir,'SKILL.md');
     const want=fs.readFileSync(src); let have=null; try{have=fs.readFileSync(dst);}catch{}
     const same=have&&Buffer.compare(want,have)===0;
-    if(a.mode==='check'){ if(!same){drift++; console.error(`drift: skills/${name}/SKILL.md`);} continue; }
+    if(a.mode==='check'){ if(!same){drift++; console.error(`drift: skills/${name}/SKILL.md`);}
+      for(const f of ['LICENSE','VENDORED.md']) if(!fs.existsSync(path.join(dstDir,f))){drift++; console.error(`missing: skills/${name}/${f}`);}
+      continue; }
     fs.mkdirSync(dstDir,{recursive:true}); fs.writeFileSync(dst,want);
     fs.writeFileSync(path.join(dstDir,'LICENSE'),fs.readFileSync(path.join(up,'LICENSE')));
     fs.writeFileSync(path.join(dstDir,'VENDORED.md'),vendoredNote(name)); console.log(`vendored: ${name}`); }
-  if(a.mode==='check') { console.log(drift?`${drift} skill(s) drifted`:'vendored skills in sync'); process.exit(drift?1:0); } }
+  if(a.mode==='check') { console.log(drift?`${drift} vendored file(s) drifted or missing`:'vendored skills in sync'); process.exit(drift?1:0); } }
 try{ main(); }catch(e){ console.error(e.message); process.exit(2); }

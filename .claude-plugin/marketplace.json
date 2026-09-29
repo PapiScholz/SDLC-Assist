@@ -1,6 +1,7 @@
 {
   "name": "ezescholz",
   "owner": { "name": "Ezequiel Scholz" },
+  "description": "Skills by Ezequiel Scholz: SDLC phase router with the spec-driven-development family bundled.",
   "plugins": [
     {
       "name": "sdlc",

@@ -47,10 +47,38 @@ check('missing includes debugging-strategies', () => {
   assert.ok(out.phases.analysis.missing.includes('debugging-strategies'));
   assert.ok(!out.phases.analysis.missing.includes('spec-driven-development'));
 });
-check('duplicates has one entry with two paths', () => {
-  assert.strictEqual(out.duplicates.length, 1);
-  assert.strictEqual(out.duplicates[0].name, 'spec-driven-development');
-  assert.strictEqual(out.duplicates[0].paths.length, 2);
+check('without --verbose: duplicates [] and duplicatesOmitted true', () => {
+  assert.deepStrictEqual(out.duplicates, []);
+  assert.strictEqual(out.duplicatesOmitted, true);
+});
+check('--verbose: duplicates has one entry with two paths, no omitted flag', () => {
+  const o = JSON.parse(run([...base, '--verbose']).stdout);
+  assert.strictEqual(o.duplicates.length, 1);
+  assert.strictEqual(o.duplicates[0].name, 'spec-driven-development');
+  assert.strictEqual(o.duplicates[0].paths.length, 2);
+  assert.strictEqual(o.duplicatesOmitted, undefined);
+});
+check('unknown --phase slug => exit 1, message on stderr, nothing on stdout', () => {
+  const r = run([...base, '--phase', 'shipping']);
+  assert.strictEqual(r.status, 1);
+  assert.ok(/unknown --phase/.test(r.stderr), r.stderr);
+  assert.strictEqual(r.stdout, '');
+});
+check('plugin cache: only the highest version of one plugin counts (1.10.0 > 1.9.0 > sha)', () => {
+  const h3 = path.join(tmp, 'home3');
+  for (const ver of ['1.9.0', '1.10.0', '0a1b2c3d4e5f'])
+    put(path.join(h3, '.claude', 'plugins', 'cache', 'm', 'superpowers', ver, 'skills', 'systematic-debugging', 'SKILL.md'), '# ' + ver + '\n');
+  const o = JSON.parse(run(['--root', h3, '--sheets-dir', sheets, '--phase', 'analysis', '--verbose']).stdout);
+  const hits = o.phases.analysis.installed.filter(i => i.name === 'systematic-debugging');
+  assert.strictEqual(hits.length, 1);
+  assert.ok(hits[0].path.split(path.sep).includes('1.10.0'), hits[0].path);
+  assert.ok(!o.duplicates.some(d => d.name === 'systematic-debugging'), JSON.stringify(o.duplicates));
+});
+check('project-level .opencode/skills is scanned', () => {
+  put(path.join(cwd, '.opencode', 'skills', 'nope-skill', 'SKILL.md'), '# n\n');
+  const o = JSON.parse(run([...base, '--phase', 'planning']).stdout);
+  fs.rmSync(path.join(cwd, '.opencode'), { recursive: true, force: true });
+  assert.ok(o.phases.planning.installed.some(i => i.name === 'nope-skill'));
 });
 check('list form parsed, project-level dir scanned', () => {
   const p = out.phases.planning;
@@ -80,7 +108,7 @@ check('same real path via symlink is not a duplicate', () => {
   fs.mkdirSync(path.join(h2, '.agents'), { recursive: true });
   try { fs.symlinkSync(path.join(h2, '.claude', 'skills'), path.join(h2, '.agents', 'skills'), 'junction'); }
   catch (e) { return; }
-  const r = run(['--root', h2, '--sheets-dir', sheets]);
+  const r = run(['--root', h2, '--sheets-dir', sheets, '--verbose']);
   assert.strictEqual(JSON.parse(r.stdout).duplicates.length, 0);
 });
 
