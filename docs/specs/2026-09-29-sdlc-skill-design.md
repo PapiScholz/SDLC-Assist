@@ -1,6 +1,6 @@
 # Spec: `sdlc` — SDLC phase router skill
 
-Phase: planning
+Phase: development
 Status: approved
 Date: 2026-09-29
 Owner: Ezequiel Scholz

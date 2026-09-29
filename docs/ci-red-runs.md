@@ -65,3 +65,33 @@ Recorded from Task 18 and re-run locally in this task. Exit 0, one warning (advi
 
 ✔ Validation passed with warnings
 ```
+
+## Dogfood
+
+The router run on its own repo at the planning close. Command: `node skills/sdlc/bin/where.js --message "continue"`. Only `inferred`, `evidence`, `alternatives` and `warnings` are recorded.
+
+Before close mode (spec header `Phase: planning`, plan present, todo with open tasks):
+
+```
+inferred: planning
+evidence:
+  - header Phase: planning, Status: approved (docs/specs/2026-09-29-sdlc-skill-design.md)
+  - fallback: development (candidates: development)
+  - tests not run (no --run-tests)
+alternatives:
+  - {phase: development, kind: fallback, reason: "header disagrees with fallback"}
+warnings:
+  - header says planning but artifacts say development
+```
+
+Close mode applied by hand (the owner approved the plan, which is the planning close): the spec header line changed from `Phase: planning` to `Phase: development`, `Status: approved` kept. Second run:
+
+```
+inferred: development
+evidence:
+  - header Phase: development, Status: approved (docs/specs/2026-09-29-sdlc-skill-design.md)
+  - fallback: development (candidates: development)
+  - tests not run (no --run-tests)
+alternatives: []
+warnings: []
+```
