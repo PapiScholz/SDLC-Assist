@@ -28,6 +28,8 @@ node "<dir>/bin/where.js" --message "<the user's request>"
 node "<dir>/bin/which.js" --phase <slug>
 ```
 
+Write the request text to a temp file or single-quote it; never paste third-party text containing quotes, `$(...)` or backticks into a double-quoted argument. If `where.js` exits non-zero, or Node is missing or older than 20, report that in one line and continue by hand with the same rules; never block.
+
 ## Protocol
 
 1. **Run** `where.js` with the request text. Add `--run-tests` only if the user asked to run the tests in the current turn; otherwise `tests.status` stays `unknown` and the evidence says so.
@@ -36,7 +38,7 @@ node "<dir>/bin/which.js" --phase <slug>
    - (a) If `request.type` is `complaint`, `bug` or `feature` and an active cycle exists, the question offers "continue active cycle" and "new cycle in analysis". Only one planned cycle at a time: `tasks/plan.md` and `tasks/todo.md` are shared, so a new cycle's planning waits until the active one closes or the user says to switch; offer that choice.
    - (b) If `request.type` is `hotfix`, apply the Hotfix threshold below and downgrade to `analysis` when it fails, saying which condition failed.
 4. **Ask ONE question** using the template below.
-5. **Run** `which.js --phase <slug>` for the confirmed phase. If `missing` is non-empty for that phase, ask the second question (the only exception to the one-question rule) with exactly four options, following `references/missing-skill.md`: install a known one, search (`npx skills find <term>` or the `find-skills` skill), create it along the way, continue without it. "Continue" is announced once and not asked again for that skill in this context. Print the skill name in the `form` that is invocable on this host.
+5. **Run** `which.js --phase <slug>` for the confirmed phase and read `phases.<slug>` in its JSON. Ask the second question (the only exception to the one-question rule) only when none of `phases.<slug>.recommends` appears in `phases.<slug>.installed` and no `phases.<slug>.alternatives` entry appears in `installed` either. When a phase recommends two skills (development), a single installed one is enough to skip the question; name the missing one in the recommendation instead. Do not use `missing` alone: it also lists uninstalled alternatives. The second question offers exactly four options, following `references/missing-skill.md`: install a known one, search (`npx skills find <term>` or the `find-skills` skill), create it along the way, continue without it. The second question, and a "continue without it" answer, never block. "Continue" is announced once and not asked again for that skill in this context. Print the skill name in the `form` that is invocable on this host.
 6. **Read** `references/phases/<slug>.md` and state the next step: what the phase produces, which skill, the concrete action, where design happens. Sheets: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`. Entry rules by request type: `references/entry-points.md`.
 
 ## Question template
