@@ -15,7 +15,7 @@ Status: draft | approved | closed
 - First token after the colon, case-insensitive; the rest of the line is ignored.
 - Slugs: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`.
 - A spec without `Status:` counts as `draft`.
-- New specs created while `sdlc` is loaded start with `Phase: analysis` / `Status: draft` (`Phase: initial` for the first spec of a project).
+- Specs always start with `Phase: analysis` / `Status: draft`, including the first spec of a project. `initial` is a phase without a header: it ends the moment the first spec exists.
 
 ## Close-mode transitions
 
@@ -23,7 +23,7 @@ Close mode runs the inference, uses the phase the user confirmed, and advances f
 
 | Confirmed phase | Writes |
 |---|---|
-| initial | `Phase: analysis` |
+| initial | nothing (the produced spec already reads `Phase: analysis`) |
 | analysis | `Status: approved`, `Phase: planning` |
 | planning | `Phase: development` |
 | development | `Phase: testing` |
