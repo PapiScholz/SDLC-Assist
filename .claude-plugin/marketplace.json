@@ -1,0 +1,11 @@
+{
+  "name": "ezescholz",
+  "owner": { "name": "Ezequiel Scholz" },
+  "plugins": [
+    {
+      "name": "sdlc",
+      "source": "./",
+      "description": "SDLC phase router with the spec-driven-development family bundled."
+    }
+  ]
+}
