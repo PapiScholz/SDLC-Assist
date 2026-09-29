@@ -74,6 +74,146 @@ check('inversion: add a source file => analysis', () => {
   const root = tmpDir(); write(root, 'src/index.js', 'x\n');
   assert.strictEqual(runWhere(root, 'I have an idea for X').inferred, 'analysis');
 });
-// fixtures 2..10 and --run-tests appended in Tasks 11-14
+function sourceRepo() {   // git repo with two source files, one commit at T1
+  const root = initRepo(tmpDir());
+  write(root, 'src/index.js', 'module.exports = 1;\n'); write(root, 'src/util.js', 'module.exports = 2;\n');
+  write(root, 'package.json', '{"name":"fx","version":"1.2.0"}\n');
+  commit(root, 'init', T1); return root;
+}
+console.log('fixture 2: source, tag v1.2.0, versioned CHANGELOG, no spec');
+function fixture2() { const root = sourceRepo(); write(root, 'CHANGELOG.md', '# Changelog\n\n## [1.2.0] - 2020-01-01\n- first\n'); commit(root, 'changelog', T2); git(root, ['tag', 'v1.2.0']); return root; }
+check('complaint => analysis, complaint, inProduction true', () => {
+  const r = runWhere(fixture2(), 'customer complains about X');
+  assert.strictEqual(r.inferred, 'analysis'); assert.strictEqual(r.request.type, 'complaint');
+  assert.strictEqual(r.signals.inProduction, true); assert.strictEqual(r.signals.git.lastSemverTag.name, 'v1.2.0');
+  assert.strictEqual(r.signals.git.tagOnHead, true); assert.strictEqual(r.active, null);
+});
+check('inversion: approved spec + plan written after it => planning, not analysis', () => {
+  const root = fixture2();
+  write(root, 'docs/specs/2020-03-01-x.md', '# X\n\nPhase: planning\nStatus: approved\n');
+  write(root, 'tasks/plan.md', '# Plan\n');
+  const r = runWhere(root, 'customer complains about X');
+  assert.strictEqual(r.inferred, 'planning'); assert.strictEqual(r.signals.specs[0].tracked, false);
+});
+console.log('fixture 6: source files, no SDD artifacts, no tags');
+check('add feature => analysis, feature, not in production', () => {
+  const r = runWhere(sourceRepo(), 'add feature X');
+  assert.strictEqual(r.inferred, 'analysis'); assert.strictEqual(r.request.type, 'feature'); assert.strictEqual(r.signals.inProduction, false);
+});
+check('inversion: remove source files => initial', () => {
+  const root = sourceRepo(); fs.rmSync(path.join(root, 'src'), { recursive: true, force: true });
+  assert.strictEqual(runWhere(root, 'add feature X').inferred, 'initial');
+});
+console.log('fixture 7: source, CHANGELOG ## 0.1.0, no tags');
+function fixture7() { const root = sourceRepo(); write(root, 'CHANGELOG.md', '## 0.1.0\n- x\n'); commit(root, 'changelog', T2); return root; }
+check('idea => analysis, inProduction false', () => {
+  const r = runWhere(fixture7(), 'I have an idea');
+  assert.strictEqual(r.inferred, 'analysis'); assert.strictEqual(r.signals.inProduction, false); assert.strictEqual(r.signals.changelog.hasPublishedVersion, true);
+});
+check('inversion: tag v0.1.0 => inProduction true', () => {
+  const root = fixture7(); git(root, ['tag', 'v0.1.0']);
+  assert.strictEqual(runWhere(root, 'I have an idea').signals.inProduction, true);
+});
+const TODO_3_OF_7 = '# Todo\n\n- [x] a\n- [x] b\n- [x] c\n- [ ] d\n- [-] e\n- [~] f\n  - [ ] g\n';   // 4 open, 3 done
+const TODO_ALL_DONE = '# Todo\n\n- [x] a\n- [x] b\n- [x] c\n- [x] d\n- [x] e\n- [x] f\n  - [X] g\n';
+function specText({ phase = 'development', status = 'approved', noPhase = false } = {}) {
+  return '# Login rework\n\n' + (noPhase ? '' : 'Phase: ' + phase + '\n') + 'Status: ' + status + '\nDate: 2020-02-01\n';
+}
+function fixture3(opts = {}) {   // spec at T2, plan+todo at T3 (plan current)
+  const root = sourceRepo();
+  write(root, 'docs/specs/2020-02-01-login.md', specText(opts)); commit(root, 'spec', T2);
+  write(root, 'tasks/plan.md', '# Plan\n\n1. do a\n2. do b\n'); write(root, 'tasks/todo.md', opts.todo || TODO_3_OF_7); commit(root, 'plan', T3);
+  return root;
+}
+console.log('fixture 3: header development/approved, current plan, todo 3/7');
+check('continue => development, header agrees, no warning', () => {
+  const r = runWhere(fixture3(), 'continue');
+  assert.strictEqual(r.inferred, 'development'); assert.deepStrictEqual(r.warnings, []);
+  assert.strictEqual(r.active.path, 'docs/specs/2020-02-01-login.md');
+  assert.deepStrictEqual([r.signals.todo.open, r.signals.todo.done], [4, 3]);
+  assert(r.evidence.some(e => /fallback: development/.test(e)));
+});
+check('inversion: close all tasks (uncommitted) => development, alt testing, warning', () => {
+  const root = fixture3(); write(root, 'tasks/todo.md', TODO_ALL_DONE);
+  const r = runWhere(root, 'continue');
+  assert.strictEqual(r.inferred, 'development'); assert(hasAlt(r, 'testing', 'fallback')); assert.strictEqual(r.warnings.length, 1);
+});
+console.log('fixture 4: fixture 3 without Phase: line (Status: approved kept)');
+check('continue => development via fallback', () => {
+  const r = runWhere(fixture3({ noPhase: true }), 'continue');
+  assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.active.phase, null); assert.deepStrictEqual(r.warnings, []);
+});
+check('inversion: close all tasks => testing', () => {
+  assert.strictEqual(runWhere(fixture3({ noPhase: true, todo: TODO_ALL_DONE }), 'continue').inferred, 'testing');
+});
+console.log('fixture 5: fixture 3 + Spanish bug report');
+check('bug with active cycle => development, alt new-cycle analysis', () => {
+  const r = runWhere(fixture3(), 'el login se rompe cuando X');
+  assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.request.type, 'bug'); assert(hasAlt(r, 'analysis', 'new-cycle'));
+});
+check('inversion: "continue" => no new-cycle alternative', () => { assert(!hasAlt(runWhere(fixture3(), 'continue'), 'analysis', 'new-cycle')); });
+console.log('fixture 8: fixture 3 with stale header Phase: analysis');
+check('continue => analysis (header), alt development, warning', () => {
+  const r = runWhere(fixture3({ phase: 'analysis' }), 'continue');
+  assert.strictEqual(r.inferred, 'analysis'); assert(hasAlt(r, 'development', 'fallback')); assert.strictEqual(r.warnings.length, 1);
+});
+check('inversion: fix header in place (dirty spec) => development, no warning', () => {
+  const root = fixture3({ phase: 'analysis' });
+  write(root, 'docs/specs/2020-02-01-login.md', specText({ phase: 'development' }));
+  const r = runWhere(root, 'continue');
+  assert.strictEqual(r.inferred, 'development'); assert.deepStrictEqual(r.warnings, []); assert.strictEqual(r.signals.specs[0].dirty, true);
+});
+console.log('fixture 9: approved spec, current plan, todo without checkbox lines');
+function fixture9() {
+  const root = sourceRepo();
+  write(root, 'docs/specs/2020-02-01-x.md', '# X\n\nStatus: approved\n'); write(root, 'tasks/plan.md', '# Plan\n');
+  write(root, 'tasks/todo.md', '# Todo\n\nNothing broken down yet.\n- plain note\n'); commit(root, 'spec+plan', T2); return root;
+}
+check('continue => planning, evidence "todo has no tasks"', () => {
+  const r = runWhere(fixture9(), 'continue');
+  assert.strictEqual(r.inferred, 'planning'); assert(r.evidence.some(e => e.includes('todo has no tasks')), r.evidence.join('|')); assert.strictEqual(r.signals.todo.total, 0);
+});
+check('inversion: add an open task (uncommitted) => development', () => {
+  const root = fixture9(); fs.appendFileSync(path.join(root, 'tasks', 'todo.md'), '- [ ] first task\n');
+  assert.strictEqual(runWhere(root, 'continue').inferred, 'development');
+});
+console.log('fixture 10: closed spec with old plan and todo 7/7, new draft spec');
+function fixture10() {
+  const root = sourceRepo();
+  write(root, 'docs/specs/2020-02-01-old.md', '# Old\n\nPhase: deployment\nStatus: closed\n');
+  write(root, 'tasks/plan.md', '# Old plan\n'); write(root, 'tasks/todo.md', TODO_ALL_DONE); commit(root, 'old cycle', T2);
+  write(root, 'docs/specs/2020-03-01-new.md', '# New\n\nPhase: analysis\nStatus: draft\n'); commit(root, 'new spec', T3); return root;
+}
+check('continue => analysis, evidence "plan belongs to a closed cycle", no testing alternative, no warning', () => {
+  const r = runWhere(fixture10(), 'continue');
+  assert.strictEqual(r.inferred, 'analysis'); assert.strictEqual(r.active.path, 'docs/specs/2020-03-01-new.md');
+  assert(r.evidence.some(e => e.includes('plan belongs to a closed cycle')), r.evidence.join('|'));
+  assert(!hasAlt(r, 'testing', 'fallback') && !hasAlt(r, 'testing', 'candidate')); assert.deepStrictEqual(r.warnings, []);
+});
+check('inversion: approve new spec, rewrite plan/todo, commit after the spec => planning', () => {
+  const root = fixture10();
+  write(root, 'docs/specs/2020-03-01-new.md', '# New\n\nPhase: planning\nStatus: approved\n');
+  write(root, 'tasks/plan.md', '# New plan\n'); write(root, 'tasks/todo.md', '# Todo\n'); commit(root, 'plan for new cycle', T4);
+  const r = runWhere(root, 'continue');
+  assert.strictEqual(r.inferred, 'planning'); assert(!r.evidence.some(e => e.includes('plan belongs to a closed cycle')));
+});
+console.log('--run-tests');
+const hasNpm = spawnSync('npm', ['--version'], { shell: true, encoding: 'utf8' }).status === 0;
+if (!hasNpm) console.log('  skip npm not on PATH');
+else {
+  check('npm runner detected and executed; status passed', () => {
+    const root = sourceRepo();
+    write(root, 'package.json', '{"name":"fx","scripts":{"test":"node -e \\"process.exit(0)\\""}}\n');
+    const r = runWhere(root, 'continue', ['--run-tests']);
+    assert.strictEqual(r.signals.testRunner.kind, 'npm'); assert.strictEqual(r.signals.tests.status, 'passed');
+    assert(!r.evidence.some(e => e.includes('tests not run')));
+  });
+  check('failing script => failed with exit code', () => {
+    const root = sourceRepo();
+    write(root, 'package.json', '{"name":"fx","scripts":{"test":"node -e \\"process.exit(3)\\""}}\n');
+    const r = runWhere(root, 'continue', ['--run-tests']);
+    assert.strictEqual(r.signals.tests.status, 'failed'); assert.strictEqual(r.signals.tests.exitCode, 3);
+  });
+}
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
