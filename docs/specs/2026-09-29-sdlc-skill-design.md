@@ -1,7 +1,7 @@
 # Spec: `sdlc` — SDLC phase router skill
 
-Phase: analysis
-Status: draft
+Phase: planning
+Status: approved
 Date: 2026-09-29
 Owner: Ezequiel Scholz
 Repo: `ezescholz/SDLC-Assist` (to be created)
@@ -173,15 +173,13 @@ only read):
 4. **Recommend.** Read `references/phases/<slug>.md`: what it produces,
    which skill, the concrete next step, where design happens.
 
-**Locating the script.** `SKILL.md` resolves `bin/` in this order:
-`${CLAUDE_PLUGIN_ROOT}/bin` when set; the directory of the `SKILL.md` the
-host reported loading; then `~/.agents/skills/sdlc/bin`,
+**Locating the script.** `bin/` is always next to the `SKILL.md` the host
+loaded: `${CLAUDE_PLUGIN_ROOT}/skills/sdlc/bin` in the plugin, otherwise
+the directory the host reported for this skill. If the host does not
+report it, try in order `~/.agents/skills/sdlc/bin`,
 `~/.claude/skills/sdlc/bin`, `~/.config/opencode/skills/sdlc/bin`,
-`~/.codex/skills/sdlc/bin`, `~/.cursor/skills/sdlc/bin`, and the
-project-level equivalents (`<repo>/.agents/skills`, `<repo>/.claude/skills`,
-`<repo>/.codex/skills`, `<repo>/.cursor/skills`). If none exists the skill
-says so and falls back to reading the artifacts by hand with the same
-rules.
+`~/.codex/skills/sdlc/bin`, `~/.cursor/skills/sdlc/bin`, then
+`<repo>/.agents/skills/sdlc/bin` and `<repo>/.claude/skills/sdlc/bin`.
 
 ## Request card and close mode
 
@@ -258,37 +256,35 @@ Line endings:   node bin/check-eol.js        (working tree bytes, not blobs)
 ## Project structure
 
 ```
-SKILL.md                         skill `sdlc`: protocol, header rule, script location, links
-.claude-plugin/plugin.json       plugin `sdlc`; lists root skill + skills/*
-.claude-plugin/marketplace.json  marketplace `ezescholz`
-commands/phase.md                /sdlc:phase [close] (Claude Code); delegates to the skill
-.opencode/command/sdlc-phase.md  /sdlc-phase [close] (OpenCode); two lines delegating to the skill
-bin/where.js                     collect + infer, prints JSON
-bin/lib/signals.js               artifacts, git, tests, production
-bin/lib/keywords.js              request classification, en + es
-bin/lib/infer.js                 decision table (single source of truth)
-bin/lib/todo.js                  task counting
-bin/lib/header.js                Phase:/Status: parsing (read-only)
-bin/where.self-test.js           fixtures
-bin/which.js + which.self-test.js       installed-skill detector
-bin/sync-vendored.js + .self-test.js    vendor check/fix
-bin/check-manifest.js            plugin/marketplace JSON check
-bin/check-sheets.js              slug/sheet parity and recommends resolvable
-bin/check-eol.js                 CRLF check on working tree
-references/phases/<slug>.md      six phase sheets; frontmatter recommends:/alternatives:
-references/entry-points.md       request type to entry phase, hotfix threshold
-references/request-card.md       five-line request template
-references/spec-header.md        header convention
-references/missing-skill.md      install / search / create / continue
-skills/<name>/                   five vendored skills (v1); eight in v1.1
-docs/specs/, docs/ideas/         this spec, ideation one-pagers
-docs/ci-red-runs.md              one recorded red run per gate
-tasks/plan.md, tasks/todo.md     this project's own plan (dogfooding)
-.github/workflows/ci.yml         self-tests, vendor check, manifest, sheets, frontmatter, eol
-.gitattributes                   `* text=auto eol=lf`
-.gitignore                       node_modules/, graphify-out/, .DS_Store, *.log, tmp fixtures
-README.md, LICENSE, CHANGELOG.md
+SDLC-Assist/
+  README.md, LICENSE, CHANGELOG.md, .gitignore, .gitattributes
+  .claude-plugin/plugin.json, .claude-plugin/marketplace.json
+  commands/phase.md                       -> /sdlc:phase [close]
+  .opencode/command/sdlc-phase.md         -> /sdlc-phase [close]
+  .github/workflows/ci.yml
+  docs/specs/2026-09-29-sdlc-skill-design.md
+  docs/ideas/sdlc-skill.md
+  docs/ci-red-runs.md
+  tasks/plan.md, tasks/todo.md            (this project's own plan, dogfooded)
+  skills/
+    sdlc/
+      SKILL.md
+      bin/where.js, bin/which.js, bin/sync-vendored.js,
+      bin/check-manifest.js, bin/check-sheets.js, bin/check-eol.js, bin/check-frontmatter.js
+      bin/lib/header.js, todo.js, keywords.js, signals.js, infer.js, skilldirs.js
+      bin/*.self-test.js (one per script), bin/lib/*.self-test.js (one per lib)
+      references/phases/{initial,analysis,planning,development,testing,deployment}.md
+      references/entry-points.md, request-card.md, spec-header.md, missing-skill.md
+    spec-driven-development/SKILL.md, LICENSE, VENDORED.md
+    planning-and-task-breakdown/…  incremental-implementation/…
+    test-driven-development/…      context-engineering/…
 ```
+
+Structural decision (2026-09-29, planning research): the router lives in
+`skills/sdlc/`, not at the repo root. The `skills` CLI fast path installs
+only `SKILL.md` for a root skill and lets a root skill shadow nested
+`skills/*`; a subfolder skill is installed with all its files. Every
+install path therefore yields `<skill dir>/bin`.
 
 The phase table in this spec is design-time; at runtime it exists only in
 `references/phases/*.md` and `bin/lib/infer.js`, and `check-sheets.js`
@@ -301,9 +297,9 @@ What each path gives, and what it overwrites:
 
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
-| skills.sh | `cd ~ && npx skills add ezescholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Overwrites same-named skills in `~/.agents/skills`; README documents `--skill sdlc` if the flag exists (verify in planning) |
+| skills.sh | `cd ~ && npx skills add ezescholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the six skills (router + five vendored) with all files; `--skill sdlc` installs only the router (flag verified). Overwrites same-named skills in `~/.agents/skills` |
 | Claude Code plugin | `claude plugin marketplace add ezescholz/SDLC-Assist` + `claude plugin install sdlc@ezescholz` | Claude Code | `/sdlc:phase` | Also registers the five vendored skills; duplicates with user-scope copies are reported by `which.js --verbose` |
-| Manual | copy repo to `~/.claude/skills/sdlc/` and each `skills/<name>/` to `~/.claude/skills/<name>/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Nested skills are not discovered, hence the second copy |
+| Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies the router and the five vendored skills |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path; documented in README |
 
 On Codex and Cursor the accepted delivery is intent only: the README says
@@ -311,12 +307,10 @@ so, and adding native command files there is a v1.1 item once their
 formats are verified.
 
 Verified on 2026-09-29 from OpenCode docs: it loads `~/.agents/skills`,
-`~/.claude/skills` and `~/.config/opencode/skills`. To verify in planning:
-that Codex and Cursor read `~/.agents/skills`, and what `npx skills add`
-copies when the repo root is itself a skill. The second point decides
-whether `bin/` lands on the skills.sh path at all; if only `SKILL.md`
-were copied, OpenCode, Codex and Cursor would always run the hand-reading
-fallback, so the plan must settle it before anything else.
+`~/.claude/skills` and `~/.config/opencode/skills`.
+
+Verified 2026-09-29: the CLI links each skill into the Claude, Codex, Cursor
+and OpenCode global dirs.
 
 ## Code style
 
@@ -346,13 +340,15 @@ inversion that must fail.
 | 1 | empty dir, no git | "I have an idea for X" | `initial` | add a source file → `analysis` |
 | 2 | source files, git, tag `v1.2.0`, versioned CHANGELOG, no spec | "customer complains about X" | `analysis`, `complaint`, `inProduction: true` | add approved spec + current plan → not `analysis` |
 | 3 | spec `Phase: development`, `Status: approved`, current plan, todo 3/7 | "continue" | `development`, next open task | close all tasks → fallback `testing` in evidence, warning |
-| 4 | same as 3 without header lines | "continue" | `development` via fallback | close all tasks → `testing` |
+| 4 | same as 3 without the `Phase:` line (`Status: approved` kept) | "continue" | `development` via fallback | close all tasks → `testing` |
 | 5 | fixture 3 | "el login se rompe cuando X" | `development` active, alternative "new cycle: analysis", `bug` | message "continue" → no alternative |
 | 6 | source files, no SDD artifacts, no tags | "add feature X" | `analysis` | remove source files → `initial` |
 | 7 | source files, CHANGELOG `## 0.1.0`, no tags | "I have an idea" | `analysis`, `inProduction: false` | add tag `v0.1.0` → `inProduction: true` |
 | 8 | fixture 3 with header `Phase: analysis` (stale) | "continue" | `analysis` (header), alternative `development`, warning | fix header → no warning |
 | 9 | approved spec, current plan, todo with no checkbox lines | "continue" | `planning`, evidence "no tasks" | add an open task → `development` |
-| 10 | closed spec with old plan and todo 7/7, new draft spec | "continue" | `analysis`, evidence "plan belongs to a closed cycle" | commit plan after the new spec → `planning` |
+| 10 | closed spec with old plan and todo 7/7, new draft spec | "continue" | `analysis`, evidence "plan belongs to a closed cycle" | approve the new spec, rewrite `tasks/plan.md` and an empty `tasks/todo.md`, commit after the spec → `planning` |
+
+`fallback` and `candidates` are internal to `infer()`; `where.js` exposes them through `evidence`.
 
 CI gates, each with one red run recorded in `docs/ci-red-runs.md`
 (recorded locally where CI cannot reproduce it, and the note says so):
@@ -400,10 +396,9 @@ another directory via each path; confirm `/sdlc:phase` in Claude Code and
 - Automatic per-turn inference hook (possible later, Claude Code only).
 - Maintenance reminders (dependencies, logs, backups).
 
-## Open questions (resolve in planning, first)
+## Open questions
 
-- What does `npx skills add` copy when the repo root is a skill? Decides
-  whether `bin/` exists on the skills.sh path.
-- Does `npx skills add ... --skill <name>` exist? Affects README only.
-- Can `claude plugin validate` run on a GitHub runner? Affects CI only.
-- Do Codex and Cursor read `~/.agents/skills`? Affects README claims.
+None. Resolved in planning on 2026-09-29: `npx skills add` copies whole
+subfolder skills and `--skill` exists; `claude plugin validate` runs
+headless and is tried in CI as a non-blocking job; Codex/Cursor receive
+links from the CLI, so their native dirs are irrelevant.
