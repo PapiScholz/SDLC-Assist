@@ -128,5 +128,11 @@ check('inProduction: tag + changelog, tag + workflow, tag alone is false', () =>
   const r3 = initRepo(); write(r3, 'a.js', ''); commit(r3, 'c', T1); run(['tag', 'v1.0.0'], r3);
   assert.strictEqual(collectSignals(r3, {}).inProduction, false);
 });
+check('non-ASCII spec path is tracked and listed unquoted', () => {
+  const root = initRepo(); write(root, 'docs/specs/diseño.md', '# D\n'); commit(root, 'one', T1);
+  const s = collectSignals(root, {});
+  assert.strictEqual(s.specs[0].path, 'docs/specs/diseño.md'); assert.strictEqual(s.specs[0].tracked, true);
+  assert.ok(s.git.commits[0].paths.includes('docs/specs/diseño.md'));
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

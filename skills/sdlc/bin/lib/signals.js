@@ -44,9 +44,9 @@ function releaseWorkflow(root) {
 }
 
 const { execFileSync, spawnSync } = require('child_process');
-function cleanEnv() { const e = { ...process.env }; delete e.GIT_DIR; delete e.GIT_WORK_TREE; delete e.GIT_INDEX_FILE; e.GIT_PAGER = 'cat'; return e; }
+function cleanEnv() { const e = { ...process.env }; delete e.GIT_DIR; delete e.GIT_WORK_TREE; delete e.GIT_INDEX_FILE; e.GIT_PAGER = 'cat'; e.GIT_OPTIONAL_LOCKS = '0'; return e; }
 function git(root, args) {
-  try { return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: cleanEnv(), windowsHide: true }); }
+  try { return execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: cleanEnv(), windowsHide: true }); }
   catch { return null; }
 }
 const lines = out => (out || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
