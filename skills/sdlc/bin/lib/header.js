@@ -1,8 +1,8 @@
 const PHASES = ['initial', 'analysis', 'planning', 'development', 'testing', 'deployment'];
 const STATUSES = ['draft', 'approved', 'closed'];
 const HEADER_LINES = 15;
-const PHASE_RE = /^[*_]{0,2}Phase[*_]{0,2}:\s*[*_]{0,2}([A-Za-z-]+)/i;
-const STATUS_RE = /^[*_]{0,2}Status[*_]{0,2}:\s*[*_]{0,2}([A-Za-z-]+)/i;
+const PHASE_RE = /^[*_]{0,2}Phase[*_]{0,2}:[*_]{0,2}\s*[*_]{0,2}([A-Za-z-]+)/i;
+const STATUS_RE = /^[*_]{0,2}Status[*_]{0,2}:[*_]{0,2}\s*[*_]{0,2}([A-Za-z-]+)/i;
 function stripFrontmatter(lines) {
   if ((lines[0] || '').trim() !== '---') return lines;
   const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');

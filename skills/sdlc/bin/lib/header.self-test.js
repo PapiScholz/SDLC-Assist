@@ -39,6 +39,10 @@ check('unknown slug => phase null, unknown status => draft', () => {
   assert.deepStrictEqual(parseHeader('Phase: shipping\nStatus: done\n'), { phase: null, status: 'draft' });
 });
 check('empty text', () => { assert.deepStrictEqual(parseHeader(''), { phase: null, status: 'draft' }); });
+check('bold forms **Phase:** x and **Phase**: x both parse', () => {
+  assert.deepStrictEqual(parseHeader('# T\n**Phase:** development\n**Status:** approved\n'), { phase: 'development', status: 'approved' });
+  assert.deepStrictEqual(parseHeader('**Phase**: testing\n__Status__: closed\n'), { phase: 'testing', status: 'closed' });
+});
 check('PHASES is the six slugs in cycle order', () => {
   assert.deepStrictEqual(PHASES, ['initial', 'analysis', 'planning', 'development', 'testing', 'deployment']);
 });
