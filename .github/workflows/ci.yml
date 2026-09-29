@@ -1,0 +1,21 @@
+name: ci
+on: { push: { branches: [main] }, pull_request: {}, workflow_dispatch: {} }
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      - run: for t in skills/sdlc/bin/lib/*.self-test.js skills/sdlc/bin/*.self-test.js; do node "$t" || exit 1; done
+      - run: node skills/sdlc/bin/sync-vendored.js --check
+      - run: node skills/sdlc/bin/check-manifest.js
+      - run: node skills/sdlc/bin/check-sheets.js
+      - run: node skills/sdlc/bin/check-frontmatter.js
+      - run: node skills/sdlc/bin/check-eol.js
+  plugin-validate:
+    runs-on: ubuntu-latest
+    continue-on-error: true   # advisory until proven stable on runners
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - run: npm install -g @anthropic-ai/claude-code && claude plugin validate .
