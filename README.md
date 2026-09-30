@@ -195,7 +195,7 @@ v1.2: native command files for Codex and Cursor once their formats are verified.
 
 ## Security
 
-Automated skill scanners rate this skill as medium risk because it tells the agent to run scripts. The scripts only read the analysed repository, run read-only git queries, and never install or execute anything on their own; the project's test suite runs only behind an explicit flag. `SECURITY.md` lists exactly what each script touches, the trust boundaries of each install path, and how to report a vulnerability privately.
+Automated skill scanners rate this skill as medium risk because it tells the agent to run scripts. The scripts only read the analysed repository, run read-only git queries, and never install or execute anything on their own; the project's test suite runs only behind an explicit flag. `SECURITY.md` lists exactly what each script touches, the trust boundaries of each install path, and how to report a vulnerability privately. The repository holds no credentials of its own: the only tokens it references are GitHub Actions secrets that `release.yml` uses to publish releases, they never ship with the installed plugin, and nothing in the skills reads them at runtime. `sync-vendored.js` clones a public repository over HTTPS with no credential, and `docs/ci-red-runs.md` is a log of pasted commands, not code that runs on install.
 
 ## Contributing
 

@@ -4,6 +4,7 @@
   "description": "SDLC phase router: infers the phase of a work request from the repo, confirms it with one question, and hands off to spec-driven-development, sdlc-qa-gate and sdlc-release.",
   "author": { "name": "Ezequiel Scholz" },
   "homepage": "https://github.com/PapiScholz/SDLC-Assist",
+  "icon": "./icon.svg",
   "repository": "https://github.com/PapiScholz/SDLC-Assist",
   "license": "MIT",
   "keywords": ["sdlc", "spec-driven-development", "workflow", "planning", "release", "agent-skills"],
