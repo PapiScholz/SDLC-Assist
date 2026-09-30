@@ -31,6 +31,7 @@ Overwrite and duplicate notes:
 - skills.sh overwrites same-named skills already in `~/.agents/skills`. Back up local edits first.
 - Installing both the plugin and a user-scope copy registers the same skill twice. Keep one; `which.js --verbose` lists the duplicates (without `--verbose` the JSON has `duplicates: []` and `duplicatesOmitted: true`). Run it from where the skill is installed: `node ~/.agents/skills/sdlc/bin/which.js --verbose` (skills.sh), `node "${CLAUDE_PLUGIN_ROOT}/skills/sdlc/bin/which.js" --verbose` (plugin), or `node ~/.claude/skills/sdlc/bin/which.js --verbose` (manual copy).
 - Find other skills with `npx skills find <term>`.
+- This checkout ships Claude Code hooks (git authorization, LF/no-BOM guard) in `.claude/settings.json`; they do not travel with the installed skills. See Playbook mapping.
 
 ## Usage
 
@@ -90,6 +91,23 @@ It edits only the active spec; with no spec it writes nothing and says so. It ne
 
 If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `skills/sdlc/references/missing-skill.md`.
 
+## Playbook mapping
+
+How the router maps to the six stages of the AI-native SDLC playbook (`#sd-c2`):
+
+| Stage | Here | Artifact that ends it |
+|---|---|---|
+| Plan | `initial`, or an `intent.md` for an idea on existing code (`references/intent.md`). An intent is for an idea or a feature the originator brings; a feature someone else reports as a request goes through the request card | committed `intent.md` |
+| Design | `analysis` (spec, with `Intent:` when one exists; request card for bugs) | spec with `Status: approved` |
+| Build | `planning` then `development` | `tasks/plan.md`, then the merged PR |
+| Test | `testing` (`sdlc-qa-gate`) | the gate report and `Phase: deployment` |
+| Deploy | `deployment` (`sdlc-release`) | tag and release |
+| Maintain | entry point `references/maintain.md` | a new `intent.md` |
+
+Every sheet carries `Governance:` (what git records) and `Measure:` (one leading, one lagging indicator). Left out on purpose, as the user's infrastructure: the automatic Maintain loop with control bands, evals in CI, AI review with `REVIEW.md`, `.claude/agents/` definitions, scheduled security scans.
+
+This repo's own hooks (`.claude/settings.json`: git authorization from the user's last message, LF/no-BOM guard) apply to Claude Code sessions in this checkout; other hosts rely on CI. The git-authorization hook catches careless or lagging commands (wrong verb, stale transcript, wrappers, substitutions, heredocs), not deliberately obfuscated ones (a command word assembled from `$'...'`/`$"..."` quotes, brace expansion or variable/command substitution), and it does not scan `xargs -I {}` arguments or heredoc bodies fed to `sh`; parse ambiguity resolves to a deny. Set `SDLC_HOOKS_DISABLE=1` in your shell to turn them off.
+
 ## Own skills
 
 Written for this repo, generic, English, Markdown only (stack detection stays in `where.js`).
@@ -116,16 +134,10 @@ Vendored unmodified from `https://github.com/addyosmani/agent-skills` at commit 
 
 ## Development
 
-Node 20 or newer, no dependencies. The gate loop is the same one CI runs:
+Node 20 or newer, no dependencies. One command runs the same gates CI runs (`--quick` skips the network-bound `sync-vendored --check`; the list is in `CONTRIBUTING.md`):
 
 ```
-for t in skills/sdlc/bin/lib/*.self-test.js skills/sdlc/bin/*.self-test.js; do node "$t" || exit 1; done
-node skills/sdlc/bin/sync-vendored.js --check
-node skills/sdlc/bin/check-manifest.js
-node skills/sdlc/bin/check-sheets.js
-node skills/sdlc/bin/check-frontmatter.js
-node skills/sdlc/bin/check-skill-sections.js
-node skills/sdlc/bin/check-eol.js
+bash scripts/gates.sh
 ```
 
 `node skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`.

@@ -12,6 +12,10 @@ Evidence that every gate in `.github/workflows/ci.yml` can actually go red. Each
 | check-frontmatter | removed `description:` in a copy | `check-frontmatter: sdlc: frontmatter missing description` | 1 |
 | check-skill-sections | renamed `## Report` to `## Results` in a copy of `sdlc-qa-gate/SKILL.md` | `check-skill-sections: sdlc-qa-gate: missing section "Report"` | 1 |
 | check-eol | wrote a CRLF file in an empty dir | `check-eol: CRLF in crlf.md` | 1 |
+| gates.sh (git-authorization hook) | `permissionDecision: 'deny'` flipped to `'allow'` in a copy of the hook | `FAIL scripts/hooks/git-authorization.self-test.js` | 1 |
+| gates.sh (eol-guard hook) | `process.exit(2)` flipped to `process.exit(0)` in a copy of the hook | `FAIL scripts/hooks/eol-guard.self-test.js` | 1 |
+| gates.sh (settings.json) | copy of `.claude/settings.json` replaced by `{` | `FAIL settings.json` | 1 |
+| gates.sh (check-eol) | appended a CRLF line to a copy of `README.md` | `FAIL check-eol` | 1 |
 
 ## Commands
 
@@ -40,8 +44,8 @@ node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
 #   check-sheets: extra sheet: testng.md
 
 # check-sheets, body lines (drop the Measure line from the copied testing sheet)
-S=$(mktemp -d); cp -r skills/sdlc/references/phases $S/ph; sed -i '/^\*\*Measure:\*\*/d' $S/ph/testing.md
-node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
+P=$(mktemp -d); cp -r skills/sdlc/references/phases $P/ph; sed -i '/^\*\*Measure:\*\*/d' $P/ph/testing.md
+node skills/sdlc/bin/check-sheets.js --sheets-dir $P/ph
 #   check-sheets: testing.md: missing body line "**Measure:**"
 
 # check-frontmatter
@@ -56,6 +60,18 @@ node skills/sdlc/bin/check-skill-sections.js --root $S
 # check-eol
 mkdir -p $S/e && printf 'a\r\nb\r\n' > $S/e/crlf.md
 node skills/sdlc/bin/check-eol.js --root $S/e           # check-eol: CRLF in crlf.md
+
+# scripts/gates.sh, whole-repo temp copy (T is separate from S); each red run prints the FAIL line and exits 1
+T=$(mktemp -d); tar --exclude=.git --exclude=graphify-out --exclude=node_modules -cf - . | tar -xf - -C "$T"
+sed -i "s/permissionDecision: 'deny'/permissionDecision: 'allow'/" $T/scripts/hooks/git-authorization.js
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL scripts/hooks/git-authorization.self-test.js
+# (recreate T from the tar line before each of the next three)
+sed -i 's/process.exit(2)/process.exit(0)/' $T/scripts/hooks/eol-guard.js
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL scripts/hooks/eol-guard.self-test.js
+echo '{' > $T/.claude/settings.json
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL settings.json
+printf 'x\r\n' >> $T/README.md
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL check-eol
 ```
 
 Revert: none needed, the tracked tree was not touched (`git status --short` showed only the new untracked files).

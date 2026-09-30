@@ -15,13 +15,7 @@ jobs:
     steps:
       - run: node --version
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
-      - run: for t in skills/sdlc/bin/lib/*.self-test.js skills/sdlc/bin/*.self-test.js; do node "$t" || exit 1; done
-      - run: node skills/sdlc/bin/sync-vendored.js --check
-      - run: node skills/sdlc/bin/check-manifest.js
-      - run: node skills/sdlc/bin/check-sheets.js
-      - run: node skills/sdlc/bin/check-frontmatter.js
-      - run: node skills/sdlc/bin/check-skill-sections.js
-      - run: node skills/sdlc/bin/check-eol.js
+      - run: bash scripts/gates.sh
   install-smoke:
     # What Task 21 did by hand: install through the skills CLI from a clean home,
     # then run the installed copy against a scratch production repo.
