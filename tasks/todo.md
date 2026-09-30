@@ -20,4 +20,4 @@
 - [x] Task 18: Plugin, marketplace, command files, manifest check
 - [x] Task 19: Frontmatter and EOL checks, CI workflow, red runs
 - [x] Task 20: README and dogfooding close
-- [ ] Task 21: Manual install verification
+- [x] Task 21: Manual install verification

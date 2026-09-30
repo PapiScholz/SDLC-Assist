@@ -95,3 +95,48 @@ evidence:
 alternatives: []
 warnings: []
 ```
+
+## Manual install verification (Task 21)
+
+Date: 2026-09-30. Repo published at https://github.com/PapiScholz/SDLC-Assist (main, 23 commits).
+
+### Path 1: skills.sh CLI (verified)
+
+Command, from an empty temporary home (`HOME=/tmp/sdlc-home`):
+
+```
+npx -y skills add PapiScholz/SDLC-Assist -y --copy
+```
+
+Result: six skills installed under `~/.agents/skills/` (`sdlc`, `spec-driven-development`,
+`planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`,
+`context-engineering`), each with all its files (`sdlc/bin/`, `sdlc/references/` present), and
+linked into `~/.claude/skills/` plus the other agents' skill directories.
+
+End-to-end run of the installed copy against a scratch production repo (source file, tag
+`v1.2.0`, versioned CHANGELOG, no spec) with the request file containing
+`un cliente se queja de que la app se rompió al pagar`:
+
+```
+node ~/.agents/skills/sdlc/bin/where.js --root <scratch> --message-file <file>
+inferred: analysis   request.type: complaint   inProduction: true   warnings: []
+evidence: fallback: analysis (candidates: analysis); tests not run (no --run-tests); in production: tag v1.2.0
+```
+
+### Path 2: Claude Code plugin (owner, native terminal)
+
+```
+claude plugin marketplace add PapiScholz/SDLC-Assist
+claude plugin install sdlc@papischolz
+```
+
+Expected: `/sdlc:phase` in the palette; one `/spec-driven-development` entry when no user-scope copy
+exists (`node <install>/skills/sdlc/bin/which.js --verbose` lists any duplicate).
+
+### Path 3: OpenCode command (owner)
+
+```
+cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/
+```
+
+Expected: `/sdlc-phase` available; the `sdlc` skill loads by intent from `~/.agents/skills`.
