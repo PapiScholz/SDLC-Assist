@@ -9,6 +9,7 @@ Evidence that every gate in `.github/workflows/ci.yml` can actually go red. Each
 | check-manifest | deleted `name` in a copy of `plugin.json` | `FAIL plugin.json: missing field name` | 1 |
 | check-sheets | renamed a sheet in a copy | `check-sheets: missing sheet: testing` | 1 |
 | check-frontmatter | removed `description:` in a copy | `check-frontmatter: sdlc: frontmatter missing description` | 1 |
+| check-skill-sections | renamed `## Report` to `## Results` in a copy of `sdlc-qa-gate/SKILL.md` | `check-skill-sections: sdlc-qa-gate: missing section "Report"` | 1 |
 | check-eol | wrote a CRLF file in an empty dir | `check-eol: CRLF in crlf.md` | 1 |
 
 ## Commands
@@ -40,6 +41,11 @@ node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
 # check-frontmatter
 mkdir -p $S/f && cp -r skills $S/f/ && sed -i '/^description:/d' $S/f/skills/sdlc/SKILL.md
 node skills/sdlc/bin/check-frontmatter.js --root $S/f   # check-frontmatter: sdlc: frontmatter missing description
+
+# check-skill-sections (rename a contract heading in the copy)
+sed -i 's/^## Report$/## Results/' $S/skills/sdlc-qa-gate/SKILL.md
+node skills/sdlc/bin/check-skill-sections.js --root $S
+#   check-skill-sections: sdlc-qa-gate: missing section "Report"
 
 # check-eol
 mkdir -p $S/e && printf 'a\r\nb\r\n' > $S/e/crlf.md

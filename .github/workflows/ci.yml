@@ -20,6 +20,7 @@ jobs:
       - run: node skills/sdlc/bin/check-manifest.js
       - run: node skills/sdlc/bin/check-sheets.js
       - run: node skills/sdlc/bin/check-frontmatter.js
+      - run: node skills/sdlc/bin/check-skill-sections.js
       - run: node skills/sdlc/bin/check-eol.js
   install-smoke:
     # What Task 21 did by hand: install through the skills CLI from a clean home,
