@@ -62,6 +62,7 @@ mkdir -p $S/e && printf 'a\r\nb\r\n' > $S/e/crlf.md
 node skills/sdlc/bin/check-eol.js --root $S/e           # check-eol: CRLF in crlf.md
 
 # scripts/gates.sh, whole-repo temp copy (T is separate from S); each red run prints the FAIL line and exits 1
+# (output filtered to the FAIL line by the `| grep ^FAIL`; the `ok` lines of the gates that still pass are dropped)
 T=$(mktemp -d); tar --exclude=.git --exclude=graphify-out --exclude=node_modules -cf - . | tar -xf - -C "$T"
 sed -i "s/permissionDecision: 'deny'/permissionDecision: 'allow'/" $T/scripts/hooks/git-authorization.js
 bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL scripts/hooks/git-authorization.self-test.js
@@ -693,3 +694,85 @@ exit=0
 ```
 
 Exit 0 with a `deny` JSON is the Claude Code contract (the decision travels in stdout, not the exit code). A first attempt fed the hook an MSYS-style `transcript_path` (`/tmp/...`) and got `deny` with reason "transcript missing/lagging": fail-closed worked, but for the wrong reason; the run above uses a Windows path, which is what Claude Code passes.
+
+### (d) sdlc-qa-gate on the branch diff against `main` (HEAD 0937ff4 plus three uncommitted doc edits)
+
+Stack facts from `where.js` (message `sdlc close`): `testRunner: {"kind":null,"command":null}`, 43 source files, `inferred: testing`. No `package.json`, `tsconfig.json` or `pyproject.toml`: the repo's runner is the single gate target, so the unit layer is `bash scripts/gates.sh`.
+
+Diff map (`git diff --name-only <merge-base>...HEAD` plus `git status --short`), grouped:
+
+| File | Domain | Existing coverage | Nature |
+|---|---|---|---|
+| `scripts/hooks/git-authorization.js` | logic (hook) | `git-authorization.self-test.js` (103 checks) | new-logic |
+| `scripts/hooks/eol-guard.js` | logic (hook) | `eol-guard.self-test.js` (11 checks) | new-logic |
+| `skills/sdlc/bin/check-sheets.js` | logic (gate) | `check-sheets.self-test.js` (10 checks) | new-logic (two mandatory lines) |
+| `scripts/gates.sh` | CI | red runs in this file (four seeded FAILs) | ci-infra |
+| `.github/workflows/ci.yml` | CI | none locally; the PR run is the check | ci-infra |
+| `.claude/settings.json` | config | `settings.json` gate (JSON parse, hook paths exist) | config |
+| `.gitignore` | config | none | config |
+| `skills/sdlc/SKILL.md`, `references/*.md` (8 sheets, `intent.md`, `maintain.md`, `entry-points.md`, `spec-header.md`) | docs (skill prose) | `check-sheets`, `check-frontmatter`, `check-skill-sections`, `check-eol` | docs |
+| `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `docs/ci-red-runs.md`, `docs/intents/*`, `docs/specs/*` | docs | `check-eol` | docs |
+
+Unit layer, real output:
+
+```
+$ bash scripts/gates.sh
+ok skills/sdlc/bin/lib/header.self-test.js
+ok skills/sdlc/bin/lib/infer.self-test.js
+ok skills/sdlc/bin/lib/keywords.self-test.js
+ok skills/sdlc/bin/lib/signals.self-test.js
+ok skills/sdlc/bin/lib/todo.self-test.js
+ok skills/sdlc/bin/check-eol.self-test.js
+ok skills/sdlc/bin/check-frontmatter.self-test.js
+ok skills/sdlc/bin/check-manifest.self-test.js
+ok skills/sdlc/bin/check-sheets.self-test.js
+ok skills/sdlc/bin/check-skill-sections.self-test.js
+ok skills/sdlc/bin/sync-vendored.self-test.js
+ok skills/sdlc/bin/where.self-test.js
+ok skills/sdlc/bin/which.self-test.js
+ok scripts/hooks/eol-guard.self-test.js
+ok scripts/hooks/git-authorization.self-test.js
+ok sync-vendored
+ok check-manifest
+ok check-sheets
+ok check-frontmatter
+ok check-skill-sections
+ok check-eol
+ok settings.json
+all gates ok
+exit=0
+```
+
+Regression: importers of the changed scripts (`grep -rln`) are only their own self-tests, `scripts/gates.sh` and the ledger snapshots under `.superpowers/` (git-ignored); no untouched module imports them. The untouched suites (`where`, `which`, `lib/*`) ran inside the same gate.
+
+Report:
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | not run | no type checker or linter configured in the repo | low: the scripts are plain Node with `'use strict'`; syntax errors would fail their self-tests, which ran |
+| unit | `bash scripts/gates.sh`, exit 0, 22 gates, no skips (`sync-vendored --check` included, network was up) | nothing | low: 124 hook checks plus the sheet gates; the seven parked tokenizer bypasses are documented in README, not covered by tests on purpose |
+| build | not run | no build step (no manifest, nothing compiled) | low: nothing is built |
+| runtime | not run | the diff touches no UI, API or dependencies; `.claude/settings.json` is host config, exercised by scenario (c)(3) with the same JSON Claude Code sends | low: the hooks ran once from a clean clone against a real input |
+| functional | the hook fed a `tool_name: "PowerShell"` call by hand (below): first run allowed `git push` with "dale"; after the fix it denies, 137/137 self-test checks | no routes; the real-session checks were two denies through Claude Code (a heredoc containing `git commit|push` text, and "dale") | low after the fix: the `Bash|PowerShell` matcher now reaches the gate on both tools |
+| regression | untouched suites ran inside the gate (exit 0) | `ci.yml` on Ubuntu and Windows runners: only the PR run verifies the workflow edit | medium until CI is green on both OS |
+
+Finding while writing the functional row: `main()` in `git-authorization.js` returned without a decision for any `tool_name` other than `Bash`, so the `Bash|PowerShell` matcher in `settings.json` invoked the hook for PowerShell and the hook let `git push` through. Real output before the fix (script feeding the same payload with both tool names, transcript ending in "dale"):
+
+```
+$ node <scratch>/ps-input.js <transcript>
+Bash: exit=0 stdout="{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"git-authorization: push needs one of: push / pushea / pushear. Ask the user to say it in their next message. Last user message: \\\"dale\\\"\"}}" stderr=""
+PowerShell: exit=0 stdout="" stderr=""
+```
+
+Fix, test first: three checks added to `git-authorization.self-test.js` (PowerShell + "dale" → deny, PowerShell + "pusheá" → allow, `Write` with a `command` field → allow), the first one red (`136 passed, 1 failed`), then `SHELL_TOOLS = new Set(['Bash', 'PowerShell'])` replaces the `=== 'Bash'` test in `main()`:
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | tail -1
+137 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+Gaps from the diff map: none of the `new-logic` files lacks a covering test. Open minor for the review wave: `keywords.js` classifies "devuelve 500" as `unknown` (scenario (c)(2)).
+
+Next step: accept the residual risk (CI on both OS pending the PR) and run `sdlc close` for Testing.

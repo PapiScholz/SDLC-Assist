@@ -65,6 +65,20 @@ check('git push --force + "pusheá" -> deny (needs force verb)', () => expect('g
 check('git push -f + "force push" -> allow', () => expect('git push -f', 'force push', 'allow'));
 check('git push origin +main + "pusheá" -> deny (+ref is a force push)', () => expect('git push origin +main', 'pusheá', 'deny'));
 
+// PowerShell tool (settings.json matcher is Bash|PowerShell): same gate, same verbs
+check('PowerShell tool, git push + "dale" -> deny', () => {
+  const r = runWith({ hook_event_name: 'PreToolUse', tool_name: 'PowerShell', tool_input: { command: 'git push' }, transcript_path: transcript('dale'), cwd: dir });
+  assert.strictEqual(verdict(r), 'deny');
+});
+check('PowerShell tool, git push + "pusheá" -> allow', () => {
+  const r = runWith({ hook_event_name: 'PreToolUse', tool_name: 'PowerShell', tool_input: { command: 'git push' }, transcript_path: transcript('pusheá'), cwd: dir });
+  assert.strictEqual(verdict(r), 'allow');
+});
+check('other tool (Write) with a command field -> allow (not a shell)', () => {
+  const r = runWith({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { command: 'git push' }, transcript_path: transcript('dale'), cwd: dir });
+  assert.strictEqual(verdict(r), 'allow');
+});
+
 // read-only / non-destructive ops pass with "dale"
 for (const cmd of ['git log', 'git status', 'git diff', 'git tag', 'git tag -l', 'git branch', 'git branch -d x',
   'git switch -c f', 'git fetch', 'git add -A', 'git reset --soft HEAD~1']) {

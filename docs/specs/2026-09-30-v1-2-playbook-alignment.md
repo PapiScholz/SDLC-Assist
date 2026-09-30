@@ -1,6 +1,6 @@
 # Spec: v1.2 — playbook alignment (`intent.md`, governance and measures, maintain entry point, single gate target, versioned hooks)
 
-Phase: planning
+Phase: deployment
 Status: approved
 Intent: docs/intents/2026-09-30-playbook-alignment.md
 Date: 2026-09-30

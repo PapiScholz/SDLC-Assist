@@ -64,6 +64,7 @@ When writing any spec in this session (full or short), prepend right after the H
 ```
 Phase: analysis
 Status: draft
+Intent: docs/intents/<file>   (only when the cycle opens from an intent.md)
 ```
 
 Specs always start in `analysis`, including the first spec of a project. `initial` has no header of its own and ends the moment the first spec exists. The vendored `spec-driven-development` is not modified; this rule lives here. Format and slugs: `references/spec-header.md`.

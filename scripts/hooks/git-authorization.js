@@ -13,6 +13,8 @@ const V = {
   'tag-delete': ['borra el tag', 'elimina el tag', 'delete tag', 'delete the tag'],
   'branch-delete': ['borra la rama', 'borra el branch', 'elimina la rama', 'delete branch', 'delete the branch'],
 };
+// Tools whose tool_input.command is a shell line (the settings.json matcher lists the same two).
+const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
 const KEYWORDS = new Set(['do', 'then', 'else', 'elif', 'if', 'while', 'until', '!']);
 // Wrapper -> its flags that take a separate value (every other -x flag, and any --long=value,
 // is skipped alone). `env -S/--split-string` is handled apart: its value is rescanned as a command.
@@ -257,7 +259,7 @@ function main(raw) {
   if (process.env.SDLC_HOOKS_DISABLE === '1') return;
   let input;
   try { input = JSON.parse(raw); } catch (_) { return; }
-  if (!input || input.tool_name !== 'Bash' || !input.tool_input || typeof input.tool_input.command !== 'string') return;
+  if (!input || !SHELL_TOOLS.has(input.tool_name) || !input.tool_input || typeof input.tool_input.command !== 'string') return;
   try {
     const cmd = input.tool_input.command;
     work = 0; budget = Math.min(256 * cmd.length + 65536, 1 << 24); // a plain command needs ~4x its length
