@@ -7,7 +7,7 @@ const path = require('path');
 const i = process.argv.indexOf('--root');
 const root = i !== -1 && process.argv[i + 1]
   ? path.resolve(process.argv[i + 1])
-  : path.resolve(__dirname, '..', '..', '..');
+  : path.resolve(__dirname, '..', '..', '..', '..', '..'); // repository root: bin -> sdlc -> skills -> sdlc-assist -> plugins -> repo
 const SKIP = new Set(['.git', 'node_modules', '.superpowers', '.sdlc-fixtures', 'graphify-out']);
 const EXT = new Set(['.md', '.js', '.json', '.yml', '.yaml', '.txt', '']);
 const bad = [];

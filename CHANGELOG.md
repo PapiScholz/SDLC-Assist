@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- The plugin lives in `plugins/sdlc-assist/` (manifest, icon, skills, commands, a short README, LICENSE) and `marketplace.json` points there, so Anthropic's plugin directory validates only what ships. Install commands do not change; anyone copying `skills/` by hand now copies `plugins/sdlc-assist/skills/`.
+- `check-manifest` runs from the repository root: it follows the marketplace `source`, rejects a plugin at the root and a `plugin.json` `icon` field, and requires `icon.svg`, `README.md` and a `LICENSE` identical to the root one inside the plugin folder.
+- `.claude-plugin/icon.svg`: pixel-art waterfall on an amber CRT.
+
 ## [0.4.0] - 2026-09-30
 
 ### Changed
