@@ -190,7 +190,7 @@ report it, try in order `~/.agents/skills/sdlc/bin`,
   what happens, what was expected, where it happens, how urgent). The skill
   fills it from the complaint and the SDD flow turns it into the short
   spec with the header.
-- **Close mode** (`/sdlc:phase close`, or "sdlc close" by intent): runs
+- **Close mode** (`/sdlc-assist:phase close` (plugin id `sdlc` until v1.3), or "sdlc close" by intent): runs
   the inference, asks whether the confirmed phase is finished and what it
   produced, advances the header as defined above, and names the next
   phase and its skill. Designed to be called from session-closure or
@@ -262,7 +262,7 @@ Line endings:   node bin/check-eol.js        (working tree bytes, not blobs)
 SDLC-Assist/
   README.md, LICENSE, CHANGELOG.md, .gitignore, .gitattributes
   .claude-plugin/plugin.json, .claude-plugin/marketplace.json
-  commands/phase.md                       -> /sdlc:phase [close]
+  commands/phase.md                       -> /sdlc-assist:phase [close]   (id `sdlc` until v1.3)
   .opencode/command/sdlc-phase.md         -> /sdlc-phase [close]
   .github/workflows/ci.yml
   docs/specs/2026-09-29-sdlc-skill-design.md
@@ -301,7 +301,7 @@ What each path gives, and what it overwrites:
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
 | skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the six skills (router + five vendored) with all files; `--skill sdlc` installs only the router (flag verified). Overwrites same-named skills in `~/.agents/skills` |
-| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` + `claude plugin install sdlc@papischolz` | Claude Code | `/sdlc:phase` | Also registers the five vendored skills; duplicates with user-scope copies are reported by `which.js --verbose` |
+| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` + `claude plugin install sdlc-assist@papischolz` | Claude Code | `/sdlc-assist:phase` | Also registers the five vendored skills; duplicates with user-scope copies are reported by `which.js --verbose` |
 | Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies the router and the five vendored skills |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path; documented in README |
 
@@ -365,7 +365,7 @@ each release; in CI only if planning confirms the CLI installs on the
 runner.
 
 Manual before publishing (ceiling: needs a native TTY): install from
-another directory via each path; confirm `/sdlc:phase` in Claude Code and
+another directory via each path; confirm `/sdlc-assist:phase` in Claude Code and
 `/sdlc-phase` in OpenCode after the manual command copy.
 
 ## Boundaries

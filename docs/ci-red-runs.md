@@ -872,3 +872,55 @@ b842d25 Merge pull request #2 from PapiScholz/v1.2-playbook-alignment
 ```
 
 Deployment closed on this output: `Status: closed` in the spec, committed with `[skip release]`.
+
+## v1.3 dogfood
+
+### (a) where.js on the request, branch `v1.3-distribution` at 5e0a3c6, before any edit
+
+```
+$ node skills/sdlc/bin/where.js --message-file <tmp>      # request: README "who this is for", GitHub metadata, directory readiness (rename plugin to sdlc-assist), awesome lists
+{
+  "inferred": "analysis",
+  "evidence": [
+    "plan present but no active spec to compare against; treated as current",
+    "fallback: analysis (candidates: analysis, testing)",
+    "tests not run (no --run-tests)",
+    "in production: tag v0.3.0"
+  ],
+  "alternatives": [ { "phase": "testing", "kind": "candidate", "reason": "fallback row also holds" } ],
+  "warnings": [],
+  "request": { "type": "unknown" },
+  "active": null
+}
+```
+
+`active` is null because the v1.2 spec is closed, so the plan file is stale for the router: a new cycle in analysis, confirmed by the owner when approving the plan. Type `unknown`: the request names four deliverables and no bug, feature or complaint keyword.
+
+### (b) check-manifest red run: fixture still on the old id after the gate moved to `sdlc-assist`
+
+```
+$ node skills/sdlc/bin/check-manifest.self-test.js | grep "FAIL\|passed"
+  FAIL valid pair => exit 0
+       FAIL marketplace.json: field plugins[0].name must be "sdlc-assist"
+  FAIL marketplace top-level description accepted; empty or non-string => exit 1
+10 passed, 2 failed
+$ node skills/sdlc/bin/check-manifest.self-test.js | tail -1      # after the fixtures moved to sdlc-assist
+12 passed, 0 failed
+```
+
+The two new cases (old id in both manifests; ids that disagree) were red before the gate change and green after it, in the same run pair.
+
+### (c) sdlc-qa-gate on the branch diff (Tasks 1 and 2 done, working tree)
+
+Diff map: two manifests, one gate and its self-test, `SKILL.md` close-mode trigger, README (new block, three renamed references, one link), design spec (four annotated lines), CHANGELOG, `tasks/todo.md`, two new docs.
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | `claude plugin validate .` → `Validation passed`; `check-eol`, `check-frontmatter`, `check-sheets`, `check-skill-sections` inside `gates.sh` | | none |
+| unit | `bash scripts/gates.sh` → `all gates ok`; `check-manifest.self-test.js` 12/12 after the red pair in (b) | | none |
+| build | n/a (no build step) | | |
+| runtime | `where.js` on the request in (a) | the plugin path: `/sdlc-assist:phase` in the palette needs a native terminal (`claude --plugin-dir .` without a TTY falls into `--print`) | the slash rename is not seen live until the owner installs `sdlc-assist@papischolz`; the manifest is the only thing that names it and the validator accepts it |
+| functional | | the directory's own Validate (owner's portal) | a check the checklist page does not list; the doc says what to do with a **Blocks** finding |
+| regression | install-smoke and both test jobs in CI on the PR | | the skills.sh path never used the plugin id, so the rename cannot reach it |
+
+Testing closed on this table with the runtime and functional gaps accepted; deployment is the merge and the release.

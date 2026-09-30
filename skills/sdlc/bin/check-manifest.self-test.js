@@ -11,10 +11,10 @@ function check(label, fn) {
 }
 const SCRIPT = path.join(__dirname, 'check-manifest.js');
 const plugin = () => ({
-  name: 'sdlc', version: '0.1.0', description: 'd', skills: ['./skills'], commands: ['./commands'],
+  name: 'sdlc-assist', version: '0.1.0', description: 'd', skills: ['./skills'], commands: ['./commands'],
 });
 const market = () => ({
-  name: 'm', owner: { name: 'o' }, plugins: [{ name: 'sdlc', source: './', description: 'd' }],
+  name: 'm', owner: { name: 'o' }, plugins: [{ name: 'sdlc-assist', source: './', description: 'd' }],
 });
 function run(p, m) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chkman-'));
@@ -62,9 +62,22 @@ check('marketplace missing owner.name => exit 1', () => {
   const m = market(); delete m.owner.name;
   assert.strictEqual(run(plugin(), m).status, 1);
 });
-check('marketplace plugin name not sdlc => exit 1', () => {
+check('marketplace plugin name not sdlc-assist => exit 1', () => {
   const m = market(); m.plugins[0].name = 'other';
   assert.strictEqual(run(plugin(), m).status, 1);
+});
+check('old plugin id "sdlc" in both manifests => exit 1 naming sdlc-assist', () => {
+  const p = plugin(); p.name = 'sdlc';
+  const m = market(); m.plugins[0].name = 'sdlc';
+  const r = run(p, m);
+  assert.strictEqual(r.status, 1);
+  assert.ok(/sdlc-assist/.test(r.stdout + r.stderr));
+});
+check('plugin.json name and marketplace plugin name disagree => exit 1 naming both', () => {
+  const p = plugin(); p.name = 'sdlc-assist-x';
+  const r = run(p, market());
+  assert.strictEqual(r.status, 1);
+  assert.ok(/must equal plugin.json name/.test(r.stdout + r.stderr));
 });
 check('invalid JSON => exit 1', () => {
   assert.strictEqual(run('{nope', market()).status, 1);
