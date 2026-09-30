@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash|PowerShell", "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/git-authorization.js"], "timeout": 10 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit", "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/eol-guard.js"], "timeout": 10 } ] }
+    ]
+  }
+}

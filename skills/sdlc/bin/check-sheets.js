@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const { PHASES } = require('./lib/header');
+const { unfencedLines } = require('./lib/unfenced');
+const BODY_LABELS = ['**Governance:**', '**Measure:**'];
 
 // sdlc-debugging, sdlc-qa-gate and sdlc-release ship since v1.1: they are known because the sheets recommend them.
 const DEFAULT_KNOWN = [
@@ -50,7 +52,8 @@ function main(argv) {
   for (const f of files) {
     const slug = f.slice(0, -3);
     if (!PHASES.includes(slug)) { errors.push('extra sheet: ' + f); continue; }
-    const fm = parseFrontmatter(fs.readFileSync(path.join(dir, f), 'utf8'));
+    const text = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n/g, '\n');
+    const fm = parseFrontmatter(text);
     if (!fm) { errors.push(f + ': no frontmatter'); continue; }
     if (fm.slug !== slug) errors.push(f + ': slug "' + fm.slug + '" does not match filename');
     if (!fm.title) errors.push(f + ': missing title');
@@ -62,6 +65,8 @@ function main(argv) {
         if (!known.includes(normalise(name))) errors.push(f + ': unknown skill "' + name + '" in ' + key);
       }
     }
+    const body = unfencedLines(text.replace(/^---\n[\s\S]*?\n---\n?/, ''));
+    for (const label of BODY_LABELS) if (!body.some((line) => line.startsWith(label))) errors.push(f + ': missing body line "' + label + '"');
   }
   if (errors.length) {
     for (const e of errors) console.error('check-sheets: ' + e);

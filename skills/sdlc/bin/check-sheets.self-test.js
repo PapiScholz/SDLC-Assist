@@ -13,7 +13,7 @@ function check(label, fn) {
 const SCRIPT = path.join(__dirname, 'check-sheets.js');
 const DEFAULT_KNOWN = 'spec-driven-development,planning-and-task-breakdown,incremental-implementation,test-driven-development,context-engineering,sdlc,sdlc-debugging,sdlc-qa-gate,sdlc-release,systematic-debugging,debugging-strategies,release-engineer,qa-push';
 function sheet(slug, rec, alt) {
-  return '---\nslug: ' + slug + '\ntitle: T ' + slug + '\nrecommends: [' + rec.join(', ') + ']\nalternatives: [' + alt.join(', ') + ']\ndesign: none\n---\n# T\n';
+  return '---\nslug: ' + slug + '\ntitle: T ' + slug + '\nrecommends: [' + rec.join(', ') + ']\nalternatives: [' + alt.join(', ') + ']\ndesign: none\n---\n# T\n**Governance:** g.\n**Measure:** m.\n';
 }
 function tmpDir(slugs, overrides) {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sheets-'));
@@ -60,6 +60,24 @@ check('slug not matching filename => exit 1', () => {
 check('CRLF sheets parse', () => {
   const d = tmpDir(PHASES, { testing: sheet('testing', ['sdlc-qa-gate'], ['qa-push']).replace(/\n/g, '\r\n') });
   assert.strictEqual(run(d).status, 0);
+});
+check('sheet without **Governance:** => exit 1 naming file and label', () => {
+  const d = tmpDir(PHASES, { testing: sheet('testing', ['sdlc-qa-gate'], []).replace('**Governance:** g.\n', '') });
+  const r = run(d);
+  assert.strictEqual(r.status, 1);
+  assert.ok((r.stdout + r.stderr).includes('testing.md: missing body line "**Governance:**"'));
+});
+check('label only inside a fenced block => exit 1', () => {
+  const d = tmpDir(PHASES, { testing: sheet('testing', ['sdlc-qa-gate'], []).replace('**Measure:** m.\n', '```\n**Measure:** m.\n```\n') });
+  const r = run(d);
+  assert.strictEqual(r.status, 1);
+  assert.ok((r.stdout + r.stderr).includes('testing.md: missing body line "**Measure:**"'));
+});
+check('lower-case **governance:** => exit 1', () => {
+  const d = tmpDir(PHASES, { testing: sheet('testing', ['sdlc-qa-gate'], []).replace('**Governance:**', '**governance:**') });
+  const r = run(d);
+  assert.strictEqual(r.status, 1);
+  assert.ok((r.stdout + r.stderr).includes('testing.md: missing body line "**Governance:**"'));
 });
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

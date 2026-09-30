@@ -1,7 +1,8 @@
 # Spec: v1.2 — playbook alignment (`intent.md`, governance and measures, maintain entry point, single gate target, versioned hooks)
 
-Phase: planning
+Phase: deployment
 Status: approved
+Intent: docs/intents/2026-09-30-playbook-alignment.md
 Date: 2026-09-30
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.2.0)
@@ -79,14 +80,17 @@ native command files stay in the backlog (formats still unverified).
   list of gates as documentation of what it runs. `check-eol` and the
   self-tests are unchanged.
 - **Hooks are the smallest set that enforces what the docs already say.**
-  `.claude/settings.json` (versioned) declares two PreToolUse hooks for
-  `Bash`: (a) git authorization: block `git commit|push|reset --hard|
-  push --force|tag -d` unless the user's last message contains the verb;
+  `.claude/settings.json` (versioned) declares two hooks, both Node
+  scripts (no bash on the host, so they run on Windows too): (a) a
+  PreToolUse hook matching `Bash|PowerShell` for git authorization: block
+  `git commit|push|push --force|reset --hard|tag -d|branch -D` unless the
+  user's last message names the verb for that op; `git add` stays allowed;
   the script is a port of the owner's global guard, generic, no project
-  names; (b) EOL guard: after any Write/Edit under the repo, run
-  `check-eol.js` on that file and fail the tool call on CRLF or BOM. Both
-  scripts live in `scripts/hooks/` with a self-test each. Hooks are
-  Claude Code only; other hosts keep relying on CI, and the README says so.
+  names, reads the transcript tail-first and fails closed when it cannot;
+  (b) a PostToolUse hook matching `Write|Edit` as EOL guard: check the
+  written file and fail the tool call on CRLF or BOM. Both scripts live in
+  `scripts/hooks/` as `.js` with a `.self-test.js` each. Hooks are Claude
+  Code only; other hosts keep relying on CI, and the README says so.
 - **Same safety regime as v1.** Nothing installed, no state-changing git
   without the user's words in the current turn, no release without request.
 
@@ -110,8 +114,8 @@ native command files stay in the backlog (formats still unverified).
   mandatory; red run recorded.
 - `scripts/gates.sh` (new) with `--quick`; `.github/workflows/ci.yml` calls
   it; `CONTRIBUTING.md`, `README.md`, `CLAUDE.md` point at it.
-- `.claude/settings.json` (new, versioned), `scripts/hooks/git-authorization.sh`,
-  `scripts/hooks/eol-guard.sh`, each with a `.self-test.sh`; `.claude/handoff.md`
+- `.claude/settings.json` (new, versioned), `scripts/hooks/git-authorization.js`,
+  `scripts/hooks/eol-guard.js`, each with a `.self-test.js`; `.claude/handoff.md`
   added to `.gitignore` (it is session state, not repo state).
 - `README.md`: a "Playbook mapping" table (six stages → phases and entry
   points, and which plays are out of scope on purpose); install notes for
@@ -134,7 +138,9 @@ native command files stay in the backlog (formats still unverified).
   the `settings.json` is validated as JSON.
 - Dogfood on this repo: open this very cycle from an `intent.md` written
   first (`docs/intents/2026-09-30-playbook-alignment.md`), so the intent →
-  spec → plan chain is exercised once and recorded; run `where.js` and
+  spec → plan chain is exercised once and recorded; run the agent-side
+  check the router prescribes (`git ls-files docs/intents` plus a grep for
+  `Intent:` in `docs/specs/`; `where.js` itself does not emit it) and
   confirm the "intent without spec" warning appears before the spec exists
   and disappears after.
 - Reference scenarios (fresh temp home): (1) idea on existing code → the

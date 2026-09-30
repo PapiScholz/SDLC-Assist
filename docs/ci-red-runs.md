@@ -8,9 +8,14 @@ Evidence that every gate in `.github/workflows/ci.yml` can actually go red. Each
 | sync-vendored | appended a line to a copy of a vendored `SKILL.md` | `drift: skills/test-driven-development/SKILL.md` | 1 |
 | check-manifest | deleted `name` in a copy of `plugin.json` | `FAIL plugin.json: missing field name` | 1 |
 | check-sheets | renamed a sheet in a copy | `check-sheets: missing sheet: testing` | 1 |
+| check-sheets (body) | deleted the `**Measure:**` line from a copy of `testing.md` | `check-sheets: testing.md: missing body line "**Measure:**"` | 1 |
 | check-frontmatter | removed `description:` in a copy | `check-frontmatter: sdlc: frontmatter missing description` | 1 |
 | check-skill-sections | renamed `## Report` to `## Results` in a copy of `sdlc-qa-gate/SKILL.md` | `check-skill-sections: sdlc-qa-gate: missing section "Report"` | 1 |
 | check-eol | wrote a CRLF file in an empty dir | `check-eol: CRLF in crlf.md` | 1 |
+| gates.sh (git-authorization hook) | `permissionDecision: 'deny'` flipped to `'allow'` in a copy of the hook | `FAIL scripts/hooks/git-authorization.self-test.js` | 1 |
+| gates.sh (eol-guard hook) | `process.exit(2)` flipped to `process.exit(0)` in a copy of the hook | `FAIL scripts/hooks/eol-guard.self-test.js` | 1 |
+| gates.sh (settings.json) | copy of `.claude/settings.json` replaced by `{` | `FAIL settings.json` | 1 |
+| gates.sh (check-eol) | appended a CRLF line to a copy of `README.md` | `FAIL check-eol` | 1 |
 
 ## Commands
 
@@ -38,6 +43,11 @@ node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
 #   check-sheets: missing sheet: testing
 #   check-sheets: extra sheet: testng.md
 
+# check-sheets, body lines (drop the Measure line from the copied testing sheet)
+P=$(mktemp -d); cp -r skills/sdlc/references/phases $P/ph; sed -i '/^\*\*Measure:\*\*/d' $P/ph/testing.md
+node skills/sdlc/bin/check-sheets.js --sheets-dir $P/ph
+#   check-sheets: testing.md: missing body line "**Measure:**"
+
 # check-frontmatter
 mkdir -p $S/f && cp -r skills $S/f/ && sed -i '/^description:/d' $S/f/skills/sdlc/SKILL.md
 node skills/sdlc/bin/check-frontmatter.js --root $S/f   # check-frontmatter: sdlc: frontmatter missing description
@@ -50,6 +60,19 @@ node skills/sdlc/bin/check-skill-sections.js --root $S
 # check-eol
 mkdir -p $S/e && printf 'a\r\nb\r\n' > $S/e/crlf.md
 node skills/sdlc/bin/check-eol.js --root $S/e           # check-eol: CRLF in crlf.md
+
+# scripts/gates.sh, whole-repo temp copy (T is separate from S); each red run prints the FAIL line and exits 1
+# (output filtered to the FAIL line by the `| grep ^FAIL`; the `ok` lines of the gates that still pass are dropped)
+T=$(mktemp -d); tar --exclude=.git --exclude=graphify-out --exclude=node_modules -cf - . | tar -xf - -C "$T"
+sed -i "s/permissionDecision: 'deny'/permissionDecision: 'allow'/" $T/scripts/hooks/git-authorization.js
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL scripts/hooks/git-authorization.self-test.js
+# (recreate T from the tar line before each of the next three)
+sed -i 's/process.exit(2)/process.exit(0)/' $T/scripts/hooks/eol-guard.js
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL scripts/hooks/eol-guard.self-test.js
+echo '{' > $T/.claude/settings.json
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL settings.json
+printf 'x\r\n' >> $T/README.md
+bash $T/scripts/gates.sh --quick | grep ^FAIL    # FAIL check-eol
 ```
 
 Revert: none needed, the tracked tree was not touched (`git status --short` showed only the new untracked files).
@@ -530,3 +553,306 @@ Gaps from the diff map: `gap: src/a.js new-logic without a covering test; propos
 Next step: accept the residual risk and run `sdlc close` for Testing, or add the proposed test first (proposed only, not written).
 
 Result: the runner path is now exercised. `testRunner.kind` came back `npm`, the unit row carries a real command, output and exit code, and the other five rows are listed as not run with their reasons.
+
+## v1.2 dogfood
+
+Runs of the v1.2 protocol against this repo, pasted verbatim.
+
+### (a) Intent without a spec pointing at it, before the spec edit (branch `v1.2-playbook-alignment` at f351dc9)
+
+The intent was committed on its own, so the repo had an intent file and no spec `Intent:` line. Real output:
+
+```
+$ git ls-files docs/intents
+docs/intents/2026-09-30-playbook-alignment.md
+$ grep -rn "^Intent:" docs/specs/
+exit=1
+```
+
+### (b) After the spec edit, same branch, working tree only
+
+The spec header gained the `Intent:` line (third header line, after `Status:`). The header parser and the phase inference must not change. Real output:
+
+```
+$ grep -rn "^Intent:" docs/specs/
+docs/specs/2026-09-30-v1-2-playbook-alignment.md:5:Intent: docs/intents/2026-09-30-playbook-alignment.md
+exit=0
+$ node skills/sdlc/bin/lib/header.self-test.js | tail -1
+13 passed, 0 failed
+$ node skills/sdlc/bin/where.js --message-file <tmp>/m.txt | grep '"inferred"'
+  "inferred": "planning",
+```
+
+The message file contained `seguí con v1.2`. Phase stays `planning` because the spec header is still `Phase: planning` / `Status: approved`; the phase advances only through close mode.
+
+### (c) Reference scenarios, fresh temp home, branch at eb641d0
+
+All commands ran from a script under the session scratchpad on Windows (Git Bash, Node). `HOME` and `USERPROFILE` pointed at an empty temp directory for the install. Output is real; paths are shortened to `<tmp>`, `<checkout>`, `<repo-a>`, `<repo-b>`, `<clone>`. Two lines of the install log per skill ("Eve does not support global skill installation") were filtered out; they are the CLI reporting one unsupported target, not a failure.
+
+**(0) Install.** The published copy is `main` (v0.2.0): it has no `intent.md` or `maintain.md` yet, so scenarios 1 and 2 ran `where.js` from this checkout and followed the branch's sheets. The install itself is what a v1.2 user gets after the release.
+
+```
+$ HOME=<tmp>/home USERPROFILE=<tmp>/home npx -y skills add PapiScholz/SDLC-Assist -y -g --copy
+└  Done!  Review skills before use; they run with full agent permissions.
+
+$ ls ~/.agents/skills
+context-engineering
+incremental-implementation
+planning-and-task-breakdown
+sdlc
+sdlc-debugging
+sdlc-qa-gate
+sdlc-release
+spec-driven-development
+test-driven-development
+$ ls ~/.agents/skills/sdlc/references
+entry-points.md
+missing-skill.md
+phases
+request-card.md
+spec-header.md
+$ grep -m1 "^version:" ~/.agents/skills/sdlc/SKILL.md
+version: 0.2.0
+```
+
+**(1) Idea on existing code.** Scratch repo with `src/orders.js`, one commit, no `docs/`, no spec. Request file: `quiero agregar exportación a CSV`.
+
+```
+$ node <checkout>/skills/sdlc/bin/where.js --root <repo-a> --message-file m1.txt
+inferred: analysis  request.type: feature  inProduction: false  warnings: []
+evidence: fallback: analysis (candidates: analysis); tests not run (no --run-tests)
+$ git ls-files docs/intents; ls docs
+ls: cannot access 'docs': No such file or directory
+```
+
+The agent then follows `intent.md`: the repo has no `docs/intents/`, so it asks before creating it (in this run the owner of the scratch repo is the agent itself; the question is the sheet's rule, recorded here as the step). It writes the intent in the originator's words, leaving what the originator has not said as open questions rather than inventing it. File written and committed:
+
+```
+$ cat docs/intents/2026-09-30-exportacion-csv.md
+# Intent: exportación a CSV
+
+Who:              originador del pedido (dueño del repo)
+Problem:          "quiero agregar exportación a CSV" (sin más detalle todavía)
+Desired outcome:  pendiente de confirmar con el originador
+Constraints:      pendiente
+Open questions:   ¿exportar qué (órdenes de `src/orders.js`)? ¿desde dónde se dispara? ¿quién lo consume?
+$ git ls-files docs/intents; grep -rln "^Intent:" docs/specs/
+docs/intents/2026-09-30-exportacion-csv.md
+specs naming it: exit=2
+```
+
+`exit=2` is grep on a missing `docs/specs/`: the intent has no spec naming it yet, which is the "intent without spec" warning the `sdlc` question must show until the analysis spec carries `Intent: docs/intents/2026-09-30-exportacion-csv.md`.
+
+**(2) Production alert.** Scratch repo with `src/api.js`, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD. Request file: `la API devuelve 500 desde ayer en producción`.
+
+```
+$ node <checkout>/skills/sdlc/bin/where.js --root <repo-b> --message-file m2.txt
+inferred: analysis  request.type: unknown  inProduction: true  warnings: []
+evidence: fallback: analysis (candidates: analysis); tests not run (no --run-tests); in production: tag v1.2.0
+```
+
+`maintain` is not inferred, by design (`maintain.md`: "nothing in `where.js` infers it"); the agent routes there from `inProduction: true` plus a signal from the running system. `request.type` came back `unknown`: the classifier has no pattern for "devuelve 500" (it does for "se queja", scenario (b) of Task 21). Noted as a minor for the v1.2 review; the routing does not depend on it here. Following `maintain.md`, the agent asks for the signal's evidence and writes the intent with the four extra lines under "Problem":
+
+```
+$ cat docs/intents/2026-09-30-api-500-produccion.md
+# Intent: la API devuelve 500 desde ayer en producción
+
+Who:              originador del aviso (opera el servicio)
+Problem:          "la API devuelve 500 desde ayer en producción"
+  Anomaly and evidence:  pendiente: pedir métrica, línea de log o id de alerta al originador
+  Proposed outcome:      pendiente de confirmar con el originador
+  Affected systems:      `src/api.js` (v1.2.0 en producción)
+  Open questions:        ¿todas las rutas o una? ¿qué cambió ayer (deploy, dependencia, infra)?
+Desired outcome:  pendiente
+Constraints:      pendiente
+Open questions:   ver arriba
+$ git ls-files docs/intents; grep -rln "^Intent:" docs/specs/
+docs/intents/2026-09-30-api-500-produccion.md
+specs naming it: exit=2
+```
+
+Next phase recommended by the sheet: analysis, as a new cycle.
+
+**(3) Contributor clone.** `git clone` of this checkout into a temp dir, then the versioned hook fed the same JSON Claude Code sends (tool call `git push`, transcript whose last human record is "dale", an older one says "pusheá"), and the single gate target.
+
+```
+$ git clone -q <checkout> clone && cd clone && git log --oneline -1
+eb641d0 spec: intent link and Node hooks paragraph; v1.2 dogfood (a)(b) [skip release]
+$ cat transcript.jsonl   # three records, last human line is "dale"
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"pusheá cuando termines"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"listo, ¿sigo?"}]}}
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"dale"}}
+$ cat hook-input.json
+{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push"},"transcript_path":"<transcript>","cwd":"<clone>"}
+$ node scripts/hooks/git-authorization.js < hook-input.json; echo "exit=$?"
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"git-authorization: push needs one of: push / pushea / pushear. Ask the user to say it in their next message. Last user message: \"dale\""}}exit=0
+$ bash scripts/gates.sh | tail -3; echo "exit=${PIPESTATUS[0]}"
+ok check-eol
+ok settings.json
+all gates ok
+exit=0
+```
+
+Exit 0 with a `deny` JSON is the Claude Code contract (the decision travels in stdout, not the exit code). A first attempt fed the hook an MSYS-style `transcript_path` (`/tmp/...`) and got `deny` with reason "transcript missing/lagging": fail-closed worked, but for the wrong reason; the run above uses a Windows path, which is what Claude Code passes.
+
+### (d) sdlc-qa-gate on the branch diff against `main` (HEAD 0937ff4 plus three uncommitted doc edits)
+
+Stack facts from `where.js` (message `sdlc close`): `testRunner: {"kind":null,"command":null}`, 43 source files, `inferred: testing`. No `package.json`, `tsconfig.json` or `pyproject.toml`: the repo's runner is the single gate target, so the unit layer is `bash scripts/gates.sh`.
+
+Diff map (`git diff --name-only <merge-base>...HEAD` plus `git status --short`), grouped:
+
+| File | Domain | Existing coverage | Nature |
+|---|---|---|---|
+| `scripts/hooks/git-authorization.js` | logic (hook) | `git-authorization.self-test.js` (103 checks) | new-logic |
+| `scripts/hooks/eol-guard.js` | logic (hook) | `eol-guard.self-test.js` (11 checks) | new-logic |
+| `skills/sdlc/bin/check-sheets.js` | logic (gate) | `check-sheets.self-test.js` (10 checks) | new-logic (two mandatory lines) |
+| `scripts/gates.sh` | CI | red runs in this file (four seeded FAILs) | ci-infra |
+| `.github/workflows/ci.yml` | CI | none locally; the PR run is the check | ci-infra |
+| `.claude/settings.json` | config | `settings.json` gate (JSON parse, hook paths exist) | config |
+| `.gitignore` | config | none | config |
+| `skills/sdlc/SKILL.md`, `references/*.md` (8 sheets, `intent.md`, `maintain.md`, `entry-points.md`, `spec-header.md`) | docs (skill prose) | `check-sheets`, `check-frontmatter`, `check-skill-sections`, `check-eol` | docs |
+| `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `docs/ci-red-runs.md`, `docs/intents/*`, `docs/specs/*` | docs | `check-eol` | docs |
+
+Unit layer, real output:
+
+```
+$ bash scripts/gates.sh
+ok skills/sdlc/bin/lib/header.self-test.js
+ok skills/sdlc/bin/lib/infer.self-test.js
+ok skills/sdlc/bin/lib/keywords.self-test.js
+ok skills/sdlc/bin/lib/signals.self-test.js
+ok skills/sdlc/bin/lib/todo.self-test.js
+ok skills/sdlc/bin/check-eol.self-test.js
+ok skills/sdlc/bin/check-frontmatter.self-test.js
+ok skills/sdlc/bin/check-manifest.self-test.js
+ok skills/sdlc/bin/check-sheets.self-test.js
+ok skills/sdlc/bin/check-skill-sections.self-test.js
+ok skills/sdlc/bin/sync-vendored.self-test.js
+ok skills/sdlc/bin/where.self-test.js
+ok skills/sdlc/bin/which.self-test.js
+ok scripts/hooks/eol-guard.self-test.js
+ok scripts/hooks/git-authorization.self-test.js
+ok sync-vendored
+ok check-manifest
+ok check-sheets
+ok check-frontmatter
+ok check-skill-sections
+ok check-eol
+ok settings.json
+all gates ok
+exit=0
+```
+
+Regression: importers of the changed scripts (`grep -rln`) are only their own self-tests, `scripts/gates.sh` and the ledger snapshots under `.superpowers/` (git-ignored); no untouched module imports them. The untouched suites (`where`, `which`, `lib/*`) ran inside the same gate.
+
+Report:
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | not run | no type checker or linter configured in the repo | low: the scripts are plain Node with `'use strict'`; syntax errors would fail their self-tests, which ran |
+| unit | `bash scripts/gates.sh`, exit 0, 22 gates, no skips (`sync-vendored --check` included, network was up) | nothing | low: 124 hook checks plus the sheet gates; the seven parked tokenizer bypasses are documented in README, not covered by tests on purpose |
+| build | not run | no build step (no manifest, nothing compiled) | low: nothing is built |
+| runtime | not run | the diff touches no UI, API or dependencies; `.claude/settings.json` is host config, exercised by scenario (c)(3) with the same JSON Claude Code sends | low: the hooks ran once from a clean clone against a real input |
+| functional | the hook fed a `tool_name: "PowerShell"` call by hand (below): first run allowed `git push` with "dale"; after the fix it denies, 137/137 self-test checks | no routes; the real-session checks were two denies through Claude Code (a heredoc containing `git commit|push` text, and "dale") | low after the fix: the `Bash|PowerShell` matcher now reaches the gate on both tools |
+| regression | untouched suites ran inside the gate (exit 0) | `ci.yml` on Ubuntu and Windows runners: only the PR run verifies the workflow edit | medium until CI is green on both OS |
+
+Finding while writing the functional row: `main()` in `git-authorization.js` returned without a decision for any `tool_name` other than `Bash`, so the `Bash|PowerShell` matcher in `settings.json` invoked the hook for PowerShell and the hook let `git push` through. Real output before the fix (script feeding the same payload with both tool names, transcript ending in "dale"):
+
+```
+$ node <scratch>/ps-input.js <transcript>
+Bash: exit=0 stdout="{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"git-authorization: push needs one of: push / pushea / pushear. Ask the user to say it in their next message. Last user message: \\\"dale\\\"\"}}" stderr=""
+PowerShell: exit=0 stdout="" stderr=""
+```
+
+Fix, test first: three checks added to `git-authorization.self-test.js` (PowerShell + "dale" → deny, PowerShell + "pusheá" → allow, `Write` with a `command` field → allow), the first one red (`136 passed, 1 failed`), then `SHELL_TOOLS = new Set(['Bash', 'PowerShell'])` replaces the `=== 'Bash'` test in `main()`:
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | tail -1
+137 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+Gaps from the diff map: none of the `new-logic` files lacks a covering test. Open minor for the review wave: `keywords.js` classifies "devuelve 500" as `unknown` (scenario (c)(2)).
+
+Next step: accept the residual risk (CI on both OS pending the PR) and run `sdlc close` for Testing.
+
+### (e) Final branch review and fix wave (base ba56b5b, HEAD a7cc47a, working tree)
+
+Package: `git diff -U10 ba56b5b HEAD` split in two files (code and skill prose; the two long docs), the spec, the plan, the intent and the SDD ledger with its nine rulings. Reviewer: a fresh subagent on the most capable model, read-only, told to verify every suspected bug by running it against throwaway inputs and to assess the parked bypass ruling. The reviewer's probes used placeholders for the gated words because the owner's global guard blocks them in the reviewer's own shell calls.
+
+Findings, with the reviewer's real output (message "look at logs" unless stated):
+
+| # | Severity | Finding | Reviewer's probe |
+|---|---|---|---|
+| 1 | blocking | PowerShell assignment bypasses the gate: the command word becomes `$out` | `$out = git push 2>&1` → `ALLOW`; controls `(git push)` and `& git push` → `DENY` |
+| 2 | blocking | Windows paths to `git.exe` under PowerShell bypass: bash backslash escaping applied to a shell that has none | `& "C:\Program Files\Git\cmd\git.exe" push` → `ALLOW`; `C:\PROGRA~1\Git\cmd\git.exe push` → `ALLOW`; single-quoted form → `DENY` |
+| 3 | important | PowerShell twins of `bash -c`/`eval` not rescanned | `cmd /c git push`, `pwsh -NoProfile -Command "git push"`, `powershell -c "git push"`, `iex 'git push'`, `Invoke-Expression "git push"` → all `ALLOW` |
+| 4 | important | Bash double quotes dropped every backslash (bash only drops it before `` $ ` " \ `` and newline) | Bash `"C:\Program Files\Git\cmd\git.exe" push` → `ALLOW` |
+| 5 | important | `bash -e -c "git push"` allowed (flag had to be the token right after the shell) | → `ALLOW` |
+| 6 | important | `git branch -d -f` / `-df` not gated | both → `ALLOW` |
+| 7 | parked | the 7 bypasses of the T3 ruling all still pass on HEAD | `$'g'it push`, `$"g"it push`, `{git,push}`, `git {push,}`, `gi${x}t push`, `g$1it push`, `$(echo git) push` → all `ALLOW` |
+
+On the ruling's proposed closure the reviewer showed three defects before writing a different patch: dropping `$` before a quote erases the only marker (`$'\x67'it push` would still pass); splitting on `{`/`}` only when standalone regresses PowerShell (`if ($true) {git push}` needs the split); "command word contains `$` and a later token is gated" misses `{git,push}`, `git {push,}` and `$(echo git) push`. The patch instead adds a second tokenizer view (unquoted substitutions and braces kept inside the token), one level of brace expansion unioned with the original tokens (expansion alone would open `git -C '{a,b}' push`), and treats any command word containing `$`, a backtick or `{…,…}` as a possible `git` when a gated subcommand follows. Every change adds views, so it can only add denies. Accepted over-detection: `$runner push` is denied.
+
+Fix wave, test first. 28 checks added to `git-authorization.self-test.js` (rows 1-7 above plus benign forms: `ls {a,b}`, `node -e "const o={a:1,b:2}"`, `"$(npm bin)/eslint" .`, `find … -exec grep -l foo {} \;`, `echo "{git,push}"`, `Get-ChildItem | ForEach-Object { $_.Name }`, `$x = git status`, and the binding case `git commit -m "a && git push"` + "commit it" → allow):
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | tail -1     # before the patch
+146 passed, 21 failed
+$ node scripts/hooks/git-authorization.self-test.js | tail -1     # reviewer's patch + rows 5 and 6 (bash -e -c via findIndex; branch -d/-f flag clusters)
+167 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+One-line minors closed in the same wave, each locked by a check: `eol-guard.js` skipped in-project files named `..foo` (`rel.startsWith('..')`; now `rel === '..' || rel.startsWith('..' + path.sep)`, probe: CRLF `..foo.md` → exit 2, 12/12); `SDLC_GIT_VERBS` accepted `[""]` and printed `needs one of: .` (empty strings filtered); `keywords.js` `es.bug` gains `devuelve 500`, `da 500`, `caida`, `caido` (not a bare `500`: "soporte para 500 usuarios" stays `feature`; 30/30; scenario (c)(2) now reads `type: bug`).
+
+Doc fixes from the review: README hooks note now names both tools, the wrapper list, the dynamic-command-word rule, `Start-Process` as a known limit and the SDK/headless behaviour (no human records → every gated op denied); CHANGELOG Unreleased says what the hook gates; `spec-header.md` `Intent:` annotation copies SKILL.md's wording ("only when the cycle opens from an intent.md", since `maintain` also writes an intent); `maintain.md` "support ticket" qualified as raised by monitoring, a person's report stays a complaint (request card); spec testing strategy no longer says `where.js` emits the intent warning (the router's agent-side check does).
+
+Stays deferred (reviewer's list, none blocks the release): presence-only verb match ("no hagas push todavía" allows, by design); heredoc commit bodies scanned line by line (false-positive denies); fence toggle only at column 0; `maintain` four-lines overlap with Open questions; self-test extraEnv/filler items and the temp dir never removed; `humanText` regexes outside the budget; `<local-command-stdout>` not stripped (no human-origin record carries it); `check-sheets` accepts an empty `**Governance:**`; eol-guard flags `.cmd`/`.bat` and gitignored paths that `check-eol` skips; the spec header jumped planning → deployment in one commit (two closes confirmed in one answer, recorded in (d)); spec line 85 "fail the tool call" is loose for a PostToolUse hook (it reports after the write).
+
+Full gate target after the wave:
+
+```
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```
+
+### (f) /code-review and /simplify on the branch after the fix wave (HEAD b432457)
+
+`/code-review` (medium) on `main...HEAD`: three findings, all in the PowerShell path of the hook, each confirmed with a probe against HEAD (transcript ending in "dale"):
+
+```
+$ node <scratch>/probe2.js <transcript>
+PowerShell "git pu`sh" -> DENY {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",…
+PowerShell "git `\n  push origin main" -> ALLOW
+PowerShell "pwsh -Comm \"git push\"" -> ALLOW
+PowerShell "powershell -EncodedCommand ZwBpAHQAIABwAHUAcwBoAA==" -> ALLOW
+```
+
+`/simplify` (four agents: reuse, simplification, efficiency, altitude). The altitude review named the root cause of all three findings: PowerShell support was layered on after a bash tokenizer (a backslash replace on the raw text, a `$x =` skip inside the loop, three pasted `findIndex` rescans), so every PowerShell form needed its own patch. Applied, tests first (8 checks added, 5 red):
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | grep "FAIL\|passed"
+  FAIL PowerShell: backtick line continuation before the subcommand + "dale" -> deny
+  FAIL PowerShell: pwsh -Comm "git push" (parameter prefix) + "dale" -> deny
+  FAIL PowerShell: pwsh -Command:"git push" (colon form) + "dale" -> deny
+  FAIL PowerShell: powershell -EncodedCommand <b64> + "pusheá" -> deny (never scanned, always denied)
+  FAIL PowerShell: pwsh -enc <b64> + "dale" -> deny
+170 passed, 5 failed
+$ node scripts/hooks/git-authorization.self-test.js | tail -1      # after the changes below
+175 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+- `normalize(tool, cmd)` before `scan()`: for PowerShell, backtick+newline → space, backtick+char → the char, backslash → slash. `scan()` is tool-agnostic again; the raw-text replace is gone.
+- One `RESCAN` table (shells `-c`, `pwsh`/`powershell` `-Command`, `cmd /c|/k`) replaces three pasted branches; `psParam(name, tok)` accepts any PowerShell parameter prefix and the `-Name:value` form.
+- `-e`/`-enc`/`-EncodedCommand` on `pwsh`/`powershell` throws → deny with a reason, never decoded (over-detection rule); `-ExecutionPolicy` is not a prefix of it and still passes.
+- `cluster(args, letters)` replaces four hand-written flag-cluster regexes; `views` built with one `flatMap`; `bump = () => charge(1)`; the second tokenizer view runs only when the text has `{`, `}`, a backtick or `$(`.
+- A self-test parses `.claude/settings.json` and asserts its `PreToolUse` matcher equals `SHELL_TOOLS`, so the two lists cannot drift.
+- Reuse: `lib/unfenced.js` (`unfencedLines`) now serves both `check-sheets.js` and `check-skill-sections.js`; the label pair is a constant.
+- eol-guard self-test: `extraEnv` applied once; the filler `assert.ok(p)` removed.
+
+Skipped, with reason: sharing `normalise`/`toRegex` from `lib/keywords.js` with the hook (the hook stays dependency-free so a copy of `scripts/hooks/` works alone); a shared `lib/eol.js` for two one-line byte checks; a shared self-test harness (pre-existing pattern across ten files, separate cleanup); deleting the repeated non-regression assertions in the hook self-test (cheap, and each round's label documents why it exists); parallel gates in CI and a 64 KB prefix read in eol-guard (would miss a late CRLF); `branch -d` over-detection (plain `-d` of a merged branch stays allowed, asserted by an existing check).

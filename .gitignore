@@ -4,3 +4,4 @@ graphify-out/
 *.log
 .sdlc-fixtures/
 .superpowers/
+.claude/handoff.md

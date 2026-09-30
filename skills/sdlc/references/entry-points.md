@@ -1,11 +1,12 @@
 # Entry points by request type
 
-| Request | Enters at | Notes |
-|---|---|---|
-| New idea, no source files | `initial` | First spec. |
-| New idea on existing code | `analysis` | New cycle. |
-| Complaint, bug or feature | `analysis` | Complaints (someone else reporting a problem) go through the request card (`request-card.md`) whether or not the project is in production. `inProduction` only adds the note "keep the running version safe". |
-| Hotfix | `development` | No spec and no cycle. |
+| Request | Enters at | Notes | Artifact |
+|---|---|---|---|
+| New idea, no source files | `initial` | First spec. | `intent.md` |
+| New idea on existing code | `analysis` | New cycle. | `intent.md` |
+| Complaint, bug or feature | `analysis` | Complaints (someone else reporting a problem) go through the request card (`request-card.md`) whether or not the project is in production. `inProduction` only adds the note "keep the running version safe". | `request card` |
+| Production signal (alert, finding, ticket) | `analysis` as a new cycle | Through `maintain.md`: writes an `intent.md` first. | `intent.md` |
+| Hotfix | `development` | No spec and no cycle. | `none` |
 
 ## Hotfix threshold
 
