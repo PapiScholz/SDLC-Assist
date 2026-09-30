@@ -2,26 +2,24 @@
 
 An agent skill, `sdlc`, that works out which phase of the software development life cycle a work request is in, shows the evidence, asks one confirmation, and points to the skill that does the next step.
 
-It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git queries) and never blocks a transition. Five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
+It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
 
 | Slug | Phase | Recommended skill |
 |---|---|---|
 | `initial` | Initial planning | spec-driven-development |
-| `analysis` | Requirements analysis | spec-driven-development |
+| `analysis` | Requirements analysis | spec-driven-development; sdlc-debugging on the bug route |
 | `planning` | Planning | planning-and-task-breakdown |
 | `development` | Development | incremental-implementation, test-driven-development |
 | `testing` | Testing | sdlc-qa-gate (alternative: qa-push) |
 | `deployment` | Deployment | sdlc-release (alternative: release-engineer) |
 
-`sdlc-qa-gate` and `sdlc-release` are not shipped in v1; when a recommended skill is missing the router asks what to do (see Missing-skill protocol).
-
 ## Install
 
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
-| skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the six skills (router + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
-| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc@papischolz` | Claude Code | `/sdlc:phase` | Also registers the five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
-| Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies the router and the five vendored skills. |
+| skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the nine skills (router + three own + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
+| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc@papischolz` | Claude Code | `/sdlc:phase` | Also registers the three own and five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
+| Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all nine skills. |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path. |
 
 Run the skills.sh command from `~`, not from inside a project: the CLI installs into the current directory's scope when it finds a repo there. The CLI copies each skill folder whole and links it into `~/.claude/skills`, `~/.codex/skills`, `~/.cursor/skills` and `~/.config/opencode/skills`.
@@ -92,6 +90,18 @@ It edits only the active spec; with no spec it writes nothing and says so. It ne
 
 If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `skills/sdlc/references/missing-skill.md`.
 
+## Own skills
+
+Written for this repo, generic, English, Markdown only (stack detection stays in `where.js`).
+
+| Skill | Phase | Produces |
+|---|---|---|
+| `sdlc-debugging` | analysis, bug route | `Cause:` and `Evidence:` lines for the short spec; reproduce, localise, explain, hand off; never edits product code |
+| `sdlc-qa-gate` | testing | the `Layer / Verified / Not verified / Residual risk` table plus gaps; never a "green" verdict |
+| `sdlc-release` | deployment | version decision, version files and changelog, tag and release; drives an existing release mechanism; every state-changing command only on request |
+
+Section parity with their contracts is enforced by `node skills/sdlc/bin/check-skill-sections.js`.
+
 ## Bundled skills
 
 Vendored unmodified from `https://github.com/addyosmani/agent-skills` at commit `bc97fd46fdb294dc3518d0e94edb989a38894f31`, MIT license. Each folder has a `VENDORED.md`; refresh with `node skills/sdlc/bin/sync-vendored.js --fix`.
@@ -114,6 +124,7 @@ node skills/sdlc/bin/sync-vendored.js --check
 node skills/sdlc/bin/check-manifest.js
 node skills/sdlc/bin/check-sheets.js
 node skills/sdlc/bin/check-frontmatter.js
+node skills/sdlc/bin/check-skill-sections.js
 node skills/sdlc/bin/check-eol.js
 ```
 
@@ -121,7 +132,7 @@ node skills/sdlc/bin/check-eol.js
 
 ## Roadmap
 
-v1.1: own `sdlc-qa-gate` and `sdlc-release` skills; command files for Codex and Cursor once their formats are verified.
+v1.2: native command files for Codex and Cursor once their formats are verified.
 
 ## Security
 

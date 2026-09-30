@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { PHASES } = require('./lib/header');
 
-// sdlc-debugging, sdlc-qa-gate and sdlc-release are not shipped in v1: they stay known because the spec names them as the v1.1 skills the sheets recommend.
+// sdlc-debugging, sdlc-qa-gate and sdlc-release ship since v1.1: they are known because the sheets recommend them.
 const DEFAULT_KNOWN = [
   'spec-driven-development', 'planning-and-task-breakdown', 'incremental-implementation',
   'test-driven-development', 'context-engineering',

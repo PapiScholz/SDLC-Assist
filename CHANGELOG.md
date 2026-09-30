@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Own phase skills `sdlc-debugging` (bug route of analysis), `sdlc-qa-gate` (testing) and `sdlc-release` (deployment); the router recommends them by default and the alternatives stay listed.
+- `check-skill-sections.js` gate: section parity with the skill contracts.
+
+### Changed
+- `check-frontmatter.js` requires `version` on the own skills, equal to `plugin.json`; the release script rewrites all four.
+- `analysis` sheet recommends `sdlc-debugging` beside `spec-driven-development`; the request card gains optional `Cause:` and `Evidence:` lines.
+
+### CI
+- `install-smoke` asserts the three own skills are installed and reported by `which.js`.
+
 ## [0.1.1] - 2026-09-30
 
 ### Fixed
