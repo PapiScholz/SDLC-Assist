@@ -29,8 +29,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
       - name: Install from this checkout into a temporary home
         run: |
-          export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"
-          npx -y skills add "$GITHUB_WORKSPACE" -y --copy
+          export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"; cd "$HOME"
+          # -g: without it the CLI installs into <cwd>/.agents/skills (project scope)
+          npx -y skills add "$GITHUB_WORKSPACE" -y -g --copy
           test -f "$HOME/.agents/skills/sdlc/bin/where.js"
           test -f "$HOME/.agents/skills/spec-driven-development/SKILL.md"
       - name: Installed copy infers a production complaint as analysis
