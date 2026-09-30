@@ -1,5 +1,6 @@
 ---
 name: sdlc
+version: 0.1.0
 description: Identifies which SDLC phase a work request is in (initial planning, requirements analysis, planning, development, testing, deployment), shows the evidence, asks one confirmation, and routes to spec-driven-development and its family. Use when starting any work request, a customer complaint, a bug, a feature, or when asked "where are we" or "sdlc close".
 ---
 

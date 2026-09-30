@@ -1,0 +1,38 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  # Manual re-trigger for a run that failed or never started. Not a remedy for an
+  # Actions outage: a dispatch is scheduled by the same control plane. For that
+  # case use the local path: bash .github/scripts/release.sh --dry-run
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: "!contains(github.event.head_commit.message, '[skip release]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 0
+          # RELEASE_TOKEN (a PAT) lets the release commit trigger other workflows;
+          # without it the default token still pushes, tags and creates the release.
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version, changelog, tag, and release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/release.sh

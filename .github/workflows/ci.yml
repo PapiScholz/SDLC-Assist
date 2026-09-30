@@ -21,6 +21,29 @@ jobs:
       - run: node skills/sdlc/bin/check-sheets.js
       - run: node skills/sdlc/bin/check-frontmatter.js
       - run: node skills/sdlc/bin/check-eol.js
+  install-smoke:
+    # What Task 21 did by hand: install through the skills CLI from a clean home,
+    # then run the installed copy against a scratch production repo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      - name: Install from this checkout into a temporary home
+        run: |
+          export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"
+          npx -y skills add "$GITHUB_WORKSPACE" -y --copy
+          test -f "$HOME/.agents/skills/sdlc/bin/where.js"
+          test -f "$HOME/.agents/skills/spec-driven-development/SKILL.md"
+      - name: Installed copy infers a production complaint as analysis
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          fx="$RUNNER_TEMP/fx"; mkdir -p "$fx/src"; cd "$fx"
+          git init -q --initial-branch=main
+          git config user.name t; git config user.email t@t
+          echo x > src/index.js; printf '# Changelog\n\n## [1.2.0] - 2026-01-01\n' > CHANGELOG.md
+          git add -A; git commit -qm init; git tag v1.2.0
+          printf 'un cliente se queja de que la app se rompió al pagar' > "$RUNNER_TEMP/msg.txt"
+          node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --message-file "$RUNNER_TEMP/msg.txt" > out.json
+          node -e "const j=require('./out.json'); if(j.inferred!=='analysis'||j.request.type!=='complaint'||!j.signals.inProduction){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok', j.inferred, j.request.type)"
   plugin-validate:
     runs-on: ubuntu-latest
     continue-on-error: true   # advisory until proven stable on runners
