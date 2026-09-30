@@ -12,7 +12,7 @@ When nothing is installed for a phase, ask once, with these options:
 
 ## Install table
 
-Verified against the `skills` CLI lock file (`~/.agents/.skill-lock.json`, `source` field) on 2026-09-29. A row without a command has no public source known to this skill: do not offer option 1 for it, and never guess a repository.
+Verified against the `skills` CLI lock file (`~/.agents/.skill-lock.json`, `source` field) on 2026-09-30. A row without a command has no public source known to this skill: do not offer option 1 for it, and never guess a repository.
 
 | Skill | Install command |
 |---|---|
@@ -25,10 +25,12 @@ Verified against the `skills` CLI lock file (`~/.agents/.skill-lock.json`, `sour
 | `debugging-strategies` | no public source |
 | `release-engineer` | no public source |
 | `qa-push` | no public source |
-| `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release` | no public source (planned for v1.1) |
+| `sdlc-debugging` | `cd ~ && npx skills add PapiScholz/SDLC-Assist --skill sdlc-debugging` (bundled with `sdlc`) |
+| `sdlc-qa-gate` | `cd ~ && npx skills add PapiScholz/SDLC-Assist --skill sdlc-qa-gate` (bundled) |
+| `sdlc-release` | `cd ~ && npx skills add PapiScholz/SDLC-Assist --skill sdlc-release` (bundled) |
 
 Names are normalised: `spec-driven-development`, `sdlc:spec-driven-development` and `superpowers:systematic-debugging` resolve to their bare name; print the form invocable on the current host.
 
 "Continue" is announced once and not asked again for that skill within the current context. After a context reset it is asked again.
 
-In v1, `sdlc-debugging`, `sdlc-qa-gate` and `sdlc-release` do not exist yet (planned for v1.1). Known alternatives: `superpowers:systematic-debugging`, `debugging-strategies`, `release-engineer`, `qa-push`.
+`sdlc-debugging`, `sdlc-qa-gate` and `sdlc-release` ship with this repo since v1.1. Known alternatives: `superpowers:systematic-debugging`, `debugging-strategies`, `release-engineer`, `qa-push`.
