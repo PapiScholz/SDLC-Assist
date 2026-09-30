@@ -1,7 +1,7 @@
 # Spec: `sdlc` — SDLC phase router skill
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-09-29
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist`
