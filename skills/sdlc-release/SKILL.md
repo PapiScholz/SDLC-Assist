@@ -40,7 +40,7 @@ last tag: <vX.Y.Z or none>   commits: <n>   classes: <feat n, fix n, ...>   prop
 
 ## 3. Update
 
-Every version source the project has, all to the same value: `package.json` (and lockfile via the package manager's own `version` command when there is one), `pyproject.toml`, `Cargo.toml` (and `Cargo.lock` through `cargo`), `go` (tag only), plugin manifests (`.claude-plugin/plugin.json`), a `version:` frontmatter in skills. The changelog: consume `## [Unreleased]` into `## [A.B.C] - YYYY-MM-DD` when present; otherwise prepend an entry with the commits grouped Added / Changed / Fixed / CI. Show the diff of these edits.
+Every version source the project has, all to the same value: `package.json` (and its lockfile through the non-committing form only: `npm version <A.B.C> --no-git-tag-version`; pnpm: `pnpm version <A.B.C> --no-git-tag-version`; yarn classic: `yarn version --new-version <A.B.C> --no-git-tag-version`; the default form of these commands also commits and tags, so never run it), `pyproject.toml`, `Cargo.toml` (edit the file, then `cargo update -w`, or `cargo generate-lockfile` when there is no lock), `go` (tag only), plugin manifests (`.claude-plugin/plugin.json`), a `version:` frontmatter in skills. The changelog: consume `## [Unreleased]` into `## [A.B.C] - YYYY-MM-DD` when present; otherwise prepend an entry with the commits grouped Added / Changed / Fixed / CI. Show the diff of these edits. Step 3 must not create a commit or a tag; those belong to the later steps and run only after the user asks.
 
 ## 4. Validate
 

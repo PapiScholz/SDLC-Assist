@@ -3,7 +3,7 @@
 This policy is intended for public repositories.
 
 ## Scope
-This repository provides the `sdlc` agent skill (Markdown instructions plus zero-dependency Node scripts) and five vendored skills from `addyosmani/agent-skills`.
+This repository provides the `sdlc` agent skill (Markdown instructions plus zero-dependency Node scripts), three own skills (`sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and five vendored skills from `addyosmani/agent-skills`.
 
 Security scope includes:
 - integrity of the behavior defined in `skills/sdlc/SKILL.md` and its reference sheets
@@ -54,11 +54,16 @@ Automated skill scanners flag this skill because it instructs the agent to run s
 - clones `addyosmani/agent-skills` at the pinned commit into a temporary directory to compare bytes
 - the only script with network access; it is run by CI and maintainers, not by the skill at runtime
 
-The agent itself, following `SKILL.md`:
+The agent itself, following the router `skills/sdlc/SKILL.md` (the own skills are covered in the next paragraph):
 - writes into the user's repository in exactly two cases: the `Phase:`/`Status:` header when it creates a spec, and the header update on a confirmed close
 - never runs `git add`, `commit`, `push`, `reset`, `checkout` or any state-changing git command
 - never installs anything without asking; install commands in `references/missing-skill.md` are offered as options, not executed
 - never initiates a release
+
+The own skills act only on the user's request in the current turn:
+- `sdlc-debugging` runs the smallest failing unit and may add a failing test or a diagnostic print; it never changes product code and never runs state-changing git.
+- `sdlc-qa-gate` runs the project's own test suite, build and a production-mode start of the built artifact on a free port, and stops only the process id it started.
+- `sdlc-release` edits the version files and the changelog and lists the commit, tag, push and publish commands; those run only after the user asks, and it never force-pushes or rewrites a tag.
 
 ## Trust Boundaries
 - Vendored skills are byte-identical to upstream commit `bc97fd46fdb294dc3518d0e94edb989a38894f31`; `node skills/sdlc/bin/sync-vendored.js --check` verifies it and runs in CI.

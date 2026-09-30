@@ -475,3 +475,58 @@ The regression row's evidence is in the loop above: `check-frontmatter.self-test
 Gaps from the diff map: no `new-logic` file lacks a covering test (both scripts have self-tests, and the frontmatter change has 22 added self-test lines). Not covered by any test: `.github/scripts/release.sh` (ci-infra, six changed lines; exercised only when `release.yml` runs on `main`).
 
 Next step: accept the residual risk and run `sdlc close` for Testing, or fix the gap list first (a release.sh check, proposed only, not written).
+
+### Reference scenario 2, rerun on a scratch npm project
+
+The earlier scenario 2 ran on a repo without `package.json`, so no row showed the runner path. This rerun follows `skills/sdlc-qa-gate/SKILL.md` literally on a scratch npm project with one changed file (the `git` LF/CRLF warnings are omitted from the outputs below; output trimmed where marked).
+
+Setup:
+
+```
+T=$(mktemp -d); mkdir -p "$T/np2/src"; cd "$T/np2"; git init -q; git config user.name t; git config user.email t@t
+printf '{"name":"np2","version":"0.0.1","scripts":{"test":"node -e 0"}}\n' > package.json
+echo 'module.exports = 1;' > src/a.js; git add -A; git commit -qm init
+echo 'module.exports = 2;' > src/a.js
+```
+
+Router facts, `node skills/sdlc/bin/where.js --root "$T/np2" --message-file <tmp>` (trimmed to the load-bearing fields):
+
+```
+"git": { "isRepo": true, "branch": "master", "commits": [ { "subject": "init", "paths": ["package.json", "src/a.js"] } ] }
+"sourceFiles": { "count": 1, "sample": ["src/a.js"] }
+"testRunner": { "kind": "npm", "command": "npm test" }
+```
+
+`testRunner.kind` is `npm`, so the unit layer applies.
+
+Diff map (`git diff --name-only HEAD` printed `src/a.js`; `git status --short` printed ` M src/a.js`):
+
+| File | Domain | Existing coverage | Nature |
+|---|---|---|---|
+| `src/a.js` | logic | none | new-logic |
+
+Unit layer, `npm test`:
+
+```
+> np2@0.0.1 test
+> node -e 0
+
+exit=0
+```
+
+Report:
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | not run | no `tsconfig.json`, lint script or type-checker config in the project | medium: no static check of `src/a.js` |
+| unit | `npm test` ran, exit 0, no skips | the suite is `node -e 0`: it executes no test, so it says nothing about `src/a.js` | high: exit 0 without any assertion |
+| build | not run | no `build` script and no build backend | low: nothing is built |
+| runtime | not run | the diff touches no UI, API, config or dependencies | low: nothing to start |
+| functional | not run | the diff touches no UI or API | low: no routes changed |
+| regression | not run | no shared module changed and no other module imports `src/a.js` | low: no importer to re-run |
+
+Gaps from the diff map: `gap: src/a.js new-logic without a covering test; proposed: a.test.js asserting that require("./src/a") returns 2`.
+
+Next step: accept the residual risk and run `sdlc close` for Testing, or add the proposed test first (proposed only, not written).
+
+Result: the runner path is now exercised. `testRunner.kind` came back `npm`, the unit row carries a real command, output and exit code, and the other five rows are listed as not run with their reasons.
