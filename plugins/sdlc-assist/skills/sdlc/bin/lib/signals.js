@@ -44,10 +44,20 @@ function releaseWorkflow(root) {
 }
 
 const { execFileSync, spawnSync } = require('child_process');
-function cleanEnv() { const e = { ...process.env }; delete e.GIT_DIR; delete e.GIT_WORK_TREE; delete e.GIT_INDEX_FILE; e.GIT_PAGER = 'cat'; e.GIT_OPTIONAL_LOCKS = '0'; return e; }
+// git runs with a fixed allowlist of variables, never the caller's whole environment: enough for git to find
+// itself, its config and a temp dir on Linux, macOS and Windows; GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE from a
+// hook context are left out so every query targets `root`, and no prompt or pager can block.
+const GIT_ENV_KEYS = ['PATH', 'HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'SYSTEMROOT', 'TEMP', 'TMP', 'TMPDIR',
+  'LANG', 'LC_ALL', 'PATHEXT', 'COMSPEC', 'APPDATA', 'LOCALAPPDATA', 'XDG_CONFIG_HOME'];
+function gitEnv() {
+  const e = {};
+  for (const k of GIT_ENV_KEYS) { const v = process.env[k]; if (v !== undefined) e[k] = v; }
+  e.GIT_PAGER = 'cat'; e.GIT_OPTIONAL_LOCKS = '0'; e.GIT_TERMINAL_PROMPT = '0';
+  return e;
+}
 const GIT_OPTS = ['-c', 'core.quotepath=off', '-c', 'core.fsmonitor=false', '--literal-pathspecs'];
 function git(root, args) {
-  try { return execFileSync('git', [...GIT_OPTS, ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: cleanEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }); }
+  try { return execFileSync('git', [...GIT_OPTS, ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: gitEnv(), windowsHide: true, maxBuffer: 64 * 1024 * 1024 }); }
   catch { return null; }
 }
 const lines = out => (out || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -55,7 +65,7 @@ const toInt = s => (s && /^\d+$/.test(s) ? parseInt(s, 10) : null);
 const toSlash = p => p.split(path.sep).join('/');
 // Only rev-parse captures stderr: it is where git reports a repo it refuses to read.
 function repoInfo(root, notes) {
-  const r = spawnSync('git', [...GIT_OPTS, 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: cleanEnv(), windowsHide: true });
+  const r = spawnSync('git', [...GIT_OPTS, 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: gitEnv(), windowsHide: true });
   if (r.error || r.status !== 0 || (r.stdout || '').trim() !== 'true') {
     if (/dubious ownership/i.test(r.stderr || '')) notes.push('git refused this repo (dubious ownership): git signals skipped; the user can run git config --global --add safe.directory <repo>');
     return { isRepo: false, toplevel: null };
@@ -125,7 +135,7 @@ function collectGit(root, notes) {
 function runTests(root, runner) {
   if (!runner.kind) return { status: 'no-runner', exitCode: null, tail: [] };
   // shell:true because on Windows `npm` is npm.cmd; the command string comes from the fixed runner table, never from input.
-  const r = spawnSync(runner.command, { cwd: root, shell: true, encoding: 'utf8', env: cleanEnv(), windowsHide: true, timeout: 10 * 60 * 1000 });
+  const r = spawnSync(runner.command, { cwd: root, shell: true, encoding: 'utf8', windowsHide: true, timeout: 10 * 60 * 1000 });
   const tail = ((r.stdout || '') + (r.stderr || '')).split(/\r?\n/).filter(Boolean).slice(-20);
   return { status: r.status === 0 ? 'passed' : 'failed', exitCode: r.status, tail };
 }

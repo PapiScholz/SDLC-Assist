@@ -24,7 +24,7 @@ Work through the four steps in order. Each has an exit criterion; do not move on
 
 Goal: one command or one manual step that shows the fault, which you can run again after every hypothesis.
 
-How: prefer, in this order, a failing test (an existing one, or a new one that asserts `Expected` from the card), a command (`signals.testRunner.command`, a script, a `curl`), a request against a running instance the user already has. Adding a failing test or a diagnostic print is allowed; it is removed or kept on purpose in the hand-off.
+How: prefer, in this order, a failing test (an existing one, or a new one that asserts `Expected` from the card), a command (`signals.testRunner.command`, a script), an HTTP request against a running instance the user already has. Adding a failing test or a diagnostic print is allowed; it is removed or kept on purpose in the hand-off.
 
 Exit: `Reproduction: <command or step>` and its observed output. If no reproduction is possible, write `Reproduction: none — <why>; evidence used instead: <logs, screenshot, user report>` and continue with lower confidence, saying so in the hand-off.
 

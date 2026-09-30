@@ -42,7 +42,7 @@ Automated skill scanners flag this skill because it instructs the agent to run s
 
 `plugins/sdlc-assist/skills/sdlc/bin/where.js` (phase inference):
 - reads spec, plan and todo files under the repository it is pointed at
-- runs read-only git queries only (`rev-parse`, `ls-files`, `log`, `status`, `tag`, `rev-list`) with `GIT_OPTIONAL_LOCKS=0` and `core.fsmonitor=false`, so git never writes to the repository's index and never runs repository-configured commands
+- runs read-only git queries only (`rev-parse`, `ls-files`, `log`, `status`, `tag`, `rev-list`) with `GIT_OPTIONAL_LOCKS=0` and `core.fsmonitor=false`, so git never writes to the repository's index and never runs repository-configured commands; git receives a fixed allowlist of environment variables (`PATH`, home and temp locations, locale), never the caller's whole environment, and the optional test run inherits the environment untouched because test tools need their own variables
 - never writes into the analysed repository; the self-test asserts a byte-level snapshot of every fixture before and after each run
 - runs the project's test suite only with the explicit `--run-tests` flag, which the skill instructs the agent to pass only when the user asked for it in the current turn
 
