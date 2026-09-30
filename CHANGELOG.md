@@ -1,11 +1,21 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2026-09-30
 
 ### Changed
 - The plugin lives in `plugins/sdlc-assist/` (manifest, icon, skills, commands, a short README, LICENSE) and `marketplace.json` points there, so Anthropic's plugin directory validates only what ships. Install commands do not change; anyone copying `skills/` by hand now copies `plugins/sdlc-assist/skills/`.
 - `check-manifest` runs from the repository root: it follows the marketplace `source`, rejects a plugin at the root and a `plugin.json` `icon` field, and requires `icon.svg`, `README.md` and a `LICENSE` identical to the root one inside the plugin folder.
 - `.claude-plugin/icon.svg`: pixel-art waterfall on an amber CRT.
+
+
+### Commits
+
+- Merge pull request #4 from PapiScholz/v1.4-plugin-subfolder
+- feat: plugin in plugins/sdlc-assist so the directory scans only what ships [minor]
+- docs: mark eval/iex rescans in the git hook as detection only [skip release]
+- fix: drop icon field from plugin.json [skip release]
+- chore: plugin icon, credential note, rename PIN [skip release]
+- spec: v1.3 closed on v0.4.0; Task 3 done [skip release]
 
 ## [0.4.0] - 2026-09-30
 
