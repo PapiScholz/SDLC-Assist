@@ -1,23 +1,14 @@
 # Todo
 
-- [x] Task 1: Amend the spec and close Analysis
-- [x] Task 2: Repo skeleton
-- [x] Task 3: Vendor the five SDD-family skills with a sync check
-- [x] Task 4: header.js parseHeader
-- [x] Task 5: todo.js countTasks
-- [x] Task 6: keywords.js classifyRequest
-- [x] Task 7: signals.js filesystem signals
-- [x] Task 8: signals.js git queries and --run-tests
-- [x] Task 9: infer.js decision table
-- [x] Task 10: where.js CLI and fixture harness
-- [x] Task 11: Fixtures 2, 6, 7
-- [x] Task 12: Fixtures 3, 4, 5, 8
-- [x] Task 13: Fixtures 9 and 10
-- [x] Task 14: --run-tests end to end
-- [x] Task 15: which.js installed-skill detector
-- [x] Task 16: Phase sheets and reference docs
-- [x] Task 17: SKILL.md for the router
-- [x] Task 18: Plugin, marketplace, command files, manifest check
-- [x] Task 19: Frontmatter and EOL checks, CI workflow, red runs
-- [x] Task 20: README and dogfooding close
-- [x] Task 21: Manual install verification
+Cycle: v1.1 own phase skills (spec: docs/specs/2026-09-30-v1-1-own-skills.md, plan: tasks/plan.md)
+
+- [x] Task 1: Branch, close planning, `sdlc-debugging` skill
+- [x] Task 2: `sdlc-qa-gate` skill
+- [x] Task 3: `sdlc-release` skill
+- [x] Task 4: `check-skill-sections.js` gate, self-test, CI step, red run
+- [x] Task 5: `check-frontmatter.js` version rule and `release.sh` version sources
+- [x] Task 6: Phase sheets, missing-skill table, request card, router note
+- [x] Task 7: CI `install-smoke` asserts the three skills
+- [x] Task 8: README, CHANGELOG `[Unreleased]`, CONTRIBUTING, CLAUDE.md
+- [x] Task 9: Dogfood runs (b) release detect and (c) debugging on a seeded fault
+- [x] Task 10: Reference scenarios on a fresh temp home, dogfood (a) QA gate, close the cycle

@@ -10,6 +10,7 @@
 # Version sources rewritten here (keep each on one line):
 #   .claude-plugin/plugin.json   "version": "X.Y.Z"   (the only "version" key)
 #   skills/sdlc/SKILL.md         version: X.Y.Z       (frontmatter)
+#   skills/sdlc-debugging/SKILL.md, skills/sdlc-qa-gate/SKILL.md, skills/sdlc-release/SKILL.md  (same line)
 #
 # Requires GNU sed (-i with no suffix); preflight() checks for it rather than
 # letting a BSD sed corrupt the version files halfway through.
@@ -114,6 +115,9 @@ echo "Releasing $NEW_TAG (bump: $BUMP, from $LAST_TAG)"
 # plugin.json has exactly one "version" key, so an unanchored substitution is safe.
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" .claude-plugin/plugin.json
 sed -i "s/^version: .*/version: $NEW_VERSION/" skills/sdlc/SKILL.md
+for own in sdlc-debugging sdlc-qa-gate sdlc-release; do
+  sed -i "s/^version: .*/version: $NEW_VERSION/" "skills/$own/SKILL.md"
+done
 
 ENTRY_BODY=$(echo "$COMMITS" | sed 's/^/- /')
 
@@ -147,7 +151,7 @@ node skills/sdlc/bin/check-manifest.js
 node skills/sdlc/bin/check-frontmatter.js
 node skills/sdlc/bin/check-eol.js
 
-git add .claude-plugin/plugin.json skills/sdlc/SKILL.md CHANGELOG.md
+git add .claude-plugin/plugin.json skills/sdlc/SKILL.md skills/sdlc-debugging/SKILL.md skills/sdlc-qa-gate/SKILL.md skills/sdlc-release/SKILL.md CHANGELOG.md
 if git diff --cached --quiet; then
   echo "Version files and CHANGELOG already at $NEW_VERSION. Tagging existing HEAD."
 else

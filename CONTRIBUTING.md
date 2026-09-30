@@ -29,6 +29,7 @@ node skills/sdlc/bin/sync-vendored.js --check
 node skills/sdlc/bin/check-manifest.js
 node skills/sdlc/bin/check-sheets.js
 node skills/sdlc/bin/check-frontmatter.js
+node skills/sdlc/bin/check-skill-sections.js
 node skills/sdlc/bin/check-eol.js
 ```
 

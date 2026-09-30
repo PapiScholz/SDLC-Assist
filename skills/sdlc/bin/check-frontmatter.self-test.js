@@ -44,5 +44,27 @@ check('no frontmatter block exits 1', () => {
 check('missing name exits 1', () => {
   assert.strictEqual(run(tree({ x: '---\ndescription: d\n---\n' })).status, 1);
 });
+function treeWithPlugin(skills, pluginVersion) {
+  const d = tree(skills);
+  fs.mkdirSync(path.join(d, '.claude-plugin'), { recursive: true });
+  fs.writeFileSync(path.join(d, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'sdlc', version: pluginVersion }));
+  return d;
+}
+check('own skill (sdlc-*) without version exits 1', () => {
+  const r = run(tree({ 'sdlc-qa-gate': '---\nname: sdlc-qa-gate\ndescription: d\n---\n' }));
+  assert.strictEqual(r.status, 1);
+  assert.ok(out(r).includes('version') && out(r).includes('sdlc-qa-gate'));
+});
+check('vendored skill without version exits 0', () => {
+  assert.strictEqual(run(tree({ 'test-driven-development': '---\nname: test-driven-development\ndescription: d\n---\n' })).status, 0);
+});
+check('own skill version differing from plugin.json exits 1', () => {
+  const r = run(treeWithPlugin({ sdlc: '---\nname: sdlc\nversion: 0.1.1\ndescription: d\n---\n' }, '0.2.0'));
+  assert.strictEqual(r.status, 1);
+  assert.ok(out(r).includes('0.1.1') && out(r).includes('0.2.0'));
+});
+check('own skill version equal to plugin.json exits 0', () => {
+  assert.strictEqual(run(treeWithPlugin({ sdlc: '---\nname: sdlc\nversion: 0.2.0\ndescription: d\n---\n' }, '0.2.0')).status, 0);
+});
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

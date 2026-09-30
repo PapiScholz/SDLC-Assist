@@ -1,7 +1,7 @@
 ---
 slug: analysis
 title: Requirements analysis
-recommends: [spec-driven-development]
+recommends: [spec-driven-development, sdlc-debugging]
 alternatives: [superpowers:systematic-debugging, debugging-strategies]
 design: in the spec, architecture-level decisions
 ---
@@ -9,6 +9,6 @@ design: in the spec, architecture-level decisions
 
 **Enters when:** source files exist and no active spec has `Status: approved` (a draft spec means: review and approve it).
 **Produces:** a spec with the header `Phase: analysis` / `Status: draft`; a short spec built from the request card for complaints and bugs (see `../request-card.md`).
-**Do now:** run `spec-driven-development`; for a bug, run a debugging skill first to localise, then write the short spec. Prepend the header (see `../spec-header.md`).
+**Do now:** for a bug or complaint, run `sdlc-debugging` first (reproduce, localise, explain, hand off the `Cause:` and `Evidence:` lines), then `spec-driven-development` for the short spec; for a feature or idea, run `spec-driven-development`. Prepend the header (see `../spec-header.md`). One of the two recommended skills installed is enough to skip the missing-skill question.
 **Next phase:** planning, after the user approves the spec (`sdlc close` writes `Status: approved` and `Phase: planning`).
 **Warns when:** code changes exist on the branch but no spec covers them.
