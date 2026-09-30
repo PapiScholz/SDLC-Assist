@@ -552,3 +552,34 @@ Gaps from the diff map: `gap: src/a.js new-logic without a covering test; propos
 Next step: accept the residual risk and run `sdlc close` for Testing, or add the proposed test first (proposed only, not written).
 
 Result: the runner path is now exercised. `testRunner.kind` came back `npm`, the unit row carries a real command, output and exit code, and the other five rows are listed as not run with their reasons.
+
+## v1.2 dogfood
+
+Runs of the v1.2 protocol against this repo, pasted verbatim.
+
+### (a) Intent without a spec pointing at it, before the spec edit (branch `v1.2-playbook-alignment` at f351dc9)
+
+The intent was committed on its own, so the repo had an intent file and no spec `Intent:` line. Real output:
+
+```
+$ git ls-files docs/intents
+docs/intents/2026-09-30-playbook-alignment.md
+$ grep -rn "^Intent:" docs/specs/
+exit=1
+```
+
+### (b) After the spec edit, same branch, working tree only
+
+The spec header gained the `Intent:` line (third header line, after `Status:`). The header parser and the phase inference must not change. Real output:
+
+```
+$ grep -rn "^Intent:" docs/specs/
+docs/specs/2026-09-30-v1-2-playbook-alignment.md:5:Intent: docs/intents/2026-09-30-playbook-alignment.md
+exit=0
+$ node skills/sdlc/bin/lib/header.self-test.js | tail -1
+13 passed, 0 failed
+$ node skills/sdlc/bin/where.js --message-file <tmp>/m.txt | grep '"inferred"'
+  "inferred": "planning",
+```
+
+The message file contained `seguí con v1.2`. Phase stays `planning` because the spec header is still `Phase: planning` / `Status: approved`; the phase advances only through close mode.
