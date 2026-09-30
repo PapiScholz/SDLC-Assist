@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Close mode: closing `deployment` now writes `Phase: deployment` together with `Status: closed`, and closing from a header that fell behind writes the confirmed phase's row, so a closed spec never keeps a stale `Phase:` (found by running the skill on its own repository).
+
 ## [0.1.0] - 2026-09-30
 
 ### Added

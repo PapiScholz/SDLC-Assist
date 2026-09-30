@@ -79,9 +79,9 @@ Triggered by `/sdlc:phase close` or "sdlc close" by intent (also from session-cl
 | planning | `Phase: development` |
 | development | `Phase: testing` |
 | testing | `Phase: deployment` |
-| deployment | `Status: closed` |
+| deployment | `Phase: deployment`, `Status: closed` |
 
-Edit the active spec only (`active.path` in the `where.js` output), advancing from the phase the user confirmed even when its header said otherwise. When there is no spec (`active` is null), write nothing and say so. A headerless spec gets the header with the phase that follows the confirmed one. After a hotfix in the same context, update nothing and recommend the QA step. Name the next phase and its skill. Never touch CHANGELOG; that belongs to the release skill.
+Edit the active spec only (`active.path` in the `where.js` output), advancing from the phase the user confirmed even when its header said otherwise: when the confirmed phase is ahead of the header (closes were skipped), write the row of the confirmed phase, never the header's, so a closed spec never keeps a stale `Phase:`. When there is no spec (`active` is null), write nothing and say so. A headerless spec gets the header with the phase that follows the confirmed one. After a hotfix in the same context, update nothing and recommend the QA step. Name the next phase and its skill. Never touch CHANGELOG; that belongs to the release skill.
 
 ## Hotfix threshold
 

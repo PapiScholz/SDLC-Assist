@@ -28,6 +28,6 @@ Close mode runs the inference, uses the phase the user confirmed, and advances f
 | planning | `Phase: development` |
 | development | `Phase: testing` |
 | testing | `Phase: deployment` |
-| deployment | `Status: closed` |
+| deployment | `Phase: deployment`, `Status: closed` |
 
 A headerless spec gets the header with the phase that follows the confirmed one. Close mode never touches CHANGELOG; that belongs to the release skill.

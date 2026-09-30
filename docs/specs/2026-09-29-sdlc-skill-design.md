@@ -127,7 +127,7 @@ only read):
    from it: closing `analysis` means the user approved the spec and
    writes `Status: approved` + `Phase: planning`; closing `planning`
    writes `development`; then `testing`, then `deployment`; closing
-   `deployment` writes `Status: closed`. A headerless spec gets the header
+   `deployment` writes `Phase: deployment` + `Status: closed`, so a closed spec never keeps a stale phase. A headerless spec gets the header
    with the phase that follows the confirmed one.
 
 ## Inference protocol

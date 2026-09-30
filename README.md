@@ -84,7 +84,7 @@ Slugs are the six above; `Status` is `draft`, `approved` or `closed`. Specs alwa
 | planning | `Phase: development` |
 | development | `Phase: testing` |
 | testing | `Phase: deployment` |
-| deployment | `Status: closed` |
+| deployment | `Phase: deployment`, `Status: closed` |
 
 It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
 
