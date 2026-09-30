@@ -924,3 +924,16 @@ Diff map: two manifests, one gate and its self-test, `SKILL.md` close-mode trigg
 | regression | install-smoke and both test jobs in CI on the PR | | the skills.sh path never used the plugin id, so the rename cannot reach it |
 
 Testing closed on this table with the runtime and functional gaps accepted; deployment is the merge and the release.
+
+### (d) Merge and release (PR #3 merged with a merge commit)
+
+```
+$ gh pr view 3 --json state,mergeCommit -q '"\(.state) \(.mergeCommit.oid[0:7])"'
+MERGED 6930f7a
+$ gh run list --workflow=release.yml -L 3 --json status,conclusion,headSha -q '.[] | select(.headSha|startswith("6930f7a")) | "\(.status) \(.conclusion)"'
+completed success
+$ git fetch --tags && git describe --tags origin/main
+v0.4.0
+```
+
+Deployment closed on this output: `Status: closed`, committed with `[skip release]`.

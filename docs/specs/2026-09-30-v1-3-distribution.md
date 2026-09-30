@@ -1,7 +1,7 @@
 # Spec: v1.3 — distribution (plugin id, positioning, directory readiness)
 
-Phase: testing
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-09-30
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.3.0)
