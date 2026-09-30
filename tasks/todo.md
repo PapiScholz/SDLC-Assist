@@ -1,11 +1,9 @@
 # Todo
 
-Cycle: v1.2 playbook alignment (spec: docs/specs/2026-09-30-v1-2-playbook-alignment.md, plan: tasks/plan.md)
+Cycle: v1.3 distribution (spec: docs/specs/2026-09-30-v1-3-distribution.md, plan: the three tasks in the spec)
 
-- [x] Task 1: `intent.md` template, `maintain` entry sheet, spec header, entry points, router text
-- [x] Task 2: Governance/Measure lines on six sheets; `check-sheets.js` body check + self-test + red run
-- [x] Task 3: `scripts/hooks/git-authorization.js` + self-test
-- [x] Task 4: `scripts/hooks/eol-guard.js` + self-test + `.claude/settings.json` + `.gitignore`
-- [x] Task 5: `scripts/gates.sh`, CI, CONTRIBUTING/README/CLAUDE.md gate references, red runs
-- [x] Task 6: README playbook mapping + hooks notes; CHANGELOG `[Unreleased]`
-- [x] Task 7: Dogfood intent chain, reference scenarios, close the cycle, PR, release
+- [x] Task 1: plugin id `sdlc-assist`, manifest fields, `check-manifest` gate and red run
+- [x] Task 2: README "Who this is for" block, `docs/distribution.md`, README link
+- [ ] Task 3: GitHub metadata, CHANGELOG, dogfood, close the cycle, PR, release
+
+Previous cycle: v1.2 playbook alignment (spec: docs/specs/2026-09-30-v1-2-playbook-alignment.md, plan: tasks/plan.md), closed on v0.3.0, all seven tasks done.

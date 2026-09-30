@@ -4,6 +4,23 @@ An agent skill, `sdlc`, that works out which phase of the software development l
 
 It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
 
+## Who this is for
+
+A developer, or a small team, already working with a coding agent (Claude Code, OpenCode, Codex, Cursor) on a repository that receives mixed requests: bugs, customer complaints, features, ideas, production alerts. You want the agent to frame the work before it codes, and to treat a complaint the same way every time, without adopting a whole methodology or restructuring the repo.
+
+It is not an orchestrator and not a team of role-playing agents. It never blocks a transition, never runs a state-changing git command, and writes nothing into your repo beyond spec headers. If you want an agent that runs the whole cycle by itself, this is not it.
+
+How it sits next to the tools you may already have:
+
+| Tool | What it does | What `sdlc` adds |
+|---|---|---|
+| [Superpowers](https://github.com/obra/superpowers) | A full method: brainstorm, plan, TDD, subagents, review | Tells you which phase you are in from what the repo already contains, then recommends Superpowers' skills when they are installed |
+| [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) | Agile roles (PM, architect, dev, QA) and 50+ workflows | One question instead of a ceremony; no roles, no new folders |
+| [Spec Kit](https://github.com/github/spec-kit) | Specify, plan, tasks, implement, with its own CLI and templates | Works on specs you already have, whatever wrote them, and knows when a request is a hotfix or a complaint rather than a feature |
+| Standalone spec skills (`write-tech-spec`, `tlc-spec-driven`, ...) | Write one spec well | The routing around the spec: what enters, when it is approved, what closes each phase, what to do after the release |
+
+The router does not replace any of these. It reads the repo, asks one question, and hands off to whichever of them you have installed.
+
 | Slug | Phase | Recommended skill |
 |---|---|---|
 | `initial` | Initial planning | spec-driven-development |
@@ -46,7 +63,7 @@ Where each kind of request enters the cycle, and what the router does on every r
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
 | skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the nine skills (router + three own + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
-| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc@papischolz` | Claude Code | `/sdlc:phase` | Also registers the three own and five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
+| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc-assist@papischolz` | Claude Code | `/sdlc-assist:phase` | Also registers the three own and five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
 | Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all nine skills. |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path. |
 
@@ -74,7 +91,7 @@ A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whos
    ```
 
    Specs always start in `analysis`; `initial` ends when the first spec exists. Slugs are the six in the table above; `Status` is `draft`, `approved` or `closed`. Details: `skills/sdlc/references/spec-header.md`.
-3. **Close each phase** when its artifact exists: say "sdlc close" (or `/sdlc:phase close`). The router infers the phase, asks whether it is finished and what it produced, and advances the header from the phase you confirm:
+3. **Close each phase** when its artifact exists: say "sdlc close" (or `/sdlc-assist:phase close`). The router infers the phase, asks whether it is finished and what it produced, and advances the header from the phase you confirm:
 
    | Confirmed phase | Writes |
    |---|---|
@@ -89,7 +106,7 @@ A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whos
 4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes `tasks/plan.md` and `tasks/todo.md`; `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
 5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
 
-Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
+Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
 
 ### What the router sees
 
@@ -170,7 +187,7 @@ Node 20 or newer, no dependencies. One command runs the same gates CI runs (`--q
 bash scripts/gates.sh
 ```
 
-`node skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`.
+`node skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`. Listing channels, the directory pre-submission checks and the portal steps are in [`docs/distribution.md`](docs/distribution.md).
 
 ## Roadmap
 

@@ -71,7 +71,7 @@ Specs always start in `analysis`, including the first spec of a project. `initia
 
 ## Close mode
 
-Triggered by `/sdlc:phase close` or "sdlc close" by intent (also from session-closure or handoff workflows). Run the inference, ask whether the confirmed phase is finished and what it produced, then advance from the phase the user confirmed:
+Triggered by `/sdlc-assist:phase close` or "sdlc close" by intent (also from session-closure or handoff workflows). Run the inference, ask whether the confirmed phase is finished and what it produced, then advance from the phase the user confirmed:
 
 | Confirmed phase | Writes |
 |---|---|

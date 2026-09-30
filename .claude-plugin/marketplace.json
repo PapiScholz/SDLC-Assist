@@ -1,12 +1,12 @@
 {
   "name": "papischolz",
   "owner": { "name": "Ezequiel Scholz" },
-  "description": "Skills by Ezequiel Scholz: SDLC phase router with the spec-driven-development family bundled.",
+  "description": "Skills by Ezequiel Scholz: an SDLC phase router with the spec-driven-development family bundled.",
   "plugins": [
     {
-      "name": "sdlc",
+      "name": "sdlc-assist",
       "source": "./",
-      "description": "SDLC phase router with the spec-driven-development family bundled."
+      "description": "Infers which SDLC phase a work request is in from the repo, asks one question, and routes to the skill for the next step."
     }
   ]
 }

@@ -36,7 +36,8 @@ if (market) {
   const p0 = Array.isArray(market.plugins) ? market.plugins[0] : null;
   if (!p0) errors.push('marketplace.json: field plugins must have at least one entry');
   else {
-    if (p0.name !== 'sdlc') errors.push('marketplace.json: field plugins[0].name must be "sdlc"');
+    if (p0.name !== 'sdlc-assist') errors.push('marketplace.json: field plugins[0].name must be "sdlc-assist"');
+    if (plugin && p0.name !== plugin.name) errors.push('marketplace.json: field plugins[0].name must equal plugin.json name (' + plugin.name + ')');
     if (p0.source !== './') errors.push('marketplace.json: field plugins[0].source must be "./"');
   }
 }
