@@ -13,6 +13,14 @@ It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git
 | `testing` | Testing | sdlc-qa-gate (alternative: qa-push) |
 | `deployment` | Deployment | sdlc-release (alternative: release-engineer) |
 
+## Quickstart
+
+```bash
+cd ~ && npx skills add PapiScholz/SDLC-Assist -y
+```
+
+Then open any repo with your agent and describe the work, or say "where are we". The router answers with the inferred phase, the evidence, and one question. Confirm the phase and follow the skill it names. When the phase's artifact exists, say "sdlc close". Other install paths (Claude Code plugin, manual copy, OpenCode command) are in Install below.
+
 ## Install
 
 | Path | Command | Skill by intent | Explicit command | Notes |
@@ -33,9 +41,39 @@ Overwrite and duplicate notes:
 - Find other skills with `npx skills find <term>`.
 - This checkout ships Claude Code hooks (git authorization, LF/no-BOM guard) in `.claude/settings.json`; they do not travel with the installed skills. See Playbook mapping.
 
-## Usage
+## How to use
 
-Describe the work, or say "where are we". The router writes your request to a temp file and runs `where.js`. A real run on a scratch repo (two source files, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD, no spec), with the request "customer complains about X":
+A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whose header carries the phase. The router reads that header, `tasks/plan.md`, `tasks/todo.md` and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
+
+1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and asks one question: `Phase: <inferred>`, up to three evidence lines, warnings, options. Confirm or pick an alternative. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
+2. **Write the spec** with the skill the router names (`spec-driven-development`; `sdlc-debugging` first on the bug route). Right after the H1:
+
+   ```
+   Phase: analysis
+   Status: draft
+   ```
+
+   Specs always start in `analysis`; `initial` ends when the first spec exists. Slugs are the six in the table above; `Status` is `draft`, `approved` or `closed`. Details: `skills/sdlc/references/spec-header.md`.
+3. **Close each phase** when its artifact exists: say "sdlc close" (or `/sdlc:phase close`). The router infers the phase, asks whether it is finished and what it produced, and advances the header from the phase you confirm:
+
+   | Confirmed phase | Writes |
+   |---|---|
+   | initial | nothing |
+   | analysis | `Status: approved`, `Phase: planning` |
+   | planning | `Phase: development` |
+   | development | `Phase: testing` |
+   | testing | `Phase: deployment` |
+   | deployment | `Phase: deployment`, `Status: closed` |
+
+   It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
+4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes `tasks/plan.md` and `tasks/todo.md`; `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
+5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
+
+Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
+
+### What the router sees
+
+A real run on a scratch repo (two source files, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD, no spec), with the request "customer complains about X":
 
 ```
 $ node skills/sdlc/bin/where.js --root <scratch repo> --message-file <temp file>
@@ -57,35 +95,7 @@ Output, trimmed to the keys the router reads:
 }
 ```
 
-The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). A complaint then goes through the request card (who asks, what happens, expected, where, urgency) and spec-driven-development turns the card into a short spec with `Phase: analysis`, `Status: draft`. `inProduction` adds the note "keep the running version safe".
-
-Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`. The cycle, the entry points and the per-request protocol are drawn in [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
-
-## Header convention
-
-A cycle is a spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`). Right after the H1:
-
-```
-Phase: analysis
-Status: draft
-```
-
-Slugs are the six above; `Status` is `draft`, `approved` or `closed`. Specs always start in `analysis`; `initial` ends when the first spec exists. Details: `skills/sdlc/references/spec-header.md`.
-
-## Close mode
-
-`/sdlc:phase close` or "sdlc close": the router infers the phase, asks whether it is finished, and advances the header from the phase you confirm.
-
-| Confirmed phase | Writes |
-|---|---|
-| initial | nothing |
-| analysis | `Status: approved`, `Phase: planning` |
-| planning | `Phase: development` |
-| development | `Phase: testing` |
-| testing | `Phase: deployment` |
-| deployment | `Phase: deployment`, `Status: closed` |
-
-It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
+The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). `inProduction` adds the note "keep the running version safe".
 
 ## Missing-skill protocol
 
