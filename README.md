@@ -123,6 +123,14 @@ node skills/sdlc/bin/check-eol.js
 
 v1.1: own `sdlc-qa-gate` and `sdlc-release` skills; command files for Codex and Cursor once their formats are verified.
 
+## Security
+
+Automated skill scanners rate this skill as medium risk because it tells the agent to run scripts. The scripts only read the analysed repository, run read-only git queries, and never install or execute anything on their own; the project's test suite runs only behind an explicit flag. `SECURITY.md` lists exactly what each script touches, the trust boundaries of each install path, and how to report a vulnerability privately.
+
+## Contributing
+
+Contributions are welcome. `CONTRIBUTING.md` describes what the repository accepts, the local validation loop (the same gates CI runs on Ubuntu and Windows), and the spec-first rule: behavior changes start in `docs/specs/`. Vendored skills are not edited here; propose changes upstream. By participating you agree to `CODE_OF_CONDUCT.md`.
+
 ## License
 
 MIT, see `LICENSE`. Vendored skills keep their upstream MIT license.
