@@ -70,7 +70,7 @@ tasks/plan.md, tasks/todo.md                     (this cycle)
 - [x] Task 4: `scripts/hooks/eol-guard.js` + self-test + `.claude/settings.json` + `.gitignore`
 - [x] Task 5: `scripts/gates.sh`, CI, CONTRIBUTING/README/CLAUDE.md gate references, red runs
 - [x] Task 6: README playbook mapping + hooks notes; CHANGELOG `[Unreleased]`
-- [ ] Task 7: Dogfood intent chain, reference scenarios, close the cycle, PR, release
+- [x] Task 7: Dogfood intent chain, reference scenarios, close the cycle, PR, release
 
 ---
 
@@ -342,7 +342,7 @@ This repo's own hooks (`.claude/settings.json`: git authorization from the user'
 - [x] Step 1: Write the intent in the owner's words from this session ("Conviene?" → the five deliverables), commit it alone first (owner's words), then add `Intent: docs/intents/2026-09-30-playbook-alignment.md` as the third header line of the spec and amend the hooks paragraph to Node. Run `where.js`: before the spec edit, the agent-side check finds the intent without a spec naming it (record the `git ls-files docs/intents` + grep output); after, it does not. Paste both into `## v1.2 dogfood`.
 - [x] Step 2: Reference scenarios, pasted commands and real outputs: (1) fresh temp home install (`npx -y skills add <repo> -y -g --copy`), a scratch repo with `src/` and no spec, request "quiero agregar exportación a CSV" → `where.js` infers analysis; the agent follows `intent.md` and writes the intent (record the file); (2) request "la API devuelve 500 desde ayer en producción" with `inProduction` → `maintain.md` → intent with the four lines → analysis; (3) fresh clone in a temp dir opened with Claude Code semantics: `echo '{"tool_name":"Bash","tool_input":{"command":"git push"},"transcript_path":"<temp transcript whose last human line is dale>"}' | node scripts/hooks/git-authorization.js` → deny JSON; `bash scripts/gates.sh` → exit 0.
 - [x] Step 3: Close development → testing (owner confirms); run `sdlc-qa-gate` on the branch diff against `main` (unit layer = `bash scripts/gates.sh`), paste the table; close testing → deployment on accepted risk; tick `tasks/todo.md`.
-- [ ] Step 4: Commit (controller, owner's words): `git add docs/intents docs/specs/2026-09-30-v1-2-playbook-alignment.md docs/ci-red-runs.md tasks/todo.md tasks/plan.md && git commit -m "spec: v1.2 testing closed; dogfood intent chain and scenarios [minor]"`; `git push -u origin v1.2-playbook-alignment`; `gh pr create --base main --title "v1.2: playbook alignment (intent.md, governance/measure, maintain, gates.sh, hooks)" --body-file <Unreleased section>`; CI green on both OS; merge with a merge commit (owner's words); `git fetch --tags && git describe --tags origin/main` → `v0.3.0`; close the cycle (`Status: closed`, commit `[skip release]`, push on words); `cd ~ && npx skills add PapiScholz/SDLC-Assist -y`.
+- [x] Step 4: Commit (controller, owner's words): `git add docs/intents docs/specs/2026-09-30-v1-2-playbook-alignment.md docs/ci-red-runs.md tasks/todo.md tasks/plan.md && git commit -m "spec: v1.2 testing closed; dogfood intent chain and scenarios [minor]"`; `git push -u origin v1.2-playbook-alignment`; `gh pr create --base main --title "v1.2: playbook alignment (intent.md, governance/measure, maintain, gates.sh, hooks)" --body-file <Unreleased section>`; CI green on both OS; merge with a merge commit (owner's words); `git fetch --tags && git describe --tags origin/main` → `v0.3.0`; close the cycle (`Status: closed`, commit `[skip release]`, push on words); `cd ~ && npx skills add PapiScholz/SDLC-Assist -y`.
 
 ## Verification (end to end)
 

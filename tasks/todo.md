@@ -8,4 +8,4 @@ Cycle: v1.2 playbook alignment (spec: docs/specs/2026-09-30-v1-2-playbook-alignm
 - [x] Task 4: `scripts/hooks/eol-guard.js` + self-test + `.claude/settings.json` + `.gitignore`
 - [x] Task 5: `scripts/gates.sh`, CI, CONTRIBUTING/README/CLAUDE.md gate references, red runs
 - [x] Task 6: README playbook mapping + hooks notes; CHANGELOG `[Unreleased]`
-- [ ] Task 7: Dogfood intent chain, reference scenarios, close the cycle, PR, release
+- [x] Task 7: Dogfood intent chain, reference scenarios, close the cycle, PR, release

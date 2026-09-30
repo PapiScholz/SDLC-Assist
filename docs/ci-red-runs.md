@@ -856,3 +856,19 @@ all gates ok
 - eol-guard self-test: `extraEnv` applied once; the filler `assert.ok(p)` removed.
 
 Skipped, with reason: sharing `normalise`/`toRegex` from `lib/keywords.js` with the hook (the hook stays dependency-free so a copy of `scripts/hooks/` works alone); a shared `lib/eol.js` for two one-line byte checks; a shared self-test harness (pre-existing pattern across ten files, separate cleanup); deleting the repeated non-regression assertions in the hook self-test (cheap, and each round's label documents why it exists); parallel gates in CI and a 64 KB prefix read in eol-guard (would miss a late CRLF); `branch -d` over-detection (plain `-d` of a merged branch stays allowed, asserted by an existing check).
+
+### (g) Merge and release (PR #2 merged with a merge commit, main at 0c21145)
+
+```
+$ gh pr view 2 --json state,mergedAt,mergeCommit
+{"mergeCommit":{"oid":"b842d25c370c785a32bfe0ff9b68a29fe40419df"},"mergedAt":"2026-09-30T18:26:18Z","state":"MERGED"}
+$ gh run list --workflow=release.yml -L 1 --json status,conclusion,databaseId -q '.[0] | "\(.status) \(.conclusion) \(.databaseId)"'
+completed success 36758572509
+$ git fetch --tags && git describe --tags origin/main
+v0.3.0
+$ git log --oneline -2 origin/main
+0c21145 chore(release): v0.3.0 [skip ci]
+b842d25 Merge pull request #2 from PapiScholz/v1.2-playbook-alignment
+```
+
+Deployment closed on this output: `Status: closed` in the spec, committed with `[skip release]`.
