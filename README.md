@@ -21,6 +21,26 @@ cd ~ && npx skills add PapiScholz/SDLC-Assist -y
 
 Then open any repo with your agent and describe the work, or say "where are we". The router answers with the inferred phase, the evidence, and one question. Confirm the phase and follow the skill it names. When the phase's artifact exists, say "sdlc close". Other install paths (Claude Code plugin, manual copy, OpenCode command) are in Install below.
 
+```mermaid
+flowchart TD
+    A["<b>initial</b><br/>spec-driven-development"]
+    B["<b>analysis</b><br/>sdlc-debugging for bugs,<br/>then spec-driven-development"]
+    C["<b>planning</b><br/>planning-and-task-breakdown"]
+    D["<b>development</b><br/>incremental-implementation<br/>test-driven-development"]
+    E["<b>testing</b><br/>sdlc-qa-gate"]
+    F["<b>deployment</b><br/>sdlc-release"]
+    G([closed])
+
+    A -->|first spec written| B
+    B -->|sdlc close| C
+    C -->|sdlc close| D
+    D -->|sdlc close| E
+    E -->|sdlc close| F
+    F -->|sdlc close| G
+```
+
+Where each kind of request enters the cycle, and what the router does on every request, are drawn in [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
+
 ## Install
 
 | Path | Command | Skill by intent | Explicit command | Notes |
