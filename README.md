@@ -19,8 +19,8 @@ It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git
 
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
-| skills.sh | `cd ~ && npx skills add ezescholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the six skills (router + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
-| Claude Code plugin | `claude plugin marketplace add ezescholz/SDLC-Assist` then `claude plugin install sdlc@ezescholz` | Claude Code | `/sdlc:phase` | Also registers the five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
+| skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the six skills (router + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
+| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc@papischolz` | Claude Code | `/sdlc:phase` | Also registers the five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
 | Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies the router and the five vendored skills. |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path. |
 

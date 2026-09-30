@@ -20,7 +20,7 @@ function subdirs(fs, dir) {
 
 // Version dirs: numeric (`1.10.0`, `v6.9`) compare segment by segment; anything else
 // (a commit SHA) ranks by directory mtime and loses to any numeric version.
-const VERSION_RE = /^v?(\d+(?:\.\d+)*)/;
+const VERSION_RE = /^v?(\d+(?:\.\d+)+)(?:[-+][0-9A-Za-z.-]+)?$/;
 function compareVersionDirs(a, b) {   // > 0 when a is newer
   const va = VERSION_RE.exec(a.name), vb = VERSION_RE.exec(b.name);
   if (va && !vb) return 1;

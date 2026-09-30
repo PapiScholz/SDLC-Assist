@@ -74,6 +74,28 @@ check('plugin cache: only the highest version of one plugin counts (1.10.0 > 1.9
   assert.ok(hits[0].path.split(path.sep).includes('1.10.0'), hits[0].path);
   assert.ok(!o.duplicates.some(d => d.name === 'systematic-debugging'), JSON.stringify(o.duplicates));
 });
+check('plugin cache: digit-leading SHA dir does not outrank 1.10.0, no duplicate', () => {
+  const h4 = path.join(tmp, 'home4');
+  for (const ver of ['1.10.0', '76c85b7366c8'])
+    put(path.join(h4, '.claude', 'plugins', 'cache', 'm', 'superpowers', ver, 'skills', 'systematic-debugging', 'SKILL.md'), '# ' + ver + '\n');
+  const o = JSON.parse(run(['--root', h4, '--sheets-dir', sheets, '--phase', 'analysis', '--verbose']).stdout);
+  const hits = o.phases.analysis.installed.filter(i => i.name === 'systematic-debugging');
+  assert.strictEqual(hits.length, 1);
+  assert.ok(hits[0].path.split(path.sep).includes('1.10.0'), hits[0].path);
+  assert.ok(!o.duplicates.some(d => d.name === 'systematic-debugging'), JSON.stringify(o.duplicates));
+});
+check('plugin cache: two digit-leading SHA dirs rank by mtime, not leading digits', () => {
+  const h5 = path.join(tmp, 'home5');
+  const base5 = path.join(h5, '.claude', 'plugins', 'cache', 'm', 'superpowers');
+  for (const ver of ['76c85b7366c8', '1aa8f02ec832'])
+    put(path.join(base5, ver, 'skills', 'systematic-debugging', 'SKILL.md'), '# ' + ver + '\n');
+  fs.utimesSync(path.join(base5, '76c85b7366c8'), new Date(2020, 0, 1), new Date(2020, 0, 1));
+  fs.utimesSync(path.join(base5, '1aa8f02ec832'), new Date(2024, 0, 1), new Date(2024, 0, 1));
+  const o = JSON.parse(run(['--root', h5, '--sheets-dir', sheets, '--phase', 'analysis', '--verbose']).stdout);
+  const hits = o.phases.analysis.installed.filter(i => i.name === 'systematic-debugging');
+  assert.strictEqual(hits.length, 1);
+  assert.ok(hits[0].path.split(path.sep).includes('1aa8f02ec832'), hits[0].path);
+});
 check('project-level .opencode/skills is scanned', () => {
   put(path.join(cwd, '.opencode', 'skills', 'nope-skill', 'SKILL.md'), '# n\n');
   const o = JSON.parse(run([...base, '--phase', 'planning']).stdout);
