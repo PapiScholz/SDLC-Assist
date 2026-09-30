@@ -583,3 +583,113 @@ $ node skills/sdlc/bin/where.js --message-file <tmp>/m.txt | grep '"inferred"'
 ```
 
 The message file contained `seguí con v1.2`. Phase stays `planning` because the spec header is still `Phase: planning` / `Status: approved`; the phase advances only through close mode.
+
+### (c) Reference scenarios, fresh temp home, branch at eb641d0
+
+All commands ran from a script under the session scratchpad on Windows (Git Bash, Node). `HOME` and `USERPROFILE` pointed at an empty temp directory for the install. Output is real; paths are shortened to `<tmp>`, `<checkout>`, `<repo-a>`, `<repo-b>`, `<clone>`. Two lines of the install log per skill ("Eve does not support global skill installation") were filtered out; they are the CLI reporting one unsupported target, not a failure.
+
+**(0) Install.** The published copy is `main` (v0.2.0): it has no `intent.md` or `maintain.md` yet, so scenarios 1 and 2 ran `where.js` from this checkout and followed the branch's sheets. The install itself is what a v1.2 user gets after the release.
+
+```
+$ HOME=<tmp>/home USERPROFILE=<tmp>/home npx -y skills add PapiScholz/SDLC-Assist -y -g --copy
+└  Done!  Review skills before use; they run with full agent permissions.
+
+$ ls ~/.agents/skills
+context-engineering
+incremental-implementation
+planning-and-task-breakdown
+sdlc
+sdlc-debugging
+sdlc-qa-gate
+sdlc-release
+spec-driven-development
+test-driven-development
+$ ls ~/.agents/skills/sdlc/references
+entry-points.md
+missing-skill.md
+phases
+request-card.md
+spec-header.md
+$ grep -m1 "^version:" ~/.agents/skills/sdlc/SKILL.md
+version: 0.2.0
+```
+
+**(1) Idea on existing code.** Scratch repo with `src/orders.js`, one commit, no `docs/`, no spec. Request file: `quiero agregar exportación a CSV`.
+
+```
+$ node <checkout>/skills/sdlc/bin/where.js --root <repo-a> --message-file m1.txt
+inferred: analysis  request.type: feature  inProduction: false  warnings: []
+evidence: fallback: analysis (candidates: analysis); tests not run (no --run-tests)
+$ git ls-files docs/intents; ls docs
+ls: cannot access 'docs': No such file or directory
+```
+
+The agent then follows `intent.md`: the repo has no `docs/intents/`, so it asks before creating it (in this run the owner of the scratch repo is the agent itself; the question is the sheet's rule, recorded here as the step). It writes the intent in the originator's words, leaving what the originator has not said as open questions rather than inventing it. File written and committed:
+
+```
+$ cat docs/intents/2026-09-30-exportacion-csv.md
+# Intent: exportación a CSV
+
+Who:              originador del pedido (dueño del repo)
+Problem:          "quiero agregar exportación a CSV" (sin más detalle todavía)
+Desired outcome:  pendiente de confirmar con el originador
+Constraints:      pendiente
+Open questions:   ¿exportar qué (órdenes de `src/orders.js`)? ¿desde dónde se dispara? ¿quién lo consume?
+$ git ls-files docs/intents; grep -rln "^Intent:" docs/specs/
+docs/intents/2026-09-30-exportacion-csv.md
+specs naming it: exit=2
+```
+
+`exit=2` is grep on a missing `docs/specs/`: the intent has no spec naming it yet, which is the "intent without spec" warning the `sdlc` question must show until the analysis spec carries `Intent: docs/intents/2026-09-30-exportacion-csv.md`.
+
+**(2) Production alert.** Scratch repo with `src/api.js`, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD. Request file: `la API devuelve 500 desde ayer en producción`.
+
+```
+$ node <checkout>/skills/sdlc/bin/where.js --root <repo-b> --message-file m2.txt
+inferred: analysis  request.type: unknown  inProduction: true  warnings: []
+evidence: fallback: analysis (candidates: analysis); tests not run (no --run-tests); in production: tag v1.2.0
+```
+
+`maintain` is not inferred, by design (`maintain.md`: "nothing in `where.js` infers it"); the agent routes there from `inProduction: true` plus a signal from the running system. `request.type` came back `unknown`: the classifier has no pattern for "devuelve 500" (it does for "se queja", scenario (b) of Task 21). Noted as a minor for the v1.2 review; the routing does not depend on it here. Following `maintain.md`, the agent asks for the signal's evidence and writes the intent with the four extra lines under "Problem":
+
+```
+$ cat docs/intents/2026-09-30-api-500-produccion.md
+# Intent: la API devuelve 500 desde ayer en producción
+
+Who:              originador del aviso (opera el servicio)
+Problem:          "la API devuelve 500 desde ayer en producción"
+  Anomaly and evidence:  pendiente: pedir métrica, línea de log o id de alerta al originador
+  Proposed outcome:      pendiente de confirmar con el originador
+  Affected systems:      `src/api.js` (v1.2.0 en producción)
+  Open questions:        ¿todas las rutas o una? ¿qué cambió ayer (deploy, dependencia, infra)?
+Desired outcome:  pendiente
+Constraints:      pendiente
+Open questions:   ver arriba
+$ git ls-files docs/intents; grep -rln "^Intent:" docs/specs/
+docs/intents/2026-09-30-api-500-produccion.md
+specs naming it: exit=2
+```
+
+Next phase recommended by the sheet: analysis, as a new cycle.
+
+**(3) Contributor clone.** `git clone` of this checkout into a temp dir, then the versioned hook fed the same JSON Claude Code sends (tool call `git push`, transcript whose last human record is "dale", an older one says "pusheá"), and the single gate target.
+
+```
+$ git clone -q <checkout> clone && cd clone && git log --oneline -1
+eb641d0 spec: intent link and Node hooks paragraph; v1.2 dogfood (a)(b) [skip release]
+$ cat transcript.jsonl   # three records, last human line is "dale"
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"pusheá cuando termines"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"listo, ¿sigo?"}]}}
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"dale"}}
+$ cat hook-input.json
+{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push"},"transcript_path":"<transcript>","cwd":"<clone>"}
+$ node scripts/hooks/git-authorization.js < hook-input.json; echo "exit=$?"
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"git-authorization: push needs one of: push / pushea / pushear. Ask the user to say it in their next message. Last user message: \"dale\""}}exit=0
+$ bash scripts/gates.sh | tail -3; echo "exit=${PIPESTATUS[0]}"
+ok check-eol
+ok settings.json
+all gates ok
+exit=0
+```
+
+Exit 0 with a `deny` JSON is the Claude Code contract (the decision travels in stdout, not the exit code). A first attempt fed the hook an MSYS-style `transcript_path` (`/tmp/...`) and got `deny` with reason "transcript missing/lagging": fail-closed worked, but for the wrong reason; the run above uses a Windows path, which is what Claude Code passes.
