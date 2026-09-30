@@ -50,7 +50,8 @@ function main(argv) {
   for (const f of files) {
     const slug = f.slice(0, -3);
     if (!PHASES.includes(slug)) { errors.push('extra sheet: ' + f); continue; }
-    const fm = parseFrontmatter(fs.readFileSync(path.join(dir, f), 'utf8'));
+    const text = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n/g, '\n');
+    const fm = parseFrontmatter(text);
     if (!fm) { errors.push(f + ': no frontmatter'); continue; }
     if (fm.slug !== slug) errors.push(f + ': slug "' + fm.slug + '" does not match filename');
     if (!fm.title) errors.push(f + ': missing title');
@@ -62,6 +63,14 @@ function main(argv) {
         if (!known.includes(normalise(name))) errors.push(f + ': unknown skill "' + name + '" in ' + key);
       }
     }
+    const body = text.replace(/^---\n[\s\S]*?\n---\n?/, '');
+    let fenced = false; const found = new Set();
+    for (const line of body.split('\n')) {
+      if (/^```/.test(line)) { fenced = !fenced; continue; }
+      if (fenced) continue;
+      for (const label of ['**Governance:**', '**Measure:**']) if (line.startsWith(label)) found.add(label);
+    }
+    for (const label of ['**Governance:**', '**Measure:**']) if (!found.has(label)) errors.push(f + ': missing body line "' + label + '"');
   }
   if (errors.length) {
     for (const e of errors) console.error('check-sheets: ' + e);

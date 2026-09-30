@@ -12,3 +12,5 @@ design: in the spec, architecture-level decisions
 **Do now:** for a bug or complaint, run `sdlc-debugging` first (reproduce, localise, explain, hand off the `Cause:` and `Evidence:` lines), then `spec-driven-development` for the short spec; for a feature or idea, run `spec-driven-development`. Prepend the header (see `../spec-header.md`). One of the two recommended skills installed is enough to skip the missing-skill question.
 **Next phase:** planning, after the user approves the spec (`sdlc close` writes `Status: approved` and `Phase: planning`).
 **Warns when:** code changes exist on the branch but no spec covers them.
+**Governance:** the spec is approved by the owner through close mode (`Status: approved` in a commit attributed to them); policy skills apply while it is written, not in a later review.
+**Measure:** leading: elapsed time between the intent commit and the spec commit; lagging: spec commits dated after the first plan commit of the same cycle.

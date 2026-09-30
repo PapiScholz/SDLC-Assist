@@ -12,3 +12,5 @@ design: in the spec's Objective and Tech Stack
 **Do now:** run `spec-driven-development` and write the first spec; design lives in its Objective and Tech Stack.
 **Next phase:** analysis, once the spec exists; close mode on `initial` writes nothing (the spec is already `analysis`; approval happens in analysis).
 **Warns when:** source files appear on the branch but no spec exists.
+**Governance:** the first spec (and its intent, when one exists) is the audit record: author, timestamp and revision history live in git.
+**Measure:** leading: time from the first conversation to the committed intent or spec; lagging: number of intent edits made after the first spec commit.

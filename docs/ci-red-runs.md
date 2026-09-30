@@ -8,6 +8,7 @@ Evidence that every gate in `.github/workflows/ci.yml` can actually go red. Each
 | sync-vendored | appended a line to a copy of a vendored `SKILL.md` | `drift: skills/test-driven-development/SKILL.md` | 1 |
 | check-manifest | deleted `name` in a copy of `plugin.json` | `FAIL plugin.json: missing field name` | 1 |
 | check-sheets | renamed a sheet in a copy | `check-sheets: missing sheet: testing` | 1 |
+| check-sheets (body) | deleted the `**Measure:**` line from a copy of `testing.md` | `check-sheets: testing.md: missing body line "**Measure:**"` | 1 |
 | check-frontmatter | removed `description:` in a copy | `check-frontmatter: sdlc: frontmatter missing description` | 1 |
 | check-skill-sections | renamed `## Report` to `## Results` in a copy of `sdlc-qa-gate/SKILL.md` | `check-skill-sections: sdlc-qa-gate: missing section "Report"` | 1 |
 | check-eol | wrote a CRLF file in an empty dir | `check-eol: CRLF in crlf.md` | 1 |
@@ -37,6 +38,11 @@ cp -r skills/sdlc/references/phases $S/ph && mv $S/ph/testing.md $S/ph/testng.md
 node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
 #   check-sheets: missing sheet: testing
 #   check-sheets: extra sheet: testng.md
+
+# check-sheets, body lines (drop the Measure line from the copied testing sheet)
+S=$(mktemp -d); cp -r skills/sdlc/references/phases $S/ph; sed -i '/^\*\*Measure:\*\*/d' $S/ph/testing.md
+node skills/sdlc/bin/check-sheets.js --sheets-dir $S/ph
+#   check-sheets: testing.md: missing body line "**Measure:**"
 
 # check-frontmatter
 mkdir -p $S/f && cp -r skills $S/f/ && sed -i '/^description:/d' $S/f/skills/sdlc/SKILL.md
