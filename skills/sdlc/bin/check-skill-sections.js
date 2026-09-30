@@ -5,6 +5,7 @@
 // Usage: check-skill-sections.js [--root <dir>]
 const fs = require('fs');
 const path = require('path');
+const { unfencedLines } = require('./lib/unfenced');
 
 const CONTRACTS = {
   'sdlc-debugging': ['Reproduce', 'Localise', 'Explain', 'Hand off', 'Never'],
@@ -19,10 +20,7 @@ const root = i !== -1 && process.argv[i + 1]
 
 function headings(text) {
   const out = [];
-  let fenced = false;
-  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
-    if (/^```/.test(line)) { fenced = !fenced; continue; }
-    if (fenced) continue;
+  for (const line of unfencedLines(text)) {
     const m = /^#{2,3}\s+(?:\d+\.\s+)?(.+?)\s*$/.exec(line);
     if (m) out.push(m[1]);
   }

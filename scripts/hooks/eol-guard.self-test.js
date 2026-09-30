@@ -17,9 +17,9 @@ function put(d, name, content) {
   return p;
 }
 function run(d, filePath, extraEnv) {
-  const env = Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: d }, extraEnv || {});
-  delete env.SDLC_HOOKS_DISABLE;
-  if (extraEnv) Object.assign(env, extraEnv);
+  const env = Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: d });
+  delete env.SDLC_HOOKS_DISABLE; // the harness may run with hooks disabled; each case sets its own
+  Object.assign(env, extraEnv || {});
   const input = JSON.stringify({ tool_name: 'Write', tool_input: { file_path: filePath } });
   return spawnSync(process.execPath, [path.join(__dirname, 'eol-guard.js')], { input, encoding: 'utf8', env });
 }
@@ -51,9 +51,8 @@ check('png with CRLF bytes exits 0', () => {
 });
 check('path built with path.join (backslashes on Windows) exits 2', () => {
   const d = project();
-  const p = put(d, path.join('sub', 'a.md'), 'x\r\ny\r\n');
+  put(d, path.join('sub', 'a.md'), 'x\r\ny\r\n');
   assert.strictEqual(run(d, path.join(d, 'sub', 'a.md')).status, 2);
-  assert.ok(p);
 });
 check('same file with forward slashes exits 2', () => {
   const d = project();

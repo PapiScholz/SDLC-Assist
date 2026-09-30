@@ -91,6 +91,22 @@ for (const c of ['cmd /c git push', 'pwsh -NoProfile -Command "git push"', 'powe
   check('PowerShell: ' + c + ' + "dale" -> deny', () => assert.strictEqual(ps(c, 'dale'), 'deny'));
 }
 check('PowerShell: ForEach-Object { $_.Name } + "dale" -> allow', () => assert.strictEqual(ps('Get-ChildItem | ForEach-Object { $_.Name }', 'dale'), 'allow'));
+// PowerShell escapes and parameter prefixes (code-review after the fix wave)
+check('PowerShell: backtick line continuation before the subcommand + "dale" -> deny', () => assert.strictEqual(ps('git `\n  push origin main', 'dale'), 'deny'));
+check('PowerShell: backtick-escaped letters gi`t pu`sh + "dale" -> deny', () => assert.strictEqual(ps('gi`t pu`sh', 'dale'), 'deny'));
+check('PowerShell: pwsh -Comm "git push" (parameter prefix) + "dale" -> deny', () => assert.strictEqual(ps('pwsh -Comm "git push"', 'dale'), 'deny'));
+check('PowerShell: pwsh -Command:"git push" (colon form) + "dale" -> deny', () => assert.strictEqual(ps('pwsh -Command:"git push"', 'dale'), 'deny'));
+check('PowerShell: powershell -EncodedCommand <b64> + "pusheá" -> deny (never scanned, always denied)', () => assert.strictEqual(ps('powershell -EncodedCommand ZwBpAHQAIABwAHUAcwBoAA==', 'pusheá'), 'deny'));
+check('PowerShell: pwsh -enc <b64> + "dale" -> deny', () => assert.strictEqual(ps('pwsh -NoProfile -enc AAAA', 'dale'), 'deny'));
+check('PowerShell: pwsh -ExecutionPolicy Bypass -File build.ps1 + "dale" -> allow (no -e alone)', () => assert.strictEqual(ps('pwsh -ExecutionPolicy Bypass -File build.ps1', 'dale'), 'allow'));
+check('SHELL_TOOLS matches the settings.json PreToolUse matcher', () => {
+  const s = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '.claude', 'settings.json'), 'utf8'));
+  const g = s.hooks.PreToolUse.find((e) => e.hooks.some((h) => (h.args || []).join(' ').includes('git-authorization')));
+  const src = fs.readFileSync(HOOK, 'utf8');
+  const m = /SHELL_TOOLS = new Set\(\[([^\]]*)\]\)/.exec(src);
+  assert.ok(g && m, 'matcher or SHELL_TOOLS not found');
+  assert.deepStrictEqual(g.matcher.split('|').sort(), m[1].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).sort());
+});
 
 // obfuscated command words, previously parked (final review): over-detection is the rule
 for (const c of ["$'g'it push", '$"g"it push', '{git,push}', 'git {push,}', 'gi${x}t push', 'g$1it push', '$(echo git) push', "$'\\x67'it push", '`echo git` push']) {

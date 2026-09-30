@@ -67,8 +67,8 @@ const UNRELIABLE = /\n|#|<<|\$'|\$\{|\$\(|`/;
 // re-scan their remainder, which can go exponential; the budget throws (-> deny in main) long
 // before the hook timeout, which Claude Code would treat as an allow.
 let work = 0, budget = Infinity;
-function bump() { if (++work > budget) throw new Error('scan budget exceeded'); }
 function charge(n) { work += n; if (work > budget) throw new Error('scan budget exceeded'); }
+const bump = () => charge(1);
 // Index of the backtick closing a `...` body that starts at j, or -1.
 function tickEnd(cmd, j) {
   for (; j < cmd.length; j++) { bump(); if (cmd[j] === '\\') j++; else if (cmd[j] === '`') return j; }
@@ -157,13 +157,25 @@ function classify(t) {
   }
   if (sub === 'reset' && rest.includes('--hard')) return 'reset';
   if (sub === 'tag' && (rest.includes('-d') || rest.includes('--delete'))) return 'tag-delete';
-  if (sub === 'branch') { // -D, -d -f, -df/-fd, --delete --force
-    const del = rest.includes('--delete') || rest.some((a) => /^-[a-zA-Z]*d[a-zA-Z]*$/.test(a));
-    const force = rest.includes('--force') || rest.some((a) => /^-[a-zA-Z]*[Df][a-zA-Z]*$/.test(a));
-    if (rest.some((a) => /^-[a-zA-Z]*D[a-zA-Z]*$/.test(a)) || (del && force)) return 'branch-delete';
+  if (sub === 'branch') { // -D, -d -f, -df/-fd, --delete --force; plain -d (merged only) is safe
+    const del = rest.includes('--delete') || cluster(rest, 'd'), force = rest.includes('--force') || cluster(rest, 'Df');
+    if (cluster(rest, 'D') || (del && force)) return 'branch-delete';
   }
   return null;
 }
+// True when any short-flag cluster in `args` (-df, -Eu) carries one of the letters.
+const cluster = (args, letters) => args.some((a) => new RegExp('^-[a-zA-Z]*[' + letters + '][a-zA-Z]*$').test(a));
+// Wrappers that run their operand as a new command line: the flag that introduces it and
+// whether the operand is one token (sh -c "…") or the rest of the segment (pwsh -Command …).
+// PowerShell accepts any prefix of a parameter name (-c, -Com, -Command), optionally with ":value".
+const psParam = (name, tok) => { const m = /^-([a-z]+)(?::|$)/i.exec(tok); return !!m && name.startsWith(m[1].toLowerCase()); };
+const RESCAN = [
+  { exes: SHELLS, flag: (tok) => /^-[a-z]*c$/.test(tok), rest: false },
+  { exes: new Set(['pwsh', 'powershell']), flag: (tok) => psParam('command', tok), rest: true },
+  { exes: new Set(['cmd']), flag: (tok) => /^\/[ck]$/i.test(tok), rest: true },
+];
+// pwsh/powershell -e/-enc/-EncodedCommand: a base64 command line is never scanned, so it is denied outright.
+const encoded = (tok) => psParam('encodedcommand', tok);
 
 function scan(cmd, depth) {
   if (depth > 8) throw new Error('command nesting too deep'); // fail closed via the caller's catch
@@ -176,9 +188,10 @@ function scan(cmd, depth) {
   charge(cmd.length);
   if (UNRELIABLE.test(cmd)) { const n = neutral(cmd); if (n !== cmd) subs.push(n, joined(cmd)); }
   for (const s of subs) ops.push(...scan(s, depth + 1));
-  const all = segs.concat(segments(cmd, true).segs);
-  const views = [];
-  for (const t of all) { views.push(t); const x = t.flatMap(braces); if (x.length !== t.length || x.some((v, k) => v !== t[k])) views.push(x); }
+  // Second view only when the text has something the first view splits differently (braces,
+  // unquoted substitutions); brace expansion as a further view. Duplicate views only repeat a deny.
+  const all = /[{}`]|\$\(/.test(cmd) ? segs.concat(segments(cmd, true).segs) : segs;
+  const views = all.flatMap((t) => [t, t.flatMap(braces)]);
   seg: for (const t of views) {
     let i = 0;
     for (;;) {
@@ -202,11 +215,15 @@ function scan(cmd, depth) {
       }
       break;
     }
-    const exe = base(t[i]); let k;
-    if (SHELLS.has(exe) && (k = t.findIndex((a, j) => j > i && /^-[a-z]*c$/.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t[k + 1], depth + 1)); // flags may precede -c (bash -e -c)
-    else if ((exe === 'pwsh' || exe === 'powershell') && (k = t.findIndex((a, j) => j > i && /^-c(ommand)?$/i.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t.slice(k + 1).join(' '), depth + 1));
-    else if (exe === 'cmd' && (k = t.findIndex((a, j) => j > i && /^\/[ck]$/i.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t.slice(k + 1).join(' '), depth + 1));
-    else if ((exe === 'eval' || exe === 'iex' || exe === 'invoke-expression') && t.length > i + 1) ops.push(...scan(t.slice(i + 1).join(' '), depth + 1));
+    const exe = base(t[i]);
+    const r = RESCAN.find((x) => x.exes.has(exe));
+    if (r) { // flags may precede the operand flag (bash -e -c, pwsh -NoProfile -Command)
+      if ((exe === 'pwsh' || exe === 'powershell') && t.some((a, j) => j > i && encoded(a))) throw new Error(exe + ' -EncodedCommand is never scanned; write the command in clear text');
+      const k = t.findIndex((a, j) => j > i && r.flag(a));
+      const attached = k > 0 ? (/^[^:]*:(.*)$/.exec(t[k]) || [])[1] : undefined; // -Command:"…" form
+      const operand = attached !== undefined ? [attached, ...t.slice(k + 1)] : k > 0 ? t.slice(k + 1) : [];
+      if (operand.length) ops.push(...scan(r.rest ? operand.join(' ') : operand[0], depth + 1));
+    } else if ((exe === 'eval' || exe === 'iex' || exe === 'invoke-expression') && t.length > i + 1) ops.push(...scan(t.slice(i + 1).join(' '), depth + 1));
     else if (exe === 'git' || /[$`{]/.test(t[i] || '')) { const op = classify(t.slice(i + 1)); if (op) ops.push(op); } // dynamic command word: may be git
   }
   return [...new Set(ops)];
@@ -271,13 +288,21 @@ function deny(why) {
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'git-authorization: ' + why } }));
 }
 
+// The scanner speaks bash. PowerShell differs in three characters, folded here so scan() stays
+// tool-agnostic: backtick+newline is a line continuation, backtick+char is an escape (the char
+// itself), and backslash is a path separator, never an escape. Only over-detection can result.
+function normalize(tool, cmd) {
+  if (tool !== 'PowerShell') return cmd;
+  return cmd.replace(/`\r?\n/g, ' ').replace(/`(.)/g, '$1').replace(/\\/g, '/');
+}
+
 function main(raw) {
   if (process.env.SDLC_HOOKS_DISABLE === '1') return;
   let input;
   try { input = JSON.parse(raw); } catch (_) { return; }
   if (!input || !SHELL_TOOLS.has(input.tool_name) || !input.tool_input || typeof input.tool_input.command !== 'string') return;
   try {
-    const cmd = input.tool_name === 'PowerShell' ? input.tool_input.command.replace(/\\/g, '/') : input.tool_input.command;
+    const cmd = normalize(input.tool_name, input.tool_input.command);
     work = 0; budget = Math.min(256 * cmd.length + 65536, 1 << 24); // a plain command needs ~4x its length
     const ops = scan(cmd, 0);
     if (!ops.length) return;

@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const { PHASES } = require('./lib/header');
+const { unfencedLines } = require('./lib/unfenced');
+const BODY_LABELS = ['**Governance:**', '**Measure:**'];
 
 // sdlc-debugging, sdlc-qa-gate and sdlc-release ship since v1.1: they are known because the sheets recommend them.
 const DEFAULT_KNOWN = [
@@ -63,14 +65,8 @@ function main(argv) {
         if (!known.includes(normalise(name))) errors.push(f + ': unknown skill "' + name + '" in ' + key);
       }
     }
-    const body = text.replace(/^---\n[\s\S]*?\n---\n?/, '');
-    let fenced = false; const found = new Set();
-    for (const line of body.split('\n')) {
-      if (/^```/.test(line)) { fenced = !fenced; continue; }
-      if (fenced) continue;
-      for (const label of ['**Governance:**', '**Measure:**']) if (line.startsWith(label)) found.add(label);
-    }
-    for (const label of ['**Governance:**', '**Measure:**']) if (!found.has(label)) errors.push(f + ': missing body line "' + label + '"');
+    const body = unfencedLines(text.replace(/^---\n[\s\S]*?\n---\n?/, ''));
+    for (const label of BODY_LABELS) if (!body.some((line) => line.startsWith(label))) errors.push(f + ': missing body line "' + label + '"');
   }
   if (errors.length) {
     for (const e of errors) console.error('check-sheets: ' + e);

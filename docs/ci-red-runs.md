@@ -818,3 +818,41 @@ Full gate target after the wave:
 $ bash scripts/gates.sh | tail -1
 all gates ok
 ```
+
+### (f) /code-review and /simplify on the branch after the fix wave (HEAD b432457)
+
+`/code-review` (medium) on `main...HEAD`: three findings, all in the PowerShell path of the hook, each confirmed with a probe against HEAD (transcript ending in "dale"):
+
+```
+$ node <scratch>/probe2.js <transcript>
+PowerShell "git pu`sh" -> DENY {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",…
+PowerShell "git `\n  push origin main" -> ALLOW
+PowerShell "pwsh -Comm \"git push\"" -> ALLOW
+PowerShell "powershell -EncodedCommand ZwBpAHQAIABwAHUAcwBoAA==" -> ALLOW
+```
+
+`/simplify` (four agents: reuse, simplification, efficiency, altitude). The altitude review named the root cause of all three findings: PowerShell support was layered on after a bash tokenizer (a backslash replace on the raw text, a `$x =` skip inside the loop, three pasted `findIndex` rescans), so every PowerShell form needed its own patch. Applied, tests first (8 checks added, 5 red):
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | grep "FAIL\|passed"
+  FAIL PowerShell: backtick line continuation before the subcommand + "dale" -> deny
+  FAIL PowerShell: pwsh -Comm "git push" (parameter prefix) + "dale" -> deny
+  FAIL PowerShell: pwsh -Command:"git push" (colon form) + "dale" -> deny
+  FAIL PowerShell: powershell -EncodedCommand <b64> + "pusheá" -> deny (never scanned, always denied)
+  FAIL PowerShell: pwsh -enc <b64> + "dale" -> deny
+170 passed, 5 failed
+$ node scripts/hooks/git-authorization.self-test.js | tail -1      # after the changes below
+175 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+- `normalize(tool, cmd)` before `scan()`: for PowerShell, backtick+newline → space, backtick+char → the char, backslash → slash. `scan()` is tool-agnostic again; the raw-text replace is gone.
+- One `RESCAN` table (shells `-c`, `pwsh`/`powershell` `-Command`, `cmd /c|/k`) replaces three pasted branches; `psParam(name, tok)` accepts any PowerShell parameter prefix and the `-Name:value` form.
+- `-e`/`-enc`/`-EncodedCommand` on `pwsh`/`powershell` throws → deny with a reason, never decoded (over-detection rule); `-ExecutionPolicy` is not a prefix of it and still passes.
+- `cluster(args, letters)` replaces four hand-written flag-cluster regexes; `views` built with one `flatMap`; `bump = () => charge(1)`; the second tokenizer view runs only when the text has `{`, `}`, a backtick or `$(`.
+- A self-test parses `.claude/settings.json` and asserts its `PreToolUse` matcher equals `SHELL_TOOLS`, so the two lists cannot drift.
+- Reuse: `lib/unfenced.js` (`unfencedLines`) now serves both `check-sheets.js` and `check-skill-sections.js`; the label pair is a constant.
+- eol-guard self-test: `extraEnv` applied once; the filler `assert.ok(p)` removed.
+
+Skipped, with reason: sharing `normalise`/`toRegex` from `lib/keywords.js` with the hook (the hook stays dependency-free so a copy of `scripts/hooks/` works alone); a shared `lib/eol.js` for two one-line byte checks; a shared self-test harness (pre-existing pattern across ten files, separate cleanup); deleting the repeated non-regression assertions in the hook self-test (cheap, and each round's label documents why it exists); parallel gates in CI and a 64 KB prefix read in eol-guard (would miss a late CRLF); `branch -d` over-detection (plain `-d` of a merged branch stays allowed, asserted by an existing check).
