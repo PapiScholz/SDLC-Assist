@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2026-09-30
 
 ### Added
 - `intent.md` template and the `Intent:` header line.
@@ -13,6 +13,24 @@
 - `check-sheets` now enforces the `Governance:` and `Measure:` body lines.
 - CI and the docs call `scripts/gates.sh`.
 - README gains a "Playbook mapping" section.
+
+
+### Commits
+
+- Merge pull request #2 from PapiScholz/v1.2-playbook-alignment
+- refactor: per-tool normalizer and rescan table in the git hook; shared unfenced-lines helper
+- fix: hook gates PowerShell forms and obfuscated command words; review fix wave
+- spec: v1.2 testing closed; qa-gate, PowerShell tool gated by the hook [minor]
+- docs: v1.2 dogfood (c) reference scenarios [skip release]
+- spec: intent link and Node hooks paragraph; v1.2 dogfood (a)(b) [skip release]
+- intent: playbook alignment, in the owner's words [skip release]
+- docs: playbook mapping, hooks notes, unreleased entry [skip release]
+- ci: single gate target scripts/gates.sh; hook self-tests in CI [skip release]
+- feat: versioned eol-guard hook and project hook settings
+- feat: versioned git-authorization hook (Node, transcript-based, fail-closed)
+- feat: governance and measure lines on every phase sheet, enforced by check-sheets
+- feat: intent.md template, maintain entry point, Intent: header line
+- spec: close v1.1; v1.2 spec approved and planned [skip release]
 
 ## [0.2.0] - 2026-09-30
 

@@ -1,6 +1,6 @@
 {
   "name": "sdlc",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SDLC phase router: infers the phase of a work request, confirms it, and routes to spec-driven-development and its family.",
   "author": { "name": "Ezequiel Scholz" },
   "license": "MIT",
