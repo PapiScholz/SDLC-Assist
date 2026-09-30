@@ -35,6 +35,7 @@ jobs:
           npx -y skills add "$GITHUB_WORKSPACE" -y -g --copy
           test -f "$HOME/.agents/skills/sdlc/bin/where.js"
           test -f "$HOME/.agents/skills/spec-driven-development/SKILL.md"
+          for s in sdlc-debugging sdlc-qa-gate sdlc-release; do test -f "$HOME/.agents/skills/$s/SKILL.md" || { echo "missing $s"; exit 1; }; done
       - name: Installed copy infers a production complaint as analysis
         run: |
           export HOME="$RUNNER_TEMP/home"
@@ -46,6 +47,13 @@ jobs:
           printf 'un cliente se queja de que la app se rompió al pagar' > "$RUNNER_TEMP/msg.txt"
           node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --message-file "$RUNNER_TEMP/msg.txt" > out.json
           node -e "const j=require('./out.json'); if(j.inferred!=='analysis'||j.request.type!=='complaint'||!j.signals.inProduction){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok', j.inferred, j.request.type)"
+      - name: Installed copy reports sdlc-qa-gate for testing and sdlc-debugging for analysis
+        run: |
+          export HOME="$RUNNER_TEMP/home"; cd "$RUNNER_TEMP/fx"
+          node "$HOME/.agents/skills/sdlc/bin/which.js" --phase testing > which.json
+          node -e "const j=require('./which.json'); const n=j.phases.testing.installed.map(i=>i.name); if(!n.includes('sdlc-qa-gate')){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok testing', n.join(','))"
+          node "$HOME/.agents/skills/sdlc/bin/which.js" --phase analysis > which2.json
+          node -e "const j=require('./which2.json'); const n=j.phases.analysis.installed.map(i=>i.name); if(!n.includes('sdlc-debugging')){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok analysis', n.join(','))"
   plugin-validate:
     runs-on: ubuntu-latest
     continue-on-error: true   # advisory until proven stable on runners
