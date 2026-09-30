@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "sdlc-assist",
-      "source": "./",
+      "source": "./plugins/sdlc-assist",
       "description": "Infers which SDLC phase a work request is in from the repo, asks one question, and routes to the skill for the next step."
     }
   ]

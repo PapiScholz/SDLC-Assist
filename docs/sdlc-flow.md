@@ -1,6 +1,6 @@
 # How the sdlc skill works
 
-Three small diagrams: the phase cycle, where each kind of request enters it, and what the agent does on every request. Details live in `skills/sdlc/SKILL.md` and `skills/sdlc/references/`.
+Three small diagrams: the phase cycle, where each kind of request enters it, and what the agent does on every request. Details live in `plugins/sdlc-assist/skills/sdlc/SKILL.md` and `plugins/sdlc-assist/skills/sdlc/references/`.
 
 ## 1. The cycle
 

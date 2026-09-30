@@ -937,3 +937,64 @@ v0.4.0
 ```
 
 Deployment closed on this output: `Status: closed`, committed with `[skip release]`.
+
+## v1.4 dogfood
+
+### (a) where.js on the request, `main` at c4df99e, before any edit
+
+```
+$ node skills/sdlc/bin/where.js --message-file "$TMPDIR/req.txt"    # message: the portal report (2 holds, 6 warnings)
+  "active": null,
+  "inferred": "analysis",
+  "evidence": [
+    "plan present but no active spec to compare against; treated as current",
+    "fallback: analysis (candidates: analysis, testing)",
+    "tests not run (no --run-tests)",
+    "in production: tag v0.4.0"
+  ],
+  "request": { "type": "bug" }
+```
+(trimmed to the fields the router reads; `cycles` lists the four closed specs)
+
+The first response to the report stayed at the root layout (comments on the hook, commit c4df99e); the portal's second run returned the same eight findings, which is what moved the cycle to the subfolder.
+
+### (b) Skills CLI discovery with the new layout, temporary copy of `main` before the branch existed
+
+```
+$ T=$(mktemp -d); git archive HEAD | tar -x -C "$T/repo"; cd "$T/repo"; mv skills commands plugins/sdlc-assist/; mv .claude-plugin/plugin.json .claude-plugin/icon.svg plugins/sdlc-assist/.claude-plugin/
+$ HOME="$T/home" npx -y skills add "$T/repo" -y -g --copy 2>&1 | tail -1
+└  Done!  Review skills before use; they run with full agent permissions.
+$ ls "$T/home/.agents/skills"
+context-engineering  incremental-implementation  planning-and-task-breakdown  sdlc  sdlc-debugging  sdlc-qa-gate  sdlc-release  spec-driven-development  test-driven-development
+```
+No `skills/` at the root, so the CLI fell back to its recursive search and found the nine under `plugins/sdlc-assist/skills/`. This is the assumption the spec records.
+
+### (c) Gates, CLI validation and the install-smoke steps on the branch (`v1.4-plugin-subfolder`, working tree)
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-manifest.self-test.js | tail -1
+16 passed, 0 failed
+$ bash scripts/gates.sh | tail -1
+all gates ok
+$ claude plugin validate .
+✔ Validation passed
+$ claude plugin validate plugins/sdlc-assist
+✔ Validation passed
+$ HOME=<tmp>/home npx -y skills add C:/Users/ezesc/Github/SDLC-Assist -y -g --copy; ls <tmp>/home/.agents/skills
+context-engineering  incremental-implementation  planning-and-task-breakdown  sdlc  sdlc-debugging  sdlc-qa-gate  sdlc-release  spec-driven-development  test-driven-development
+$ node <tmp>/home/.agents/skills/sdlc/bin/where.js --root <scratch repo with tag v1.2.0> --message-file <complaint>    # inferred, request.type, signals.inProduction
+analysis complaint true
+```
+
+### (d) sdlc-qa-gate on the branch diff (working tree, before the commit)
+
+Diff map: 62 renames under `plugins/sdlc-assist/` (skills, commands, manifest, icon), new plugin README and LICENSE copy, marketplace `source`, `check-manifest.js` rewritten with its self-test, `check-eol.js` root, `gates.sh`, `release.sh`, `ci.yml`, path mentions in six docs, spec, todo, CHANGELOG `[Unreleased]`.
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | `claude plugin validate .` and `claude plugin validate plugins/sdlc-assist` → `Validation passed`; `check-eol` over the whole tree from its new default root | | none |
+| unit | `bash scripts/gates.sh` → `all gates ok`; `check-manifest.self-test.js` 16/16 (new red cases: source `./`, `icon` field, missing icon/LICENSE/README, LICENSE drift) | | none |
+| build | n/a | | |
+| runtime | install-smoke steps run locally against this checkout: nine skills installed from a clean home, installed `where.js` infers `analysis complaint true` | `release.sh` end to end (its preflight refuses a branch other than `main`); every path it rewrites was listed and exists with the expected `version` line | a typo in the rewrite would surface on the first push to `main` as a failed release job, before any tag |
+| functional | | the directory's Validate on the merged `main` (owner's portal) | the whole point of the cycle; acceptance item 4 in the spec |
+| regression | | CI on the PR: gates on Ubuntu and Windows, install-smoke, plugin-validate | the local runs above are the same commands |

@@ -64,7 +64,7 @@ Where each kind of request enters the cycle, and what the router does on every r
 |---|---|---|---|---|
 | skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the nine skills (router + three own + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
 | Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc-assist@papischolz` | Claude Code | `/sdlc-assist:phase` | Also registers the three own and five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
-| Manual | `cp -r skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all nine skills. |
+| Manual | `cp -r plugins/sdlc-assist/skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all nine skills. |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path. |
 
 Run the skills.sh command from `~`, not from inside a project: the CLI installs into the current directory's scope when it finds a repo there. The CLI copies each skill folder whole and links it into `~/.claude/skills`, `~/.codex/skills`, `~/.cursor/skills` and `~/.config/opencode/skills`.
@@ -90,7 +90,7 @@ A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whos
    Status: draft
    ```
 
-   Specs always start in `analysis`; `initial` ends when the first spec exists. Slugs are the six in the table above; `Status` is `draft`, `approved` or `closed`. Details: `skills/sdlc/references/spec-header.md`.
+   Specs always start in `analysis`; `initial` ends when the first spec exists. Slugs are the six in the table above; `Status` is `draft`, `approved` or `closed`. Details: `plugins/sdlc-assist/skills/sdlc/references/spec-header.md`.
 3. **Close each phase** when its artifact exists: say "sdlc close" (or `/sdlc-assist:phase close`). The router infers the phase, asks whether it is finished and what it produced, and advances the header from the phase you confirm:
 
    | Confirmed phase | Writes |
@@ -104,16 +104,16 @@ A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whos
 
    It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
 4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes `tasks/plan.md` and `tasks/todo.md`; `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
-5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
+5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
 
-Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
+Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
 
 ### What the router sees
 
 A real run on a scratch repo (two source files, `CHANGELOG.md` with `## [1.2.0]`, tag `v1.2.0` on HEAD, no spec), with the request "customer complains about X":
 
 ```
-$ node skills/sdlc/bin/where.js --root <scratch repo> --message-file <temp file>
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --root <scratch repo> --message-file <temp file>
 ```
 
 Output, trimmed to the keys the router reads:
@@ -136,7 +136,7 @@ The agent turns that into one question (`Phase: analysis`, the evidence lines, `
 
 ## Missing-skill protocol
 
-If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `skills/sdlc/references/missing-skill.md`.
+If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `plugins/sdlc-assist/skills/sdlc/references/missing-skill.md`.
 
 ## Playbook mapping
 
@@ -165,19 +165,19 @@ Written for this repo, generic, English, Markdown only (stack detection stays in
 | `sdlc-qa-gate` | testing | the `Layer / Verified / Not verified / Residual risk` table plus gaps; never a "green" verdict |
 | `sdlc-release` | deployment | version decision, version files and changelog, tag and release; drives an existing release mechanism; every state-changing command only on request |
 
-Section parity with their contracts is enforced by `node skills/sdlc/bin/check-skill-sections.js`.
+Section parity with their contracts is enforced by `node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.js`.
 
 ## Bundled skills
 
-Vendored unmodified from `https://github.com/addyosmani/agent-skills` at commit `bc97fd46fdb294dc3518d0e94edb989a38894f31`, MIT license. Each folder has a `VENDORED.md`; refresh with `node skills/sdlc/bin/sync-vendored.js --fix`.
+Vendored unmodified from `https://github.com/addyosmani/agent-skills` at commit `bc97fd46fdb294dc3518d0e94edb989a38894f31`, MIT license. Each folder has a `VENDORED.md`; refresh with `node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.js --fix`.
 
 | Skill | Upstream path |
 |---|---|
-| spec-driven-development | `skills/spec-driven-development` |
-| planning-and-task-breakdown | `skills/planning-and-task-breakdown` |
-| incremental-implementation | `skills/incremental-implementation` |
-| test-driven-development | `skills/test-driven-development` |
-| context-engineering | `skills/context-engineering` |
+| spec-driven-development | `plugins/sdlc-assist/skills/spec-driven-development` |
+| planning-and-task-breakdown | `plugins/sdlc-assist/skills/planning-and-task-breakdown` |
+| incremental-implementation | `plugins/sdlc-assist/skills/incremental-implementation` |
+| test-driven-development | `plugins/sdlc-assist/skills/test-driven-development` |
+| context-engineering | `plugins/sdlc-assist/skills/context-engineering` |
 
 ## Development
 
@@ -187,7 +187,7 @@ Node 20 or newer, no dependencies. One command runs the same gates CI runs (`--q
 bash scripts/gates.sh
 ```
 
-`node skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`. Listing channels, the directory pre-submission checks and the portal steps are in [`docs/distribution.md`](docs/distribution.md).
+`node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`. Listing channels, the directory pre-submission checks and the portal steps are in [`docs/distribution.md`](docs/distribution.md).
 
 ## Roadmap
 

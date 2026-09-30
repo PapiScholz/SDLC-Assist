@@ -53,4 +53,4 @@ jobs:
     continue-on-error: true   # advisory until proven stable on runners
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - run: npm install -g @anthropic-ai/claude-code && claude plugin validate .
+      - run: npm install -g @anthropic-ai/claude-code && claude plugin validate . && claude plugin validate plugins/sdlc-assist

@@ -30,12 +30,12 @@ $ claude plugin validate .
 ✔ Validation passed
 ```
 
-`LICENSE` (MIT) and `README.md` are at the root, which is the plugin folder. `plugin.json` declares no hooks and no MCP servers; the `.claude/settings.json` hooks are project settings for this checkout and are not part of the plugin. The scripts under `skills/sdlc/bin` only read the analysed repository (`SECURITY.md`).
+Since v1.4 the plugin folder is `plugins/sdlc-assist/` (manifest, icon, skills, commands, a short README and a byte copy of `LICENSE` that the manifest gate compares with the root file); `marketplace.json` at the root points there, so the directory validates only what ships and not `CLAUDE.md`, `docs/` or `scripts/`. The pasted checks above ran on the v1.3 layout, where the root was the plugin folder. `plugin.json` declares no hooks and no MCP servers; the `.claude/settings.json` hooks are project settings for this checkout and are not part of the plugin. The scripts under `skills/sdlc/bin` only read the analysed repository (`SECURITY.md`).
 
 ### Portal steps
 
 1. **Submit new** → **Plugin bundle**.
-2. **Source**: repository `PapiScholz/SDLC-Assist`; plugin path empty (root); branch empty (follows `main`). Select **Validate**. Fix anything marked **Blocks**, push, **Re-validate**.
+2. **Source**: repository `PapiScholz/SDLC-Assist`; plugin path `plugins/sdlc-assist`; branch empty (follows `main`). Select **Validate**. Fix anything marked **Blocks**, push, **Re-validate**.
 3. **Listing details**: name and short description come from `plugin.json`, the long description from `README.md`. Edit those files and re-validate to change them.
 4. **Data handling**: the plugin reads no personal data, sends nothing to any service, keeps nothing, and is not intended for people under 18. The scripts read files in the repository being analysed and run read-only git queries; the only network access in the whole repo is `sync-vendored.js --check`, a development gate that fetches `addyosmani/agent-skills` from GitHub and is not part of the plugin's runtime.
 5. **Compliance**: contact email, four acknowledgements.

@@ -6,7 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 quick=0; [ "${1:-}" = "--quick" ] && quick=1
 gate() { local n=$1 out; shift
   if out=$("$@" 2>&1); then echo "ok $n"; else echo "FAIL $n"; printf '%s\n' "$out"; exit 1; fi; }
-B=skills/sdlc/bin
+B=plugins/sdlc-assist/skills/sdlc/bin
 for t in $B/lib/*.self-test.js $B/*.self-test.js scripts/hooks/*.self-test.js; do gate "$t" node "$t"; done
 if [ "$quick" = 1 ]; then echo "skip sync-vendored (--quick)"; else gate sync-vendored node $B/sync-vendored.js --check; fi
 for c in check-manifest check-sheets check-frontmatter check-skill-sections check-eol; do gate "$c" node "$B/$c.js"; done
