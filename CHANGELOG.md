@@ -7,7 +7,7 @@
 - `maintain` entry point (`references/maintain.md`).
 - `Governance:` and `Measure:` lines on every phase sheet.
 - `scripts/gates.sh`, one entry point for the gate loop (`--quick` skips the network-bound `sync-vendored --check`).
-- Versioned hooks in `.claude/settings.json`: git authorization from the user's last message, and an LF/no-BOM guard.
+- Versioned hooks in `.claude/settings.json`: git authorization from the user's last message (gates the `Bash` and `PowerShell` tools, including `pwsh -Command`, `cmd /c`, `iex`, `$x = git ...`, Windows paths to `git.exe`, and command words built by quoting, brace expansion or substitution), and an LF/no-BOM guard.
 
 ### Changed
 - `check-sheets` now enforces the `Governance:` and `Measure:` body lines.

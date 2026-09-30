@@ -97,7 +97,7 @@ function substEnd(cmd, j) {
 
 // Quote-aware split into segments of tokens. Command substitutions inside double quotes
 // ($(...) and backticks) are returned in `subs` so the caller scans them too.
-function segments(cmd) {
+function segments(cmd, words) {
   const segs = [], subs = [];
   let toks = [], cur = '', has = false, q = null, qStart = 0;
   const endTok = () => { if (has) toks.push(cur); cur = ''; has = false; };
@@ -105,7 +105,7 @@ function segments(cmd) {
   for (let i = 0; i < cmd.length; i++) {
     bump();
     const c = cmd[i];
-    if (q === '"' && (c === '`' || (c === '$' && cmd[i + 1] === '('))) {
+    if ((q === '"' || (words && !q)) && (c === '`' || (c === '$' && cmd[i + 1] === '('))) { has = true;
       const open = c === '`' ? 1 : 2;
       const end = c === '`' ? tickEnd(cmd, i + 1) : substEnd(cmd, i + 2);
       if (end === -1) {
@@ -125,12 +125,13 @@ function segments(cmd) {
     }
     if (q) {
       if (c === q) q = null;
-      else if (c === '\\' && q === '"' && i + 1 < cmd.length) cur += cmd[++i];
+      else if (c === '\\' && q === '"' && '$`"\\\n'.includes(cmd[i + 1] || '')) cur += cmd[++i];
       else cur += c;
       continue;
     }
     if (c === '"' || c === "'") { q = c; qStart = i; has = true; continue; }
     if (c === '\\' && i + 1 < cmd.length) { if (cmd[++i] !== '\n') { cur += cmd[i]; has = true; } continue; }
+    if (words && (c === '{' || c === '}') && (has || (c === '{' && !/\s/.test(cmd[i + 1] || ' ')))) { cur += c; has = true; continue; }
     if (';&|\n()`{}'.includes(c)) { endSeg(); continue; }
     if (/\s/.test(c)) { endTok(); continue; }
     cur += c; has = true;
@@ -140,6 +141,11 @@ function segments(cmd) {
   return { segs, subs };
 }
 
+// One level of brace expansion (pre{a,b}post -> prea preb), empty words dropped.
+function braces(tok) {
+  const m = /^([^{}]*)\{([^{}]*,[^{}]*)\}([^{}]*)$/.exec(tok);
+  return m ? m[2].split(',').map((a) => m[1] + a + m[3]).filter(Boolean) : [tok];
+}
 function classify(t) {
   let j = 0;
   while (j < t.length && t[j].startsWith('-')) j += /^(-C|-c|--git-dir|--work-tree|--namespace)$/.test(t[j]) ? 2 : 1;
@@ -151,7 +157,11 @@ function classify(t) {
   }
   if (sub === 'reset' && rest.includes('--hard')) return 'reset';
   if (sub === 'tag' && (rest.includes('-d') || rest.includes('--delete'))) return 'tag-delete';
-  if (sub === 'branch' && (rest.includes('-D') || (rest.includes('--delete') && rest.includes('--force')))) return 'branch-delete';
+  if (sub === 'branch') { // -D, -d -f, -df/-fd, --delete --force
+    const del = rest.includes('--delete') || rest.some((a) => /^-[a-zA-Z]*d[a-zA-Z]*$/.test(a));
+    const force = rest.includes('--force') || rest.some((a) => /^-[a-zA-Z]*[Df][a-zA-Z]*$/.test(a));
+    if (rest.some((a) => /^-[a-zA-Z]*D[a-zA-Z]*$/.test(a)) || (del && force)) return 'branch-delete';
+  }
   return null;
 }
 
@@ -166,10 +176,14 @@ function scan(cmd, depth) {
   charge(cmd.length);
   if (UNRELIABLE.test(cmd)) { const n = neutral(cmd); if (n !== cmd) subs.push(n, joined(cmd)); }
   for (const s of subs) ops.push(...scan(s, depth + 1));
-  seg: for (const t of segs) {
+  const all = segs.concat(segments(cmd, true).segs);
+  const views = [];
+  for (const t of all) { views.push(t); const x = t.flatMap(braces); if (x.length !== t.length || x.some((v, k) => v !== t[k])) views.push(x); }
+  seg: for (const t of views) {
     let i = 0;
     for (;;) {
       if (i < t.length && (ASSIGN.test(t[i]) || KEYWORDS.has(t[i]))) { i++; continue; }
+      if (/^\$[\w:]+$/.test(t[i] || '') && /^[-+*\/%]?=$/.test(t[i + 1] || '')) { i += 2; continue; } // PowerShell $x = cmd
       const w = base(t[i]);
       if (i < t.length && Object.prototype.hasOwnProperty.call(WRAPPERS, w)) {
         i++;
@@ -188,10 +202,12 @@ function scan(cmd, depth) {
       }
       break;
     }
-    const exe = base(t[i]);
-    if (SHELLS.has(exe) && /^-[a-z]*c$/.test(t[i + 1] || '') && t[i + 2] !== undefined) ops.push(...scan(t[i + 2], depth + 1));
-    else if (exe === 'eval' && t.length > i + 1) ops.push(...scan(t.slice(i + 1).join(' '), depth + 1));
-    else if (exe === 'git') { const op = classify(t.slice(i + 1)); if (op) ops.push(op); }
+    const exe = base(t[i]); let k;
+    if (SHELLS.has(exe) && (k = t.findIndex((a, j) => j > i && /^-[a-z]*c$/.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t[k + 1], depth + 1)); // flags may precede -c (bash -e -c)
+    else if ((exe === 'pwsh' || exe === 'powershell') && (k = t.findIndex((a, j) => j > i && /^-c(ommand)?$/i.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t.slice(k + 1).join(' '), depth + 1));
+    else if (exe === 'cmd' && (k = t.findIndex((a, j) => j > i && /^\/[ck]$/i.test(a))) > 0 && t[k + 1] !== undefined) ops.push(...scan(t.slice(k + 1).join(' '), depth + 1));
+    else if ((exe === 'eval' || exe === 'iex' || exe === 'invoke-expression') && t.length > i + 1) ops.push(...scan(t.slice(i + 1).join(' '), depth + 1));
+    else if (exe === 'git' || /[$`{]/.test(t[i] || '')) { const op = classify(t.slice(i + 1)); if (op) ops.push(op); } // dynamic command word: may be git
   }
   return [...new Set(ops)];
 }
@@ -247,7 +263,7 @@ function loadVerbs() {
   try {
     const o = JSON.parse(env);
     if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('not an object');
-    for (const [k, v] of Object.entries(o)) if (Array.isArray(v) && v.every((s) => typeof s === 'string')) verbs[k] = v;
+    for (const [k, v] of Object.entries(o)) if (Array.isArray(v) && v.every((s) => typeof s === 'string') && v.some((s) => s.trim())) verbs[k] = v.filter((s) => s.trim());
   } catch (_) { process.stderr.write('git-authorization: SDLC_GIT_VERBS is not valid JSON (an object of op -> [verbs]); using defaults\n'); }
   return verbs;
 }
@@ -261,7 +277,7 @@ function main(raw) {
   try { input = JSON.parse(raw); } catch (_) { return; }
   if (!input || !SHELL_TOOLS.has(input.tool_name) || !input.tool_input || typeof input.tool_input.command !== 'string') return;
   try {
-    const cmd = input.tool_input.command;
+    const cmd = input.tool_name === 'PowerShell' ? input.tool_input.command.replace(/\\/g, '/') : input.tool_input.command;
     work = 0; budget = Math.min(256 * cmd.length + 65536, 1 << 24); // a plain command needs ~4x its length
     const ops = scan(cmd, 0);
     if (!ops.length) return;

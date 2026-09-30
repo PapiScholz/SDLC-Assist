@@ -138,7 +138,9 @@ native command files stay in the backlog (formats still unverified).
   the `settings.json` is validated as JSON.
 - Dogfood on this repo: open this very cycle from an `intent.md` written
   first (`docs/intents/2026-09-30-playbook-alignment.md`), so the intent →
-  spec → plan chain is exercised once and recorded; run `where.js` and
+  spec → plan chain is exercised once and recorded; run the agent-side
+  check the router prescribes (`git ls-files docs/intents` plus a grep for
+  `Intent:` in `docs/specs/`; `where.js` itself does not emit it) and
   confirm the "intent without spec" warning appears before the spec exists
   and disappears after.
 - Reference scenarios (fresh temp home): (1) idea on existing code → the

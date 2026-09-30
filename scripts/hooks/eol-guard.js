@@ -8,7 +8,7 @@ if (/\.(png|gif|jpe?g|ico|woff2?|pdf|zip)$/i.test(fp)) process.exit(0);
 const root = path.resolve(process.env.CLAUDE_PROJECT_DIR || i.cwd || process.cwd());
 const abs = path.resolve(root, fp);
 const rel = path.relative(root, abs);
-if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) process.exit(0);
+if (!rel || rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) process.exit(0);
 let b; try { if (!fs.statSync(abs).isFile()) process.exit(0); b = fs.readFileSync(abs); } catch { process.exit(0); }
 if (b.includes(0)) process.exit(0);
 const bom = b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf, crlf = b.includes('\r\n');

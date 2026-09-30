@@ -35,6 +35,10 @@ check('CRLF file exits 2 and stderr has the relative path and sed -i', () => {
   assert.ok(r.stderr.includes(path.join('docs', 'a.md')), r.stderr);
   assert.ok(r.stderr.includes('sed -i'), r.stderr);
 });
+check('in-project file named ..foo.md with CRLF exits 2 (not mistaken for a parent path)', () => {
+  const d = project();
+  assert.strictEqual(run(d, put(d, '..foo.md', 'one\r\n')).status, 2);
+});
 check('BOM plus LF exits 2 and stderr mentions BOM', () => {
   const d = project();
   const r = run(d, put(d, 'a.md', Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('one\n')])));

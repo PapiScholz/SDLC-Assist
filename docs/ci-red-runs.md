@@ -776,3 +776,45 @@ all gates ok
 Gaps from the diff map: none of the `new-logic` files lacks a covering test. Open minor for the review wave: `keywords.js` classifies "devuelve 500" as `unknown` (scenario (c)(2)).
 
 Next step: accept the residual risk (CI on both OS pending the PR) and run `sdlc close` for Testing.
+
+### (e) Final branch review and fix wave (base ba56b5b, HEAD a7cc47a, working tree)
+
+Package: `git diff -U10 ba56b5b HEAD` split in two files (code and skill prose; the two long docs), the spec, the plan, the intent and the SDD ledger with its nine rulings. Reviewer: a fresh subagent on the most capable model, read-only, told to verify every suspected bug by running it against throwaway inputs and to assess the parked bypass ruling. The reviewer's probes used placeholders for the gated words because the owner's global guard blocks them in the reviewer's own shell calls.
+
+Findings, with the reviewer's real output (message "look at logs" unless stated):
+
+| # | Severity | Finding | Reviewer's probe |
+|---|---|---|---|
+| 1 | blocking | PowerShell assignment bypasses the gate: the command word becomes `$out` | `$out = git push 2>&1` → `ALLOW`; controls `(git push)` and `& git push` → `DENY` |
+| 2 | blocking | Windows paths to `git.exe` under PowerShell bypass: bash backslash escaping applied to a shell that has none | `& "C:\Program Files\Git\cmd\git.exe" push` → `ALLOW`; `C:\PROGRA~1\Git\cmd\git.exe push` → `ALLOW`; single-quoted form → `DENY` |
+| 3 | important | PowerShell twins of `bash -c`/`eval` not rescanned | `cmd /c git push`, `pwsh -NoProfile -Command "git push"`, `powershell -c "git push"`, `iex 'git push'`, `Invoke-Expression "git push"` → all `ALLOW` |
+| 4 | important | Bash double quotes dropped every backslash (bash only drops it before `` $ ` " \ `` and newline) | Bash `"C:\Program Files\Git\cmd\git.exe" push` → `ALLOW` |
+| 5 | important | `bash -e -c "git push"` allowed (flag had to be the token right after the shell) | → `ALLOW` |
+| 6 | important | `git branch -d -f` / `-df` not gated | both → `ALLOW` |
+| 7 | parked | the 7 bypasses of the T3 ruling all still pass on HEAD | `$'g'it push`, `$"g"it push`, `{git,push}`, `git {push,}`, `gi${x}t push`, `g$1it push`, `$(echo git) push` → all `ALLOW` |
+
+On the ruling's proposed closure the reviewer showed three defects before writing a different patch: dropping `$` before a quote erases the only marker (`$'\x67'it push` would still pass); splitting on `{`/`}` only when standalone regresses PowerShell (`if ($true) {git push}` needs the split); "command word contains `$` and a later token is gated" misses `{git,push}`, `git {push,}` and `$(echo git) push`. The patch instead adds a second tokenizer view (unquoted substitutions and braces kept inside the token), one level of brace expansion unioned with the original tokens (expansion alone would open `git -C '{a,b}' push`), and treats any command word containing `$`, a backtick or `{…,…}` as a possible `git` when a gated subcommand follows. Every change adds views, so it can only add denies. Accepted over-detection: `$runner push` is denied.
+
+Fix wave, test first. 28 checks added to `git-authorization.self-test.js` (rows 1-7 above plus benign forms: `ls {a,b}`, `node -e "const o={a:1,b:2}"`, `"$(npm bin)/eslint" .`, `find … -exec grep -l foo {} \;`, `echo "{git,push}"`, `Get-ChildItem | ForEach-Object { $_.Name }`, `$x = git status`, and the binding case `git commit -m "a && git push"` + "commit it" → allow):
+
+```
+$ node scripts/hooks/git-authorization.self-test.js | tail -1     # before the patch
+146 passed, 21 failed
+$ node scripts/hooks/git-authorization.self-test.js | tail -1     # reviewer's patch + rows 5 and 6 (bash -e -c via findIndex; branch -d/-f flag clusters)
+167 passed, 0 failed
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```
+
+One-line minors closed in the same wave, each locked by a check: `eol-guard.js` skipped in-project files named `..foo` (`rel.startsWith('..')`; now `rel === '..' || rel.startsWith('..' + path.sep)`, probe: CRLF `..foo.md` → exit 2, 12/12); `SDLC_GIT_VERBS` accepted `[""]` and printed `needs one of: .` (empty strings filtered); `keywords.js` `es.bug` gains `devuelve 500`, `da 500`, `caida`, `caido` (not a bare `500`: "soporte para 500 usuarios" stays `feature`; 30/30; scenario (c)(2) now reads `type: bug`).
+
+Doc fixes from the review: README hooks note now names both tools, the wrapper list, the dynamic-command-word rule, `Start-Process` as a known limit and the SDK/headless behaviour (no human records → every gated op denied); CHANGELOG Unreleased says what the hook gates; `spec-header.md` `Intent:` annotation copies SKILL.md's wording ("only when the cycle opens from an intent.md", since `maintain` also writes an intent); `maintain.md` "support ticket" qualified as raised by monitoring, a person's report stays a complaint (request card); spec testing strategy no longer says `where.js` emits the intent warning (the router's agent-side check does).
+
+Stays deferred (reviewer's list, none blocks the release): presence-only verb match ("no hagas push todavía" allows, by design); heredoc commit bodies scanned line by line (false-positive denies); fence toggle only at column 0; `maintain` four-lines overlap with Open questions; self-test extraEnv/filler items and the temp dir never removed; `humanText` regexes outside the budget; `<local-command-stdout>` not stripped (no human-origin record carries it); `check-sheets` accepts an empty `**Governance:**`; eol-guard flags `.cmd`/`.bat` and gitignored paths that `check-eol` skips; the spec header jumped planning → deployment in one commit (two closes confirmed in one answer, recorded in (d)); spec line 85 "fail the tool call" is loose for a PostToolUse hook (it reports after the write).
+
+Full gate target after the wave:
+
+```
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```

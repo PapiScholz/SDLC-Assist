@@ -79,6 +79,33 @@ check('other tool (Write) with a command field -> allow (not a shell)', () => {
   assert.strictEqual(verdict(r), 'allow');
 });
 
+function ps(cmd, msg) {
+  return verdict(runWith({ hook_event_name: 'PreToolUse', tool_name: 'PowerShell', tool_input: { command: cmd }, transcript_path: transcript(msg), cwd: dir }));
+}
+// PowerShell forms (final review, blocking 1-2 and important 3)
+check('PowerShell: $out = git push 2>&1 + "dale" -> deny (assignment capture)', () => assert.strictEqual(ps('$out = git push 2>&1', 'dale'), 'deny'));
+check('PowerShell: $x = git status + "dale" -> allow', () => assert.strictEqual(ps('$x = git status', 'dale'), 'allow'));
+check('PowerShell: & "C:\\Program Files\\Git\\cmd\\git.exe" push + "dale" -> deny', () => assert.strictEqual(ps('& "C:\\Program Files\\Git\\cmd\\git.exe" push', 'dale'), 'deny'));
+check('PowerShell: C:\\PROGRA~1\\Git\\cmd\\git.exe push + "dale" -> deny', () => assert.strictEqual(ps('C:\\PROGRA~1\\Git\\cmd\\git.exe push', 'dale'), 'deny'));
+for (const c of ['cmd /c git push', 'pwsh -NoProfile -Command "git push"', 'powershell -c "git push"', "iex 'git push'", 'Invoke-Expression "git push"', 'if ($true) {git push}']) {
+  check('PowerShell: ' + c + ' + "dale" -> deny', () => assert.strictEqual(ps(c, 'dale'), 'deny'));
+}
+check('PowerShell: ForEach-Object { $_.Name } + "dale" -> allow', () => assert.strictEqual(ps('Get-ChildItem | ForEach-Object { $_.Name }', 'dale'), 'allow'));
+
+// obfuscated command words, previously parked (final review): over-detection is the rule
+for (const c of ["$'g'it push", '$"g"it push', '{git,push}', 'git {push,}', 'gi${x}t push', 'g$1it push', '$(echo git) push', "$'\\x67'it push", '`echo git` push']) {
+  check('bypass: ' + c + ' + "dale" -> deny', () => expect(c, 'dale', 'deny'));
+}
+check('"C:\\Program Files\\Git\\cmd\\git.exe" push + "dale" -> deny (bash keeps backslashes before ordinary chars)', () => expect('"C:\\Program Files\\Git\\cmd\\git.exe" push', 'dale', 'deny'));
+check('bash -e -c "git push" + "dale" -> deny (flag before -c)', () => expect('bash -e -c "git push"', 'dale', 'deny'));
+check('git branch -d -f topic + "dale" -> deny', () => expect('git branch -d -f topic', 'dale', 'deny'));
+check('git branch -df topic + "dale" -> deny', () => expect('git branch -df topic', 'dale', 'deny'));
+// benign forms that must keep passing
+for (const c of ['ls {a,b}', 'node -e "const o={a:1,b:2}"', '"$(npm bin)/eslint" .', 'find . -name "*.js" -exec grep -l foo {} \\;', 'echo "{git,push}"']) {
+  check('benign: ' + c + ' + "dale" -> allow', () => expect(c, 'dale', 'allow'));
+}
+check('git commit -m "a && git push" + "commit it" -> allow (binding case holds)', () => expect('git commit -m "a && git push"', 'commit it', 'allow'));
+
 // read-only / non-destructive ops pass with "dale"
 for (const cmd of ['git log', 'git status', 'git diff', 'git tag', 'git tag -l', 'git branch', 'git branch -d x',
   'git switch -c f', 'git fetch', 'git add -A', 'git reset --soft HEAD~1']) {

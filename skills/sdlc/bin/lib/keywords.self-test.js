@@ -15,6 +15,7 @@ const cases = [
   ['something is wrong with totals', 'bug'], ['problem saving the form', 'bug'], ['hay que arreglar el login', 'bug'],
   ['no me deja entrar', 'bug'], ['el servidor se cayó', 'bug'], ['tengo un problema con el pago', 'bug'],
   ['quick fix for the header', 'hotfix'], ['prefix option for ids', 'unknown'],
+  ['la API devuelve 500 desde ayer en producción', 'bug'], ['soporte para 500 usuarios', 'feature'],
 ];
 for (const [msg, want] of cases) check(JSON.stringify(msg) + ' -> ' + want, () => assert.strictEqual(classifyRequest(msg), want));
 check('precedence order is fixed (complaint first)', () => assert.deepStrictEqual(PRECEDENCE, ['complaint', 'hotfix', 'bug', 'feature', 'idea']));

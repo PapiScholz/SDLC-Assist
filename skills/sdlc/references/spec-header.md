@@ -9,7 +9,7 @@ A cycle is a spec file: `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md`.
 
 Phase: <slug>
 Status: draft | approved | closed
-Intent: docs/intents/<file>   (optional, ideas and features only)
+Intent: docs/intents/<file>   (only when the cycle opens from an intent.md)
 ```
 
 - The header is the first three lines under the H1: `Phase:`, `Status:`, then the optional `Intent:`. `header.js` reads only the first 15 lines after the frontmatter, so nothing goes above them.
