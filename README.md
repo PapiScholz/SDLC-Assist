@@ -59,7 +59,7 @@ Output, trimmed to the keys the router reads:
 
 The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). A complaint then goes through the request card (who asks, what happens, expected, where, urgency) and spec-driven-development turns the card into a short spec with `Phase: analysis`, `Status: draft`. `inProduction` adds the note "keep the running version safe".
 
-Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`.
+Commands: `/sdlc:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `skills/sdlc/references/entry-points.md`. The cycle, the entry points and the per-request protocol are drawn in [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
 
 ## Header convention
 
