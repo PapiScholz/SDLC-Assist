@@ -998,3 +998,25 @@ Diff map: 62 renames under `plugins/sdlc-assist/` (skills, commands, manifest, i
 | runtime | install-smoke steps run locally against this checkout: nine skills installed from a clean home, installed `where.js` infers `analysis complaint true` | `release.sh` end to end (its preflight refuses a branch other than `main`); every path it rewrites was listed and exists with the expected `version` line | a typo in the rewrite would surface on the first push to `main` as a failed release job, before any tag |
 | functional | | the directory's Validate on the merged `main` (owner's portal) | the whole point of the cycle; acceptance item 4 in the spec |
 | regression | | CI on the PR: gates on Ubuntu and Windows, install-smoke, plugin-validate | the local runs above are the same commands |
+
+### (e) Merge and release (PR #4 merged with a merge commit)
+
+```
+$ gh pr checks 4 | awk '{print $1, $2}'
+install-smoke pass
+plugin-validate pass
+test (ubuntu-latest) pass
+test (windows-latest) pass
+$ gh pr merge 4 --merge; git log --oneline -1 origin/main
+fcd4318 Merge pull request #4 from PapiScholz/v1.4-plugin-subfolder
+$ gh run view <release run on fcd4318> --log | grep -E "last tag|Releasing"
+last tag: v0.4.0   auto-bump: minor -> 0.5.0
+Releasing v0.5.0 (bump: minor, from v0.4.0)
+$ git describe --tags origin/main
+v0.5.0
+$ grep -H -m1 -E '^version:|"version"' plugins/sdlc-assist/.claude-plugin/plugin.json plugins/sdlc-assist/skills/sdlc*/SKILL.md | sed 's/.*: *//' | sort -u
+"0.5.0",
+0.5.0
+```
+
+The release script rewrote every version line at the new paths (the residual risk in (d) is closed). Deployment closed on this output: `Status: closed`, committed with `[skip release]`. The directory's Validate on `main` with plugin path `plugins/sdlc-assist` is the owner's step and its result goes to `docs/distribution.md`.

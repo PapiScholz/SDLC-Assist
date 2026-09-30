@@ -1,7 +1,7 @@
 # Spec: v1.4 — plugin in a subfolder (directory scan scoped to what ships)
 
 Phase: deployment
-Status: approved
+Status: closed
 Date: 2026-09-30
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.4.0)
