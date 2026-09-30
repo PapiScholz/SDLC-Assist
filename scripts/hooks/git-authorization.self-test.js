@@ -87,6 +87,7 @@ check('PowerShell: $out = git push 2>&1 + "dale" -> deny (assignment capture)', 
 check('PowerShell: $x = git status + "dale" -> allow', () => assert.strictEqual(ps('$x = git status', 'dale'), 'allow'));
 check('PowerShell: & "C:\\Program Files\\Git\\cmd\\git.exe" push + "dale" -> deny', () => assert.strictEqual(ps('& "C:\\Program Files\\Git\\cmd\\git.exe" push', 'dale'), 'deny'));
 check('PowerShell: C:\\PROGRA~1\\Git\\cmd\\git.exe push + "dale" -> deny', () => assert.strictEqual(ps('C:\\PROGRA~1\\Git\\cmd\\git.exe push', 'dale'), 'deny'));
+// Fixtures fed to the hook as text; nothing here is executed. They prove that eval-style wrappers are denied.
 for (const c of ['cmd /c git push', 'pwsh -NoProfile -Command "git push"', 'powershell -c "git push"', "iex 'git push'", 'Invoke-Expression "git push"', 'if ($true) {git push}']) {
   check('PowerShell: ' + c + ' + "dale" -> deny', () => assert.strictEqual(ps(c, 'dale'), 'deny'));
 }

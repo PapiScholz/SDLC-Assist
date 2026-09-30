@@ -223,6 +223,7 @@ function scan(cmd, depth) {
       const attached = k > 0 ? (/^[^:]*:(.*)$/.exec(t[k]) || [])[1] : undefined; // -Command:"…" form
       const operand = attached !== undefined ? [attached, ...t.slice(k + 1)] : k > 0 ? t.slice(k + 1) : [];
       if (operand.length) ops.push(...scan(r.rest ? operand.join(' ') : operand[0], depth + 1));
+    // Detection only: eval / iex / Invoke-Expression are rescanned so a wrapped `git push` is still gated. The hook never runs them.
     } else if ((exe === 'eval' || exe === 'iex' || exe === 'invoke-expression') && t.length > i + 1) ops.push(...scan(t.slice(i + 1).join(' '), depth + 1));
     else if (exe === 'git' || /[$`{]/.test(t[i] || '')) { const op = classify(t.slice(i + 1)); if (op) ops.push(op); } // dynamic command word: may be git
   }
