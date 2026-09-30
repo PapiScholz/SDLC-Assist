@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] - 2026-09-30
 
 ### Added
 - Own phase skills `sdlc-debugging` (bug route of analysis), `sdlc-qa-gate` (testing) and `sdlc-release` (deployment); the router recommends them by default and the alternatives stay listed.
@@ -12,6 +12,19 @@
 
 ### CI
 - `install-smoke` asserts the three own skills are installed and reported by `which.js`.
+
+
+### Commits
+
+- Merge pull request #1 from PapiScholz/v1.1-own-skills
+- spec: v1.1 testing closed; final review fixes [minor]
+- docs: v1.1 dogfood runs, reference scenarios and QA gate report; development closed [skip release]
+- ci: install-smoke asserts the three own skills and which.js reports them [skip release]
+- docs: own skills in README, changelog unreleased entry, gate loop [skip release]
+- ci: check-skill-sections gate (section parity for the own skills) with red run
+- feat: sheets recommend the own skills; own skills carry the plugin version; release script rewrites all four
+- feat: sdlc-qa-gate and sdlc-release skills (testing and deployment phases)
+- feat: sdlc-debugging skill (bug route of analysis); close planning for v1.1
 
 ## [0.1.1] - 2026-09-30
 
