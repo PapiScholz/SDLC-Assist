@@ -9,8 +9,10 @@ A cycle is a spec file: `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md`.
 
 Phase: <slug>
 Status: draft | approved | closed
+Intent: docs/intents/<file>   (optional, ideas and features only)
 ```
 
+- The header is the first three lines under the H1: `Phase:`, `Status:`, then the optional `Intent:`. `header.js` reads only the first 15 lines after the frontmatter, so nothing goes above them.
 - Placed immediately after the H1 (or at the top when there is no H1), within the first 15 lines after any YAML frontmatter.
 - First token after the colon, case-insensitive; the rest of the line is ignored.
 - Slugs: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`.

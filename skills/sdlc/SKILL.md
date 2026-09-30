@@ -40,7 +40,7 @@ Pass the request through a file: write the user's text with your file tool to th
    - (b) If `request.type` is `hotfix`, apply the Hotfix threshold below and downgrade to `analysis` when it fails, saying which condition failed.
 4. **Ask ONE question** using the template below.
 5. **Run** `which.js --phase <slug>` for the confirmed phase and read `phases.<slug>` in its JSON. Ask the second question (the only exception to the one-question rule) only when none of `phases.<slug>.recommends` appears in `phases.<slug>.installed` and no `phases.<slug>.alternatives` entry appears in `installed` either. When a phase recommends two skills (analysis, development), a single installed one is enough to skip the question; name the missing one in the recommendation instead. Do not use `missing` alone: it also lists uninstalled alternatives. The second question offers the options in `references/missing-skill.md`: install a known one (only when its install table has a command for that skill; otherwise leave this option out), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, continue without it. The second question, and a "continue without it" answer, never block. "Continue" is announced once and not asked again for that skill in this context. Print the skill name in the `form` that is invocable on this host.
-6. **Read** `references/phases/<slug>.md` and state the next step: what the phase produces, which skill, the concrete action, where design happens. Sheets: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`. Entry rules by request type: `references/entry-points.md`.
+6. **Read** `references/phases/<slug>.md` and state the next step: what the phase produces, which skill, the concrete action, where design happens. Sheets: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`. Entry rules by request type: `references/entry-points.md`. When the active spec carries an `Intent:` line, read that file too and quote its `Desired outcome` in the next-step statement. Entry sheet for production signals: `references/maintain.md`.
 
 ## Question template
 
@@ -51,7 +51,7 @@ Warnings: <lines or "none">
 Options: [confirm <inferred>] [<alternative 1>] [<alternative 2>] [new cycle: analysis]
 ```
 
-List `[new cycle: analysis]` only when `alternatives` has an entry with `kind: new-cycle`. Up to three alternatives (other candidates, continue active cycle, new cycle). A header that disagrees with the fallback evidence, development without an approved spec, or deployment without testing are warnings inside this question, never blocks. State which phase was skipped and why.
+List `[new cycle: analysis]` only when `alternatives` has an entry with `kind: new-cycle`. Up to three alternatives (other candidates, continue active cycle, new cycle). A header that disagrees with the fallback evidence, development without an approved spec, or deployment without testing are warnings inside this question, never blocks. State which phase was skipped and why. Warnings also list `intent without spec: <path>` when `docs/intents/` holds a committed intent no spec names (read-only `git ls-files`, grep `Intent:` in `docs/specs/`).
 
 ## Complaints and the request card
 
