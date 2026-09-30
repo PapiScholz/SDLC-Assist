@@ -1,6 +1,6 @@
 {
   "name": "sdlc-assist",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "SDLC phase router: infers the phase of a work request from the repo, confirms it with one question, and hands off to spec-driven-development, sdlc-qa-gate and sdlc-release.",
   "author": { "name": "Ezequiel Scholz" },
   "homepage": "https://github.com/PapiScholz/SDLC-Assist",

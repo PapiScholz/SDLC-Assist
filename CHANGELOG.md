@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2026-09-30
 
 ### Changed
 - Plugin id `sdlc` becomes `sdlc-assist`: the slash command is `/sdlc-assist:phase` and the install is `claude plugin install sdlc-assist@papischolz`. Users on the plugin path uninstall `sdlc` and install `sdlc-assist`; the skills.sh and manual paths are unchanged. The manifest gate asserts that `plugin.json` and `marketplace.json` agree on the id.
@@ -9,6 +9,16 @@
 ### Added
 - README "Who this is for" block with a comparison against Superpowers, BMAD Method, Spec Kit and standalone spec skills.
 - `docs/distribution.md`: pre-submission checks for Anthropic's plugin directory with pasted output, the portal steps, and which community lists accept a link-only entry.
+
+
+### Commits
+
+- Merge pull request #3 from PapiScholz/v1.3-distribution
+- feat: plugin id sdlc-assist, README positioning, directory readiness [minor]
+- docs: cycle diagram inline in the README quickstart [skip release]
+- docs: README quickstart and how-to-use walkthrough; close mode folded in [skip release]
+- docs: sdlc flow diagrams (cycle, entry points, protocol), linked from README [skip release]
+- spec: v1.2 closed on v0.3.0; Task 7 done [skip release]
 
 ## [0.3.0] - 2026-09-30
 
