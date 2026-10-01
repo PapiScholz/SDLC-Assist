@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.0] - 2026-10-01
+
+- Merge pull request #7 from PapiScholz/v1.5-layout
+- feat: per-cycle layout docs/specs/<dir>/{spec,plan,tasks}.md [minor]
+
 ## [0.6.0] - 2026-10-01
 
 - Merge pull request #6 from PapiScholz/v1.5-ears
