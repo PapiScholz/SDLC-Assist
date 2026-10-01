@@ -1,4 +1,17 @@
-# SDLC-Assist
+<p align="center">
+  <img src="plugins/sdlc-assist/.claude-plugin/icon.svg" width="96" height="96" alt="SDLC-Assist icon">
+</p>
+
+<h1 align="center">SDLC-Assist</h1>
+
+<p align="center">
+  <a href="https://github.com/PapiScholz/SDLC-Assist/actions/workflows/ci.yml"><img src="https://github.com/PapiScholz/SDLC-Assist/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <a href="https://github.com/PapiScholz/SDLC-Assist/releases/latest"><img src="https://img.shields.io/github/v/release/PapiScholz/SDLC-Assist?label=release&color=FFB000" alt="latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3A2812" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/node-%E2%89%A520-150D03" alt="Node 20 or newer">
+  <img src="https://img.shields.io/badge/dependencies-none-150D03" alt="no dependencies">
+  <img src="https://img.shields.io/badge/Claude%20Code%20%C2%B7%20OpenCode%20%C2%B7%20Codex%20%C2%B7%20Cursor-hosts-3A2812" alt="hosts">
+</p>
 
 An agent skill, `sdlc`, that works out which phase of the software development life cycle a work request is in, shows the evidence, asks one confirmation, and points to the skill that does the next step.
 
