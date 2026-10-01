@@ -1,5 +1,7 @@
 # Todo
 
+Current cycle (v1.6) lives in `docs/specs/2026-10-01-v1-6-repo-artifacts/tasks.md`; this file is the closed v1.5 list and is not updated.
+
 Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, plan: tasks/plan.md → docs/plans/plan-*.md)
 
 ## Plan 1 — positioning (`docs/plans/plan-positioning.md`)

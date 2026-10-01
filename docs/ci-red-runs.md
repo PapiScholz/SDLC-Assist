@@ -1210,3 +1210,29 @@ v0.8.0	Latest	v0.8.0	2026-10-01T04:47:38Z
 v0.7.0		v0.7.0	2026-10-01T04:28:11Z
 v0.6.0		v0.6.0	2026-10-01T03:12:10Z
 ```
+
+## v1.6 dogfood
+
+### (a) cycle opened in the per-cycle folder layout (branch `v1.6-spec`, 2026-10-01)
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | node -e '...'   # active + the v1-6 entry from signals.specs, trimmed
+{
+ "active": {
+  "path": "docs/specs/2026-10-01-v1-6-repo-artifacts/spec.md",
+  "phase": "analysis",
+  "status": "draft",
+  "date": 1790832452,
+  "tracked": false,
+  "dirty": false,
+  "active": true
+ },
+ "inferred": "analysis",
+ "warnings": []
+}
+entry: {"layout":"folder","plan":"docs/specs/2026-10-01-v1-6-repo-artifacts/plan.md","todo":{"path":"docs/specs/2026-10-01-v1-6-repo-artifacts/tasks.md","open":20,"total":20}}
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.js --root .
+check-acceptance: 1 specs, 44 bullets, 0 not EARS
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```
