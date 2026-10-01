@@ -15,13 +15,15 @@ flowchart TD
     E["<b>testing</b><br/>sdlc-qa-gate"]
     F["<b>deployment</b><br/>sdlc-release"]
     G([closed])
-    K["docs/constitution.md<br/>optional, read by every phase"]
+    K["cross-cycle artifacts: constitution,<br/>ADRs, ARCHITECTURE.md<br/>optional, detected and cited, never written"]
 
     K -.-> A
     K -.-> B
     K -.-> C
     K -.-> D
     K -.-> E
+    K -.-> F
+    style K stroke-dasharray: 5 5
     A -->|first spec written| B
     B -->|sdlc close| C
     C -->|sdlc close| D
@@ -60,7 +62,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    S([Work request]) --> W["Run where.js<br/>read-only: spec headers, plan and tasks,<br/>constitution, git"]
+    S([Work request]) --> W["Run where.js<br/>read-only: spec headers, plan and tasks,<br/>constitution, ADRs, architecture, hygiene, git"]
     W --> I["Inferred phase<br/>+ evidence + warnings"]
     I --> Q["Ask ONE question<br/>confirm phase or pick an alternative"]
     Q --> K["Run which.js<br/>is the phase skill installed?"]

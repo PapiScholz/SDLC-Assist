@@ -33,6 +33,16 @@ const CONSTITUTION_PATHS = ['docs/constitution.md', 'CONSTITUTION.md'];
 const ARCHITECTURE_PATHS = ['ARCHITECTURE.md', 'docs/architecture.md'];
 function findConstitution(root) { return findDoc(root, CONSTITUTION_PATHS); }
 function findArchitecture(root) { return findDoc(root, ARCHITECTURE_PATHS); }
+// Repo hygiene: a closed list of files a public repo carries from day one. Presence only, never content; no git.
+const HYGIENE_FILES = ['LICENSE', 'README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md', '.gitignore', '.gitattributes', '.editorconfig', 'ARCHITECTURE.md'];
+function isFile(abs) { try { return fs.statSync(abs).isFile(); } catch { return false; } }
+function findHygiene(root, architecture) {
+  const license = listDir(root).some(e => e.isFile() && /^LICEN[CS]E(\.[a-z0-9]+)?$/i.test(e.name));
+  const has = { LICENSE: license, 'ARCHITECTURE.md': architecture.exists };
+  const present = [], missing = [];
+  for (const f of HYGIENE_FILES) ((f in has ? has[f] : isFile(path.join(root, f))) ? present : missing).push(f);
+  return { present, missing, license };
+}
 // ADRs (Nygard): detected and cited, never written. `docs/adr/` wins over `docs/decisions/`; only `NNNN-slug.md` files count.
 const ADR_DIRS = ['docs/adr', 'docs/decisions'];
 const ADR_FILE = /^(\d{4})-[^/\\]+\.md$/i;
@@ -213,8 +223,9 @@ function collectSignals(repoRoot, opts) {
   const tests = options.runTests ? runTests(abs, testRunner) : { status: 'unknown', exitCode: null, tail: [] };
   const rw = releaseWorkflow(abs);
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
+  const architecture = findArchitecture(abs);
   return {
-    root, specs, modules, plan, todo, constitution: findConstitution(abs), architecture: findArchitecture(abs), adr: findAdrs(abs), git: gitInfo, changelog,
+    root, specs, modules, plan, todo, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };

@@ -88,6 +88,11 @@ check('idea => initial', () => {
   assert.deepStrictEqual(r.signals.constitution, { exists: false, path: null, sections: [] });
   assert.deepStrictEqual(r.signals.adr, { exists: false, dir: null, count: 0, byStatus: {}, latest: null });
   assert.deepStrictEqual(r.signals.architecture, { exists: false, path: null, sections: [] });
+  assert.strictEqual(r.signals.hygiene.missing.length, 9); assert.deepStrictEqual(r.signals.hygiene.present, []); assert.strictEqual(r.signals.hygiene.license, false);
+});
+check('hygiene field is serialized; this repository has every file in the closed list', () => {
+  const r = runWhere(path.resolve(__dirname, '..', '..', '..', '..', '..'), 'where are we');
+  assert.deepStrictEqual(r.signals.hygiene.missing, []); assert.strictEqual(r.signals.hygiene.license, true);
 });
 check('architecture field is serialized when ARCHITECTURE.md exists', () => {
   const root = tmpDir(); write(root, 'ARCHITECTURE.md', '# A\n\n## Overview\n\n## Structure\n');
