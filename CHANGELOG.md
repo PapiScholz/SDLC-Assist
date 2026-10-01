@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.11.0] - 2026-10-01
+
+- Merge pull request #13 from PapiScholz/v1.6-hygiene
+- feat: repo hygiene detected and listed in initial and before a first release only (hygiene signal) [minor]
+
 ## [0.10.0] - 2026-10-01
 
 - Merge pull request #12 from PapiScholz/v1.6-architecture
