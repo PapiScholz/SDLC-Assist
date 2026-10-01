@@ -85,6 +85,13 @@ console.log('fixture 1: empty dir, no git');
 check('idea => initial', () => {
   const r = runWhere(tmpDir(), 'I have an idea for X');
   assert.strictEqual(r.inferred, 'initial'); assert.strictEqual(r.request.type, 'idea'); assert.strictEqual(r.signals.git.isRepo, false);
+  assert.deepStrictEqual(r.signals.constitution, { exists: false, path: null, sections: [] });
+});
+check('constitution field is serialized when docs/constitution.md exists', () => {
+  const root = tmpDir(); write(root, 'docs/constitution.md', '# C\n\n## Principles\n\n## Never\n');
+  const r = runWhere(root, 'I have an idea for X');
+  assert.deepStrictEqual(r.signals.constitution, { exists: true, path: 'docs/constitution.md', sections: ['Principles', 'Never'] });
+  assert.strictEqual(r.inferred, 'initial');   // a constitution alone is not a spec and not a source file
 });
 check('inversion: add a source file => analysis', () => {
   const root = tmpDir(); write(root, 'src/index.js', 'x\n');

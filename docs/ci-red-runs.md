@@ -1112,3 +1112,50 @@ ok check-acceptance (advisory)
 ok settings.json
 all gates ok
 ```
+
+### (d) where.js on this repo before and after `docs/constitution.md` (branch `v1.5-constitution`, working tree over `main` at a5d4e00)
+
+Before plan 4 the field did not exist; `signals.self-test.js` (3 cases) and `where.self-test.js` (2 cases) were red first.
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | grep -A3 '"constitution"'
+$ echo $?
+1
+```
+(no match: the field was absent.) After `lib/signals.js` gained `findConstitution` and `docs/constitution.md` was written from `CLAUDE.md`:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(JSON.stringify(j.signals.constitution,null,2)); console.log('active', j.active.path, 'inferred', j.inferred)"
+{
+  "exists": true,
+  "path": "docs/constitution.md",
+  "sections": [
+    "Principles",
+    "Never",
+    "Testing",
+    "Release",
+    "Amendments"
+  ]
+}
+active docs/specs/2026-09-30-v1-5-sdd-alignment.md inferred analysis
+```
+
+The router's question block for that run, as `SKILL.md` step 6 now specifies it (the `Constitution:` line is added only when `exists` is true):
+
+```
+Phase: analysis
+Evidence:
+- header Phase: analysis, Status: draft (docs/specs/2026-09-30-v1-5-sdd-alignment.md)
+- fallback: analysis (candidates: analysis, development)
+- tests not run (no --run-tests)
+Constitution: docs/constitution.md (5 sections)
+Warnings: none
+Options: [confirm analysis]
+```
+
+Same `where.js` on a scratch dir with no constitution and no files (`where.self-test.js` "idea => initial"): `"constitution": { "exists": false, "path": null, "sections": [] }`, and the question carries no `Constitution:` line. Gates on the working tree:
+
+```
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```

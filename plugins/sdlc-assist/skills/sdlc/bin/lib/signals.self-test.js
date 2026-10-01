@@ -57,6 +57,20 @@ check('flat spec and folder spec coexist, sorted by path', () => {
   const s = collectSignals(root, { runTests: false });
   assert.deepStrictEqual(s.specs.map(x => x.path), ['docs/specs/2026-09-30-flat.md', 'docs/specs/2026-10-02-folder/spec.md']);
 });
+check('constitution absent => exists false, path null, no sections', () => {
+  assert.deepStrictEqual(collectSignals(tmpDir(), {}).constitution, { exists: false, path: null, sections: [] });
+});
+check('constitution: docs/constitution.md found; sections are the ## headings outside fences', () => {
+  const root = tmpDir();
+  write(root, 'docs/constitution.md', '# Constitution\n\n## Principles\n\n- a\n\n```markdown\n## Not a section\n```\n\n## Never\n\n## Amendments\n');
+  assert.deepStrictEqual(collectSignals(root, {}).constitution, { exists: true, path: 'docs/constitution.md', sections: ['Principles', 'Never', 'Amendments'] });
+});
+check('constitution: root CONSTITUTION.md is the fallback; docs/ wins when both exist', () => {
+  const root = tmpDir(); write(root, 'CONSTITUTION.md', '# C\n\n## Rules\n');
+  assert.deepStrictEqual(collectSignals(root, {}).constitution, { exists: true, path: 'CONSTITUTION.md', sections: ['Rules'] });
+  write(root, 'docs/constitution.md', '# C\n\n## Principles\n');
+  assert.strictEqual(collectSignals(root, {}).constitution.path, 'docs/constitution.md');
+});
 check('plan and todo counts', () => {
   const root = tmpDir();
   write(root, 'tasks/plan.md', '# Plan\n'); write(root, 'tasks/todo.md', '- [ ] a\n- [x] b\n- [X] c\n');

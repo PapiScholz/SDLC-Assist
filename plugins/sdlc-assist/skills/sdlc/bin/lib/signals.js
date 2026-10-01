@@ -1,5 +1,5 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive } = require('./infer');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive } = require('./infer'); const { unfencedLines } = require('./unfenced');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
 const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|conftest\.py|manage\.py|gulpfile\.js|gruntfile\.js|karma\.conf\.js|knexfile\.js)$/i;
@@ -18,6 +18,17 @@ function findSpecs(root) {
   }
   for (const e of listDir(root)) if (e.isFile() && (/^spec\.md$/i.test(e.name) || /^SPEC-.*\.md$/i.test(e.name))) out.push(e.name);
   return out.sort();
+}
+// Constitution (Spec Kit's first artifact): detected and cited, never required. First found wins.
+const CONSTITUTION_PATHS = ['docs/constitution.md', 'CONSTITUTION.md'];
+function findConstitution(root) {
+  for (const rel of CONSTITUTION_PATHS) {
+    const text = readText(path.join(root, rel));
+    if (text === null) continue;
+    const sections = unfencedLines(text).map(l => /^##\s+(.+?)\s*$/.exec(l)).filter(Boolean).map(m => m[1]);
+    return { exists: true, path: rel, sections };
+  }
+  return { exists: false, path: null, sections: [] };
 }
 function countSourceFiles(root) {
   let count = 0; const sample = [];
@@ -178,7 +189,7 @@ function collectSignals(repoRoot, opts) {
   const rw = releaseWorkflow(abs);
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   return {
-    root, specs, modules, plan, todo, git: gitInfo, changelog,
+    root, specs, modules, plan, todo, constitution: findConstitution(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };
