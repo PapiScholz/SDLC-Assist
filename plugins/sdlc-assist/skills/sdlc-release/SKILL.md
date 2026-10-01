@@ -1,6 +1,6 @@
 ---
 name: sdlc-release
-version: 0.7.0
+version: 0.8.0
 description: Decides the next version from the commits since the last tag, updates every version source and the changelog, validates, then tags and publishes through the forge, driving the project's existing release mechanism when there is one. Every state-changing command runs only after the user asks in the current turn. Use for the Deployment phase, when asked to release, tag, bump the version or publish.
 ---
 

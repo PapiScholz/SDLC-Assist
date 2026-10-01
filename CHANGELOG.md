@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.0] - 2026-10-01
+
+- Merge pull request #8 from PapiScholz/v1.5-constitution
+- feat: constitution detected and cited, never required [minor]
+
 ## [0.7.0] - 2026-10-01
 
 - Merge pull request #7 from PapiScholz/v1.5-layout
