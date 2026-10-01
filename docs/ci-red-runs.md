@@ -1159,3 +1159,54 @@ Same `where.js` on a scratch dir with no constitution and no files (`where.self-
 $ bash scripts/gates.sh | tail -1
 all gates ok
 ```
+
+### (e) qa-gate at close and the three releases (`main` at 3e4dce5)
+
+Functional layer: one probe per `## Acceptance` bullet, on throwaway repos under `mktemp` (script `qa-gate-v15.sh`, kept in the session scratchpad; each probe runs `where.js` or `check-acceptance.js` from this checkout and asserts on the JSON). First run had two red probes, both in the probe and not in the product: bullet 4 expected line 12 and the prose bullet is on line 13; bullet 7 also asserted "active is the newest" and two commits in the same second tie on effective date, so the smaller path wins (recorded as deferred in the spec's `## Decisions`).
+
+```
+$ bash qa-gate-v15.sh
+  pass  1 constitution.exists/path present in where.js output for a repo without one
+  pass  2 folder spec: plan and todo paths inside the folder, 2 open, inferred development
+  pass  3 flat spec: tasks/plan.md and tasks/todo.md, inferred development
+  pass  4 check-acceptance prints docs/specs/a.md:13 for the prose bullet and exits 0
+  pass  5 check-acceptance reports 2 open questions for the spec
+  pass  6 spec-template.md and constitution-template.md exist; analysis and planning sheets name them
+  pass  7 two planned folder cycles: warnings empty, both listed as cycles
+  pass  8 bash scripts/gates.sh ends with all gates ok
+functional layer: 8/8 probes passed
+```
+
+Static and unit layers:
+
+```
+$ for f in plugins/sdlc-assist/skills/sdlc/bin/*.js plugins/sdlc-assist/skills/sdlc/bin/lib/*.js scripts/hooks/*.js; do node --check "$f" || echo "FAIL $f"; done; echo "exit $?"
+exit 0    # 34 files
+$ for t in plugins/sdlc-assist/skills/sdlc/bin/*.self-test.js plugins/sdlc-assist/skills/sdlc/bin/lib/*.self-test.js; do printf '%s ' "$(basename $t)"; node $t | tail -1; done
+check-acceptance.self-test.js 13 passed, 0 failed
+check-eol.self-test.js 6 passed, 0 failed
+check-frontmatter.self-test.js 10 passed, 0 failed
+check-manifest.self-test.js 16 passed, 0 failed
+check-sheets.self-test.js 10 passed, 0 failed
+check-skill-sections.self-test.js 7 passed, 0 failed
+sync-vendored.self-test.js sync-vendored self-test OK
+where.self-test.js 29 passed, 0 failed
+which.self-test.js 15 passed, 0 failed
+header.self-test.js 13 passed, 0 failed
+infer.self-test.js 29 passed, 0 failed
+keywords.self-test.js 30 passed, 0 failed
+signals.self-test.js 31 passed, 0 failed
+todo.self-test.js 6 passed, 0 failed
+```
+
+Releases of the cycle (both PRs merged with a merge commit after CI 4/4, no `[skip release]`, `[minor]` in the branch commit):
+
+```
+$ gh run list --branch main --workflow release.yml --limit 2 --json name,conclusion,headSha,displayTitle -q '.[] | .name + " " + .conclusion + " " + .headSha[0:7] + " " + .displayTitle'
+release success ce30735 Merge pull request #8 from PapiScholz/v1.5-constitution
+release success 89b2efd Merge pull request #7 from PapiScholz/v1.5-layout
+$ gh release list --limit 3
+v0.8.0	Latest	v0.8.0	2026-10-01T04:47:38Z
+v0.7.0		v0.7.0	2026-10-01T04:28:11Z
+v0.6.0		v0.6.0	2026-10-01T03:12:10Z
+```
