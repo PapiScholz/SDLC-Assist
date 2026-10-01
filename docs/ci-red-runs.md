@@ -1236,3 +1236,42 @@ check-acceptance: 1 specs, 44 bullets, 0 not EARS
 $ bash scripts/gates.sh | tail -1
 all gates ok
 ```
+
+### (b) plan A: adr signal before and after the five retroactive ADRs (branch `v1.6-adr`, 2026-10-01)
+
+```
+$ git stash list | wc -l; git show HEAD:plugins/sdlc-assist/skills/sdlc/bin/lib/signals.js | grep -c findAdrs   # HEAD = d0d657b, before A.1: no adr signal
+0
+0
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | node -e ... # signals.adr after A.6
+{
+ "exists": true,
+ "dir": "docs/adr",
+ "count": 5,
+ "byStatus": {
+  "accepted": 5
+ },
+ "latest": {
+  "number": 5,
+  "path": "docs/adr/0005-per-cycle-layout-no-fallback.md",
+  "status": "accepted"
+ }
+}
+inferred: planning warnings: ["header says planning but artifacts say development"]
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-adr.js --root .
+check-adr: docs/adr, 5 ADRs
+$ for t in check-adr signals where; do ...self-test.js | tail -1; done
+check-adr.self-test.js 10 passed, 0 failed
+signals.self-test.js 36 passed, 0 failed
+where.self-test.js 30 passed, 0 failed
+$ bash <scratchpad>/replay-smoke.sh   # the two install-smoke fixtures of ci.yml, replayed on the working copy
+ok development {"accepted":1,"proposed":1} warnings: 0
+check-adr: docs/adr, 2 ADRs
+ok check-adr summary
+ok empty fixture adr absent
+$ bash scripts/gates.sh | grep -E "check-adr|all gates"
+ok plugins/sdlc-assist/skills/sdlc/bin/check-adr.self-test.js
+  check-adr: docs/adr, 5 ADRs
+ok check-adr (advisory)
+all gates ok
+```

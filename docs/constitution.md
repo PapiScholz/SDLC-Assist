@@ -29,3 +29,4 @@ Product rules every spec, plan and change in this repository obeys. Agent workin
 ## Amendments
 
 - 2026-10-01: created from `CLAUDE.md` (v1.5 plan 4). `CLAUDE.md` keeps the agent-specific mechanics and links here.
+- 2026-10-01: decisions that outlive a cycle are recorded in `docs/adr/` (v1.6 plan A); the five retroactive ADRs cover v1.4 and v1.5.

@@ -12,5 +12,7 @@ if [ "$quick" = 1 ]; then echo "skip sync-vendored (--quick)"; else gate sync-ve
 for c in check-manifest check-sheets check-frontmatter check-skill-sections check-eol; do gate "$c" node "$B/$c.js"; done
 # Advisory: EARS acceptance and open questions in open specs. Prints warnings, exits 0 (--strict fails).
 node "$B/check-acceptance.js" --root . | sed 's/^/  /'; echo "ok check-acceptance (advisory)"
+# Advisory: ADR numbering and Status values. Prints warnings, exits 0 (--strict fails).
+node "$B/check-adr.js" --root . | sed 's/^/  /'; echo "ok check-adr (advisory)"
 gate settings.json node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json","utf8"));for(const ev of Object.values(s.hooks))for(const g of ev)for(const h of g.hooks)for(const a of h.args)if(!require("fs").existsSync(a.replace("${CLAUDE_PROJECT_DIR}","."))) throw new Error("hook missing: "+a)'
 echo "all gates ok"

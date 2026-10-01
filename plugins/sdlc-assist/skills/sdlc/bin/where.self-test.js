@@ -86,6 +86,13 @@ check('idea => initial', () => {
   const r = runWhere(tmpDir(), 'I have an idea for X');
   assert.strictEqual(r.inferred, 'initial'); assert.strictEqual(r.request.type, 'idea'); assert.strictEqual(r.signals.git.isRepo, false);
   assert.deepStrictEqual(r.signals.constitution, { exists: false, path: null, sections: [] });
+  assert.deepStrictEqual(r.signals.adr, { exists: false, dir: null, count: 0, byStatus: {}, latest: null });
+});
+check('adr field is serialized when docs/adr/ has ADRs', () => {
+  const root = tmpDir(); write(root, 'docs/adr/0001-x.md', 'Status: accepted\n');
+  const r = runWhere(root, 'I have an idea for X');
+  assert.deepStrictEqual(r.signals.adr, { exists: true, dir: 'docs/adr', count: 1, byStatus: { accepted: 1 }, latest: { number: 1, path: 'docs/adr/0001-x.md', status: 'accepted' } });
+  assert.strictEqual(r.inferred, 'initial');
 });
 check('constitution field is serialized when docs/constitution.md exists', () => {
   const root = tmpDir(); write(root, 'docs/constitution.md', '# C\n\n## Principles\n\n## Never\n');

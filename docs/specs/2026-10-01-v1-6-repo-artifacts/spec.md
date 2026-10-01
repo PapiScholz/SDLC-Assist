@@ -1,6 +1,6 @@
 # Spec: v1.6 — repo artifacts the router detects and cites (ADRs, ARCHITECTURE.md, hygiene)
 
-Phase: planning
+Phase: development
 Status: approved
 Date: 2026-10-01
 Owner: Ezequiel Scholz
