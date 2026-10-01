@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-10-01
+
+- Merge pull request #6 from PapiScholz/v1.5-ears
+- feat: EARS acceptance, spec template, open-questions close rule [minor]
+- docs: skip-release marker goes on the merge commit of docs-only PRs; plan 1 done [skip release]
+
 ## [0.5.1] - 2026-10-01
 
 - Merge pull request #5 from PapiScholz/v1.5-positioning
