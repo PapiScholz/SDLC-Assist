@@ -6,7 +6,7 @@ Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, pl
 - [x] 1.1 README "Who this is for": taxonomy paragraph, spec-anchored, what the router adds
 - [x] 1.2 Plugin README: one spec-anchored sentence
 - [x] 1.3 README Roadmap: v1.5 list
-- [ ] 1.4 Dogfood (a) in ci-red-runs; PR, merge, Re-validate
+- [x] 1.4 Dogfood (a) in ci-red-runs; PR #5 merged (cec383e, released as v0.5.1 by mistake: merge commit without the marker); Re-validate pending
 
 ## Plan 2 — EARS and spec template (`docs/plans/plan-ears.md`)
 - [ ] 2.1 `references/spec-template.md` (header, Clarifications, Open Questions, Acceptance in EARS)
