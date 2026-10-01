@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.0] - 2026-10-01
+
+- Merge pull request #11 from PapiScholz/v1.6-adr
+- feat: ADRs detected and cited, never required (adr signal, template, sheets, check-adr) [minor]
+- spec: v1.6 analysis closed, header planning/approved
+- Merge pull request #10 from PapiScholz/v1.6-spec [skip release]
+- spec: open v1.6 repo artifacts (ADRs, ARCHITECTURE.md, hygiene) in the per-cycle folder layout
+- Merge pull request #9 from PapiScholz/v1.5-close [skip release]
+- spec: v1.5 closed on v0.8.0; qa-gate report, dogfood (e), roadmap [skip release]
+
 ## [0.8.0] - 2026-10-01
 
 - Merge pull request #8 from PapiScholz/v1.5-constitution
