@@ -38,6 +38,6 @@ Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, pl
 - [x] 4.8 Dogfood (d) before/after; PR with `[minor]`, merge, Re-validate
 
 ## Close
-- [ ] Close testing on the qa-gate table of plan 4; close deployment on the last release; `Status: closed` with `[skip release]`
+- [x] Close testing on the qa-gate table of plan 4; close deployment on the last release; `Status: closed` with `[skip release]`
 
 Previous cycle: v1.4 plugin in a subfolder (spec: docs/specs/2026-09-30-v1-4-plugin-subfolder.md), closed on v0.5.0, all three tasks done.

@@ -1,10 +1,10 @@
 # Spec: v1.5 — SDD alignment (positioning, EARS, clarifications, per-cycle layout, constitution)
 
-Phase: analysis
-Status: draft
+Phase: deployment
+Status: closed
 Date: 2026-09-30
 Owner: Ezequiel Scholz
-Repo: `PapiScholz/SDLC-Assist` (in production, v0.5.0)
+Repo: `PapiScholz/SDLC-Assist` (in production, v0.8.0; this cycle shipped v0.6.0, v0.7.0 and v0.8.0)
 Parent: `docs/specs/2026-09-30-v1-4-plugin-subfolder.md` (v1.4, closed)
 
 ## Objective
@@ -37,6 +37,7 @@ layout plan's spec template):
 
 ## Decisions
 
+- Deferred (2026-10-01, owner: Ezequiel Scholz): `rankCycles` breaks an effective-date tie by the smaller path, so of two specs committed in the same second the older dated slug is active. Reverse the tie-break for date-prefixed slugs in the next cycle that touches `lib/infer.js`; found by the qa-gate regression probe at close.
 - Order of the plans: positioning, EARS, layout (with clarifications),
   constitution. Each lands as its own PR on this spec; the layout plan goes
   before the constitution plan because the sheets that cite the constitution
@@ -98,4 +99,16 @@ skills; generating code from specs.
 ## Verification record
 
 Pasted output goes to `docs/ci-red-runs.md` under "v1.5 dogfood", one block
-per plan.
+per plan: (a) opening run, (b) EARS check, (c) folder cycle, (d) constitution,
+(e) qa-gate at close. Releases: v0.6.0 (PR #6), v0.7.0 (PR #7), v0.8.0 (PR #8).
+
+sdlc-qa-gate report at close (2026-10-01, `main` at 3e4dce5):
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | `node --check` on the 34 scripts under `bin/`, `bin/lib/` and `scripts/hooks/`, exit 0; `bash scripts/gates.sh` `all gates ok` (manifest, sheets, frontmatter, skill sections, EOL, acceptance advisory) | no linter or type checker is configured | low: the gates are the repo's static layer by design |
+| unit | 14 self-test suites, 0 failed (check-acceptance 13, check-eol 6, check-frontmatter 10, check-manifest 16, check-sheets 10, check-skill-sections 7, sync-vendored ok, where 29, which 15, header 13, infer 29, keywords 30, signals 31, todo 6) | nothing | low |
+| build | not applicable: no `package.json`, no build step, the artifact is the source tree | — | none |
+| runtime | not applicable: no server or UI; the scripts ran on throwaway repos in the functional layer | — | none |
+| functional | 8 of 8 `## Acceptance` bullets probed on throwaway repos (`qa-gate-v15.sh`, pasted in `docs/ci-red-runs.md` (e)) | bullet 5 probes the `N open questions` line of `check-acceptance`; the router's refusal to close is agent behavior stated in `SKILL.md`, not runnable | low |
+| regression | the 11 suites of untouched modules still pass (unit row); CI install-smoke ran the installed copy on both fixtures (PR #7, #8); constitution principles with a check: gates (run), LF files (check-eol, run), vendored intact (sync-vendored, run) | principles without a check (spec first, dogfood first, pasted records, bump markers, no co-authorship) are review-only; finding: two cycles with the same effective date (same-second commits) rank by smaller path, so the older dated slug wins the tie | low: same-second ties happen only when two specs land in one commit; deferred, see `## Decisions` |
