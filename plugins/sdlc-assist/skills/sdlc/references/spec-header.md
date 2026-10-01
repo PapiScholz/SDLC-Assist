@@ -26,7 +26,7 @@ Close mode runs the inference, uses the phase the user confirmed, and advances f
 | Confirmed phase | Writes |
 |---|---|
 | initial | nothing (the produced spec already reads `Phase: analysis`) |
-| analysis | `Status: approved`, `Phase: planning` |
+| analysis | `Status: approved`, `Phase: planning`; only when `## Open Questions` reads `(none)` (see `spec-template.md`) |
 | planning | `Phase: development` |
 | development | `Phase: testing` |
 | testing | `Phase: deployment` |

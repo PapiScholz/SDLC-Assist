@@ -90,7 +90,7 @@ skills; generating code from specs.
 - WHEN `docs/specs/<slug>/spec.md` exists with a header, THE SYSTEM SHALL list it as a cycle with `plan` and `todo` taken from `plan.md` and `tasks.md` in the same folder.
 - WHEN the active spec is a flat `docs/specs/<name>.md`, THE SYSTEM SHALL keep reading `tasks/plan.md` and `tasks/todo.md`.
 - IF a spec's `## Acceptance` has a bullet that matches no EARS shape, THEN the acceptance check SHALL print the file and line and exit 0.
-- IF `## Open Questions` has bullets, THEN close mode on `analysis` SHALL refuse to advance the header and list them.
+- IF `## Open Questions` has bullets, THEN THE ROUTER SHALL refuse to close `analysis` and list them.
 - THE SYSTEM SHALL ship `references/spec-template.md` and `references/constitution-template.md` and name both from the `analysis` and `planning` sheets.
 - WHILE two folder cycles are active, THE SYSTEM SHALL not emit the "one planned cycle at a time" warning.
 - THE SYSTEM SHALL keep `bash scripts/gates.sh` at `all gates ok` after every plan, with the new checks included.

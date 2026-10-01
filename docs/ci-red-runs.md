@@ -1035,3 +1035,22 @@ inferred analysis type unknown active null evidence ["plan present but no active
 $ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message-file "$TMPDIR/w.txt"    # message: where are we
 active docs/specs/2026-09-30-v1-5-sdd-alignment.md inferred analysis todo {"exists":true,"path":"tasks/todo.md","open":28,"done":0,"total":28}
 ```
+
+### (b) check-acceptance: red run, green run, repo-wide output (branch `v1.5-ears`, working tree)
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.self-test.js | tail -1    # before check-acceptance.js existed
+0 passed, 10 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.self-test.js | tail -1    # after; two cases added later (closed specs skipped, multi-word subjects)
+12 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.js --root .
+check-acceptance: 1 specs, 8 bullets, 0 not EARS
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.js --root . --all | tail -1
+check-acceptance: 6 specs, 13 bullets, 5 not EARS (12 warnings)
+$ bash scripts/gates.sh | tail -3
+ok check-acceptance (advisory)
+ok settings.json
+all gates ok
+```
+
+The first repo-wide run (before `--all` existed) flagged the five closed specs and two bullets of the v1.5 spec itself: `IF ... THEN close mode on analysis SHALL` has no component as subject, and `THE ACCEPTANCE CHECK SHALL` needed a subject of more than one word. The spec bullet was rewritten (`THEN THE ROUTER SHALL refuse to close analysis`), the subject pattern widened, and closed specs became records the check skips unless `--all` is given.

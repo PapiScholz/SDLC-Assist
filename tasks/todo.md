@@ -9,13 +9,13 @@ Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, pl
 - [x] 1.4 Dogfood (a) in ci-red-runs; PR #5 merged (cec383e, released as v0.5.1 by mistake: merge commit without the marker); Re-validate pending
 
 ## Plan 2 — EARS and spec template (`docs/plans/plan-ears.md`)
-- [ ] 2.1 `references/spec-template.md` (header, Clarifications, Open Questions, Acceptance in EARS)
-- [ ] 2.2 `check-acceptance.self-test.js` red, then `check-acceptance.js` green (five shapes, prose warns, missing section warns, `--strict`)
-- [ ] 2.3 Open-questions report in the same check, with tests
-- [ ] 2.4 `gates.sh` and CONTRIBUTING name the check (warn-only)
-- [ ] 2.5 SKILL.md close rule for analysis; spec-header.md row; analysis sheet names the template
-- [ ] 2.6 qa-gate functional row reads Acceptance bullets; check-skill-sections still ok
-- [ ] 2.7 Repo-wide check output pasted; dogfood (b); PR with `[minor]`, merge, Re-validate
+- [x] 2.1 `references/spec-template.md` (header, Clarifications, Open Questions, Acceptance in EARS)
+- [x] 2.2 `check-acceptance.self-test.js` red, then `check-acceptance.js` green (five shapes, prose warns, missing section warns, `--strict`)
+- [x] 2.3 Open-questions report in the same check, with tests
+- [x] 2.4 `gates.sh` and CONTRIBUTING name the check (warn-only)
+- [x] 2.5 SKILL.md close rule for analysis; spec-header.md row; analysis sheet names the template
+- [x] 2.6 qa-gate functional row reads Acceptance bullets; check-skill-sections still ok
+- [ ] 2.7 Repo-wide check output pasted and dogfood (b) done; pending: PR with `[minor]`, merge, Re-validate
 
 ## Plan 3 — per-cycle layout (`docs/plans/plan-layout.md`)
 - [ ] 3.1 `findSpecs` discovers `docs/specs/<dir>/spec.md` (tests first)
