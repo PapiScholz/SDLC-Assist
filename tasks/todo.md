@@ -3,9 +3,9 @@
 Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, plan: tasks/plan.md → docs/plans/plan-*.md)
 
 ## Plan 1 — positioning (`docs/plans/plan-positioning.md`)
-- [ ] 1.1 README "Who this is for": taxonomy paragraph, spec-anchored, what the router adds
-- [ ] 1.2 Plugin README: one spec-anchored sentence
-- [ ] 1.3 README Roadmap: v1.5 list
+- [x] 1.1 README "Who this is for": taxonomy paragraph, spec-anchored, what the router adds
+- [x] 1.2 Plugin README: one spec-anchored sentence
+- [x] 1.3 README Roadmap: v1.5 list
 - [ ] 1.4 Dogfood (a) in ci-red-runs; PR, merge, Re-validate
 
 ## Plan 2 — EARS and spec template (`docs/plans/plan-ears.md`)
