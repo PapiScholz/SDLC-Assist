@@ -1,7 +1,7 @@
 # Spec: v1.6 — repo artifacts the router detects and cites (ADRs, ARCHITECTURE.md, hygiene)
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-10-01
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.8.0)
@@ -131,3 +131,14 @@ References and dogfood:
 ## Verification record
 
 Pasted output goes to `docs/ci-red-runs.md`, section "v1.6 dogfood": (a) this spec's open (router and `check-acceptance.js`), (b) `where.js` before and after plan A, (c) before and after plan B, (d) the three releases at close. The qa-gate table at close goes here.
+
+sdlc-qa-gate report at close (2026-10-01, `main` at 75f1b90, released as v0.9.0, v0.10.0 and v0.11.0):
+
+| Layer | Verified | Not verified | Residual risk |
+|---|---|---|---|
+| static | `node --check` on the 36 scripts under `bin/`, `bin/lib/` and `scripts/hooks/`, exit 0; `bash scripts/gates.sh` ends with `all gates ok` (manifest, sheets, frontmatter, skill sections, EOL, acceptance advisory, ADR advisory) | no linter or type checker is configured | low: the gates are the repo's static layer by design |
+| unit | 17 self-test suites, 0 failed (header 13, infer 29, keywords 30, signals 44, todo 6, check-acceptance 13, check-adr 10, check-eol 6, check-frontmatter 10, check-manifest 16, check-sheets 10, check-skill-sections 7, sync-vendored ok, where 32, which 15, eol-guard 12, git-authorization 175) | nothing | low |
+| build | not applicable: no `package.json`, no build step, the artifact is the source tree | — | none |
+| runtime | not applicable: no server or UI; the scripts ran on throwaway repos in the functional layer | — | none |
+| functional | 44 of 44 `## Acceptance` bullets probed, one probe per bullet, on throwaway repos under `mktemp` and on this checkout (`qa-functional.sh`, pasted in `docs/ci-red-runs.md` (d)); first run had one red probe (11, hygiene shape) that was a bug in the probe's JSON helper, not in the product | the sheet wording bullets are asserted by `grep` on the sheet text; that the agent cites the signal at runtime is behavior stated in `SKILL.md`, not runnable | low |
+| regression | the suites of untouched modules still pass (unit row); `signals.js` importers (`where.js`, `check-acceptance.js`) pass their self-tests; `which.js`, `infer.js` and the vendored skills are unchanged since v0.8.0 (probe 44); CI install-smoke asserted the three signals on both fixtures (PR #11, #12, #13); constitution principles with a check: gates (run), LF files (check-eol, run), vendored intact (sync-vendored, run) | principles without a check (spec first, dogfood first, pasted records, bump markers, no co-authorship) are review-only | low |

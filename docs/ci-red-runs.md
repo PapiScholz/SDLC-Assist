@@ -1348,3 +1348,112 @@ $ node plugins/sdlc-assist/skills/sdlc/bin/check-sheets.js --root . | tail -1; b
 check-sheets: 6 sheets OK
 all gates ok
 ```
+
+### (d) qa-gate at close, the three releases and the global reinstall (branch `v1.6-close`, `main` at 75f1b90, 2026-10-01)
+
+Functional layer: one probe per `## Acceptance` bullet, on throwaway repos under `mktemp` and on this checkout (script `qa-functional.sh`, kept in the session scratchpad; each probe runs `where.js`, `check-adr.js` or `gates.sh` from this checkout and asserts on the JSON or the text). First run had one red probe, in the probe and not in the product: probe 11 fed `Object.keys(signals.hygiene)` to a helper that prefixes only the first token with the parsed object, so it evaluated `j.Object.keys(...)`; rewritten as a direct `node -e` the shape is `present,missing,license`.
+
+```
+$ bash qa-functional.sh
+ok   1 adr absent shape
+ok   2 adr count/byStatus/latest
+ok   3 decisions fallback
+ok   4 docs/adr wins
+ok   5 non-matching name ignored
+ok   6 superseded by counted
+ok   7 architecture root
+ok   8 docs/architecture fallback
+ok   9 root wins
+ok   10 findDoc shared, constitution tests pass
+ok   11 hygiene shape
+ok   12 nine missing on empty
+ok   13 LICENSE* => license true
+ok   14 hygiene no git, no writes
+ok   15 analysis: mark [ADR], create proposed
+ok   16 planning: ADR by number
+ok   17 development: accepted in commit
+ok   18 deployment: proposed listed at close
+ok   19 initial offers ARCHITECTURE.md
+ok   20 analysis reads architecture, [ADR] on boundary
+ok   21 development updates ARCHITECTURE.md
+ok   22 initial lists hygiene.missing
+ok   23 deployment warns LICENSE/SECURITY when !inProduction
+ok   24 deployment silent in production
+ok   25 hygiene only in initial, deployment
+ok   26 ADRs only in analysis/planning/development/deployment
+ok   27 SKILL ADR line
+ok   28 SKILL architecture line
+ok   29 SKILL hygiene line conditions
+ok   30 absent signal prints nothing
+ok   31 [ADR] without file warns, no block
+ok   32 never writes adr/architecture/hygiene files
+ok   33 duplicate number warn
+ok   34 invalid status warn
+ok   35 superseded missing warn
+ok   36 gaps do not warn
+ok   37 exit 0, --strict 1
+ok   38 gates.sh prints check-adr advisory and all gates ok
+ok   39 three references ship, no copied content
+ok   40 five accepted dated ADRs
+ok   41 ARCHITECTURE.md lists five ADRs
+ok   42 this repo hygiene.missing empty
+ok   43 install-smoke asserts the three signals on both fixtures
+ok   44 which.js, infer.js, vendored unchanged since v0.8.0
+functional: 44 probes, 0 failed
+```
+
+Static and unit layers:
+
+```
+$ for f in $(find plugins/sdlc-assist/skills/sdlc/bin scripts/hooks -name "*.js" -not -path "*/vendored/*"); do node --check "$f" || echo "FAIL $f"; done; echo "exit $?"
+exit 0    # 36 files
+$ for t in plugins/sdlc-assist/skills/sdlc/bin/lib/*.self-test.js plugins/sdlc-assist/skills/sdlc/bin/*.self-test.js scripts/hooks/*.self-test.js; do printf '%s ' "$(basename $t)"; node $t | tail -1; done
+header.self-test.js 13 passed, 0 failed
+infer.self-test.js 29 passed, 0 failed
+keywords.self-test.js 30 passed, 0 failed
+signals.self-test.js 44 passed, 0 failed
+todo.self-test.js 6 passed, 0 failed
+check-acceptance.self-test.js 13 passed, 0 failed
+check-adr.self-test.js 10 passed, 0 failed
+check-eol.self-test.js 6 passed, 0 failed
+check-frontmatter.self-test.js 10 passed, 0 failed
+check-manifest.self-test.js 16 passed, 0 failed
+check-sheets.self-test.js 10 passed, 0 failed
+check-skill-sections.self-test.js 7 passed, 0 failed
+sync-vendored.self-test.js sync-vendored self-test OK
+where.self-test.js 32 passed, 0 failed
+which.self-test.js 15 passed, 0 failed
+eol-guard.self-test.js 12 passed, 0 failed
+git-authorization.self-test.js 175 passed, 0 failed
+```
+
+Releases of the cycle (three PRs merged with a merge commit after CI, no `[skip release]`, `[minor]` in the branch commit):
+
+```
+$ gh run list --branch main --workflow release.yml --limit 3 --json name,conclusion,headSha,displayTitle -q '.[] | .name + " " + .conclusion + " " + .headSha[0:7] + " " + .displayTitle'
+release success c95bc73 Merge pull request #13 from PapiScholz/v1.6-hygiene
+release success 3d1938e Merge pull request #12 from PapiScholz/v1.6-architecture
+release success 925990b Merge pull request #11 from PapiScholz/v1.6-adr
+$ gh release list --limit 3
+v0.11.0	Latest	v0.11.0	2026-10-01T16:41:01Z
+v0.10.0		v0.10.0	2026-10-01T16:27:49Z
+v0.9.0		v0.9.0	2026-10-01T16:03:31Z
+```
+
+Global reinstall of the skills from the published repo (`~/.agents/skills` had 0.8.0 from the v1.5 close):
+
+```
+$ npx -y skills add PapiScholz/SDLC-Assist -y -g --copy
+└  Done!  Review skills before use; they run with full agent permissions.
+$ grep -m1 "^version:" ~/.agents/skills/sdlc/SKILL.md
+version: 0.11.0
+$ ls ~/.agents/skills | grep -E "^(sdlc|spec-driven|test-driven|incremental|planning)"
+incremental-implementation
+planning-and-task-breakdown
+sdlc
+sdlc-debugging
+sdlc-qa-gate
+sdlc-release
+spec-driven-development
+test-driven-development
+```
