@@ -217,7 +217,7 @@ bash scripts/gates.sh
 
 v1.5 shipped as v0.6.0, v0.7.0 and v0.8.0 (spec `docs/specs/2026-09-30-v1-5-sdd-alignment.md`, closed): acceptance criteria in EARS with a warn-only check, `## Clarifications` with a close rule for analysis, one plan and one task list per cycle (`docs/specs/<date>-<slug>/{spec,plan,tasks}.md`), and a project constitution the router detects and the phase sheets cite. Deferred: native command files for Codex and Cursor once their formats are verified; tie-break of two cycles with the same effective date (see the spec's `## Decisions`).
 
-v1.6 (spec `docs/specs/2026-10-01-v1-6-repo-artifacts/spec.md`, in analysis) adds three read-only signals the router detects and the phase sheets cite, never writes and never nags about: ADRs in `docs/adr/` with an advisory `check-adr.js` (v0.9.0), `ARCHITECTURE.md` (v0.10.0), and a closed list of repo hygiene files mentioned in `initial` and `deployment` only (v0.11.0). It is the first cycle on the per-cycle folder layout.
+v1.6 shipped as v0.9.0, v0.10.0 and v0.11.0 (spec `docs/specs/2026-10-01-v1-6-repo-artifacts/spec.md`, closed): three read-only signals the router detects and the phase sheets cite, never writes and never nags about: ADRs in `docs/adr/` with an advisory `check-adr.js` (v0.9.0), `ARCHITECTURE.md` (v0.10.0), and a closed list of repo hygiene files mentioned in `initial` and `deployment` only (v0.11.0). It is the first cycle on the per-cycle folder layout.
 
 ## Security
 

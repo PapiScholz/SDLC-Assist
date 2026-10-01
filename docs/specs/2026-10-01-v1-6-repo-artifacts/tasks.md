@@ -30,4 +30,4 @@ Spec: `spec.md`. Plan: `plan.md`. One PR per plan; a task is ticked when its PR 
 - [x] C.6 `docs/sdlc-flow.md` dashed node (Mermaid validated); README day-one step and ADR mention
 
 ## Close (`v1.6-close`, docs-only, `[skip release]`)
-- [ ] Z.1 qa-gate table in `## Verification record`; header `Phase: deployment` / `Status: closed`; dogfood (d); reinstall `~/.agents/skills`; handoff and memory updated
+- [x] Z.1 qa-gate table in `## Verification record`; header `Phase: deployment` / `Status: closed`; dogfood (d); reinstall `~/.agents/skills`; handoff and memory updated
