@@ -92,6 +92,28 @@ check('findDoc is shared: constitution and architecture resolve independently in
   const { findDoc } = require('./signals');
   assert.deepStrictEqual(findDoc(root, ['nope.md', 'ARCHITECTURE.md']), { exists: true, path: 'ARCHITECTURE.md', sections: ['Overview'] });
 });
+const HYGIENE = ['LICENSE', 'README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md', '.gitignore', '.gitattributes', '.editorconfig', 'ARCHITECTURE.md'];
+check('hygiene: empty dir => nine missing, none present, no license', () => {
+  assert.deepStrictEqual(collectSignals(tmpDir(), {}).hygiene, { present: [], missing: HYGIENE, license: false });
+});
+check('hygiene: full dir => none missing, license true; order follows the closed list', () => {
+  const root = tmpDir();
+  for (const f of HYGIENE) write(root, f, 'x\n');
+  assert.deepStrictEqual(collectSignals(root, {}).hygiene, { present: HYGIENE, missing: [], license: true });
+});
+check('hygiene: LICENSE.md and LICENSE.txt count as the license; docs/architecture.md counts as ARCHITECTURE.md', () => {
+  const root = tmpDir(); write(root, 'LICENSE.md', 'MIT\n'); write(root, 'docs/architecture.md', '# A\n\n## Overview\n');
+  const h = collectSignals(root, {}).hygiene;
+  assert.strictEqual(h.license, true); assert.ok(h.present.includes('LICENSE')); assert.ok(h.present.includes('ARCHITECTURE.md'));
+  assert.ok(!h.missing.includes('LICENSE') && !h.missing.includes('ARCHITECTURE.md'));
+  const root2 = tmpDir(); write(root2, 'LICENSE.txt', 'MIT\n');
+  assert.strictEqual(collectSignals(root2, {}).hygiene.license, true);
+});
+check('hygiene: a directory named like a file does not count; LICENSES/ is not a license', () => {
+  const root = tmpDir(); fs.mkdirSync(path.join(root, 'README.md')); fs.mkdirSync(path.join(root, 'LICENSES'));
+  const h = collectSignals(root, {}).hygiene;
+  assert.ok(h.missing.includes('README.md')); assert.strictEqual(h.license, false);
+});
 check('adr absent => exists false, dir null, count 0, no statuses, no latest', () => {
   assert.deepStrictEqual(collectSignals(tmpDir(), {}).adr, { exists: false, dir: null, count: 0, byStatus: {}, latest: null });
 });

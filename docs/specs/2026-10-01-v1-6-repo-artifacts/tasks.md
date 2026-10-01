@@ -22,12 +22,12 @@ Spec: `spec.md`. Plan: `plan.md`. One PR per plan; a task is ticked when its PR 
 - [x] B.5 This repo's `ARCHITECTURE.md`; install-smoke assertion; dogfood (c)
 
 ## Plan C — repo hygiene (`v1.6-hygiene`, `[minor]` → v0.11.0)
-- [ ] C.1 `hygiene` signal over the closed list of nine; self-test cases first
-- [ ] C.2 `references/repo-hygiene.md` (why + canonical source per file; item 14 line)
-- [ ] C.3 Sheets: initial lists missing, deployment warns when `!inProduction`; no other sheet
-- [ ] C.4 `SKILL.md` step 6 line in initial and deployment only
-- [ ] C.5 This repo's `.editorconfig`; `hygiene.missing` empty; install-smoke assertions
-- [ ] C.6 `docs/sdlc-flow.md` dashed node (Mermaid validated); README day-one step and ADR mention
+- [x] C.1 `hygiene` signal over the closed list of nine; self-test cases first
+- [x] C.2 `references/repo-hygiene.md` (why + canonical source per file; item 14 line)
+- [x] C.3 Sheets: initial lists missing, deployment warns when `!inProduction`; no other sheet
+- [x] C.4 `SKILL.md` step 6 line in initial and deployment only
+- [x] C.5 This repo's `.editorconfig`; `hygiene.missing` empty; install-smoke assertions
+- [x] C.6 `docs/sdlc-flow.md` dashed node (Mermaid validated); README day-one step and ADR mention
 
 ## Close (`v1.6-close`, docs-only, `[skip release]`)
 - [ ] Z.1 qa-gate table in `## Verification record`; header `Phase: deployment` / `Status: closed`; dogfood (d); reinstall `~/.agents/skills`; handoff and memory updated

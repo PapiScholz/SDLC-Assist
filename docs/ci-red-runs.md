@@ -1319,3 +1319,32 @@ $ node plugins/sdlc-assist/skills/sdlc/bin/check-sheets.js --root . | tail -1; b
 check-sheets: 6 sheets OK
 all gates ok
 ```
+
+### (c2) plan C: hygiene signal on this repo before and after `.editorconfig` (branch `v1.6-hygiene`, 2026-10-01)
+
+```
+$ git show HEAD:plugins/sdlc-assist/skills/sdlc/bin/lib/signals.js | grep -c findHygiene   # HEAD = 3d1938e (v0.10.0), before C.1
+0
+$ test -f .editorconfig at HEAD: git ls-tree HEAD --name-only | grep -c editorconfig
+0
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | node -e ...   # signals.hygiene after C.5
+{"present":["LICENSE","README.md","CONTRIBUTING.md","SECURITY.md","CODE_OF_CONDUCT.md",".gitignore",".gitattributes",".editorconfig","ARCHITECTURE.md"],"missing":[],"license":true}
+inferred: development inProduction: true warnings: []
+$ for t in signals where; do ...self-test.js | tail -1; done
+signals.self-test.js 44 passed, 0 failed
+where.self-test.js 32 passed, 0 failed
+$ bash <scratchpad>/replay-smoke.sh   # the two install-smoke fixtures of ci.yml, replayed on the working copy
+ok development {"accepted":1,"proposed":1} ["Overview","Structure"] hygiene.missing: [] warnings: 0
+check-adr: docs/adr, 2 ADRs
+ok check-adr summary
+ok empty fixture: adr and architecture absent, hygiene.missing 9 license false
+$ node -e "...valid" on the two saved MCP results of docs/sdlc-flow.md blocks 1 and 3
+sdlc-flow block 1 valid: true flowchart
+sdlc-flow block 3 valid: true flowchart
+$ grep -c hygiene plugins/sdlc-assist/skills/sdlc/references/phases/*.md | grep -v ":0"
+plugins/sdlc-assist/skills/sdlc/references/phases/deployment.md:1
+plugins/sdlc-assist/skills/sdlc/references/phases/initial.md:1
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-sheets.js --root . | tail -1; bash scripts/gates.sh | tail -1
+check-sheets: 6 sheets OK
+all gates ok
+```
