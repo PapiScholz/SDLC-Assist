@@ -1275,3 +1275,47 @@ ok plugins/sdlc-assist/skills/sdlc/bin/check-adr.self-test.js
 ok check-adr (advisory)
 all gates ok
 ```
+
+### (c) plan B: architecture signal before and after this repo's ARCHITECTURE.md (branch `v1.6-architecture`, 2026-10-01)
+
+```
+$ git show HEAD:plugins/sdlc-assist/skills/sdlc/bin/lib/signals.js | grep -c "findDoc\|findArchitecture"   # HEAD = 925990b (v0.9.0), before B.1
+0
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message "where are we" | node -e ...   # signals.architecture and signals.constitution after B.5 (findDoc shared)
+{
+ "architecture": {
+  "exists": true,
+  "path": "ARCHITECTURE.md",
+  "sections": [
+   "Overview",
+   "Structure",
+   "Components and boundaries",
+   "Data flow",
+   "Decisions"
+  ]
+ },
+ "constitution": {
+  "exists": true,
+  "path": "docs/constitution.md",
+  "sections": [
+   "Principles",
+   "Never",
+   "Testing",
+   "Release",
+   "Amendments"
+  ]
+ }
+}
+inferred: development warnings: []
+$ for t in signals where; do ...self-test.js | tail -1; done
+signals.self-test.js 40 passed, 0 failed
+where.self-test.js 31 passed, 0 failed
+$ bash <scratchpad>/replay-smoke.sh   # the two install-smoke fixtures of ci.yml, replayed on the working copy
+ok development {"accepted":1,"proposed":1} {"exists":true,"path":"ARCHITECTURE.md","sections":["Overview","Structure"]} warnings: 0
+check-adr: docs/adr, 2 ADRs
+ok check-adr summary
+ok empty fixture: adr and architecture absent
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-sheets.js --root . | tail -1; bash scripts/gates.sh | tail -1
+check-sheets: 6 sheets OK
+all gates ok
+```

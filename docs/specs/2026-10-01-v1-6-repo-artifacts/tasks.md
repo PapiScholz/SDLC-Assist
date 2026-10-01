@@ -15,11 +15,11 @@ Spec: `spec.md`. Plan: `plan.md`. One PR per plan; a task is ticked when its PR 
 - [x] A.6 Five retroactive ADRs in `docs/adr/`; constitution amendment line; install-smoke assertions; dogfood (b)
 
 ## Plan B — ARCHITECTURE.md (`v1.6-architecture`, `[minor]` → v0.10.0)
-- [ ] B.1 `findDoc(root, paths)` shared by constitution and architecture; self-test cases first
-- [ ] B.2 `references/architecture-template.md`
-- [ ] B.3 Sheets: initial offers it, analysis reads it, development keeps it current
-- [ ] B.4 `SKILL.md` step 6 line
-- [ ] B.5 This repo's `ARCHITECTURE.md`; install-smoke assertion; dogfood (c)
+- [x] B.1 `findDoc(root, paths)` shared by constitution and architecture; self-test cases first
+- [x] B.2 `references/architecture-template.md`
+- [x] B.3 Sheets: initial offers it, analysis reads it, development keeps it current
+- [x] B.4 `SKILL.md` step 6 line
+- [x] B.5 This repo's `ARCHITECTURE.md`; install-smoke assertion; dogfood (c)
 
 ## Plan C — repo hygiene (`v1.6-hygiene`, `[minor]` → v0.11.0)
 - [ ] C.1 `hygiene` signal over the closed list of nine; self-test cases first
