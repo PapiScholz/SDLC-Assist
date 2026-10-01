@@ -65,6 +65,17 @@ After the first listing, every push to `main` already publishes a release, and t
 | `composio-community/awesome-claude-plugins` | Copies the plugin folder into their repository | Not pursued: a second copy of the plugin with no sync check drifts silently. |
 | `GiladShoham/awesome-claude-plugins` | Copies the plugin folder into `plugins/` of their marketplace | Not pursued, same reason. |
 | skills.sh, awesomeclaudeplugins.com | Automatic index of public GitHub repositories | Listed already; nothing to do. |
+| `awesome-opencode/awesome-opencode` | Link only: one YAML file in `data/projects/` (schema `data/schema.json`, tagline ≤120 chars); the README regenerates from it. Requires relevance to OpenCode and commits in the last 6 months. | Submitted 2026-10-01 as `awesome-opencode/awesome-opencode#799` from the fork `PapiScholz/awesome-opencode`, branch `add-sdlc-assist`; passed their `scripts/validate.js` locally. Their CI had not run yet (first-time contributor). Last merge there 2026-07-02, 200+ open PRs. |
+| `composio-community/awesome-codex-skills` | Link only, with a Codex install line (`install-skill-from-github.py`); no star or age floor. | Eligible, not sent. Verify the install line from a clean Codex home first. |
+| `BehiSecc/awesome-claude-skills` | Link only, one line; no written rules. | Eligible, not sent. 200+ open PRs; the maintainer adds entries by hand. |
+| `heilcheng/awesome-agent-skills` | Link only. | Eligible, not sent. Dormant since 2026-04-05. |
+| `VoltAgent/awesome-agent-skills` | Link only, description ≤10 words with author prefix, PR title `Add skill: author/skill-name`. Refuses brand-new skills; recent additions had 136+ stars. | Later, once the repo has users and stars. |
+| `libukai/awesome-agent-skills` | Hand-curated by the maintainer; issues welcome. | Later, as an issue suggestion at most. |
+| `travisvn/awesome-claude-skills` | Link only. Closes skills under 10 stars and refuses AI-assisted PRs. | Not eligible. |
+| `ComposioHQ/awesome-claude-skills` | Copies the skill folder into their repository. | Not pursued: copy drifts, and no merge since 2026-05-22. |
+| `hashgraph-online/awesome-codex-plugins` (fork at `PapiScholz/awesome-codex-plugins`) | Needs `.codex-plugin/plugin.json` and the HOL plugin scanner in CI. | Not pursued: this repo ships no Codex plugin manifest. |
+
+Rules above were read on 2026-10-01 from each list's README, CONTRIBUTING and templates; recheck before sending.
 
 ## GitHub metadata
 
