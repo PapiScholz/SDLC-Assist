@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.1] - 2026-10-01
+
+- Merge pull request #5 from PapiScholz/v1.5-positioning
+- docs: positioning, spec-anchored not spec-as-source; roadmap v1.5 [skip release]
+- spec: v1.5 SDD alignment, four plans and the todo [skip release]
+- docs: portal validation record, 0 holds on main@59264f8 [skip release]
+- fix: signals.js never reads the environment; git settings travel as flags [skip release]
+- fix: qa-gate runtime row no longer names curl [skip release]
+- fix: git runs with an env allowlist; debugging skill drops the curl mention [skip release]
+- spec: v1.4 closed on v0.5.0; Task 3 done [skip release]
+
 ## [0.5.0] - 2026-09-30
 
 ### Changed
