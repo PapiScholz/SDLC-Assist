@@ -57,6 +57,17 @@ Plugin path `plugins/sdlc-assist`, branch empty. 0 policy holds, 0 warnings. The
 
 After the first listing, every push to `main` already publishes a release, and the directory picks up the same commit; `release.sh` raises `version` in `plugin.json` each time, which the directory requires.
 
+### Listing status (owner's portal, pasted from the screen on 2026-10-01)
+
+```
+Sdlc Assist · Complemento · de PapiScholz · submitted hace 20 horas
+Publicado   Listed in: Claude Code · Cowork · Claude apps
+Enviado (hace 20 horas) → Escaneo de seguridad (hace 14 minutos) → Aprobado → Publicado (hace 14 minutos)
+v0.11.0 · 10b9af8 passed its security scan. It waits for an Anthropic reviewer; [...]
+The live version is still v0.8.0 · ef5bea3.
+```
+Each new version passes the security scan on its own and then waits for an Anthropic reviewer; the owner's **Publish update** button on the plugin page records the request. Until a reviewer approves it, the directory keeps serving the last approved version.
+
 ## Community lists
 
 | List | Entry type | Status |
