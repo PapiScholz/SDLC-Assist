@@ -2,7 +2,7 @@
 
 An agent skill, `sdlc`, that works out which phase of the software development life cycle a work request is in, shows the evidence, asks one confirmation, and points to the skill that does the next step.
 
-It reads the repo (spec headers, `tasks/plan.md`, `tasks/todo.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
+It reads the repo (spec headers, the cycle's `plan.md` and `tasks.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
 
 ## Who this is for
 
@@ -82,7 +82,7 @@ Overwrite and duplicate notes:
 
 ## How to use
 
-A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whose header carries the phase. The router reads that header, `tasks/plan.md`, `tasks/todo.md` and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
+A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slug>/spec.md` with `plan.md` and `tasks.md` beside it, or a legacy flat spec (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) paired with `tasks/plan.md` and `tasks/todo.md`. The router reads that header, the cycle's plan and task list, and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
 
 1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and asks one question: `Phase: <inferred>`, up to three evidence lines, warnings, options. Confirm or pick an alternative. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
 2. **Write the spec** with the skill the router names (`spec-driven-development`; `sdlc-debugging` first on the bug route). Right after the H1:
@@ -105,7 +105,7 @@ A cycle is one spec file (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) whos
    | deployment | `Phase: deployment`, `Status: closed` |
 
    It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
-4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes `tasks/plan.md` and `tasks/todo.md`; `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
+4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
 5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
 
 Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
@@ -136,6 +136,27 @@ Output, trimmed to the keys the router reads:
 
 The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). `inProduction` adds the note "keep the running version safe".
 
+The same run on a repo with a folder cycle (`docs/specs/2026-10-01-x/spec.md` with `Phase: development` / `Status: approved`, `plan.md` and `tasks.md` beside it with two open tasks), trimmed to the cycle keys:
+
+```json
+{
+  "active": { "path": "docs/specs/2026-10-01-x/spec.md", "phase": "development", "status": "approved" },
+  "signals": {
+    "plan": { "exists": true, "path": "docs/specs/2026-10-01-x/plan.md" },
+    "todo": { "exists": true, "path": "docs/specs/2026-10-01-x/tasks.md", "open": 2, "done": 0, "total": 2 }
+  },
+  "inferred": "development",
+  "evidence": [
+    "header Phase: development, Status: approved (docs/specs/2026-10-01-x/spec.md)",
+    "fallback: development (candidates: development)",
+    "tests not run (no --run-tests)"
+  ],
+  "warnings": []
+}
+```
+
+The plan and the task list are the files beside that spec; a flat spec keeps `tasks/plan.md` and `tasks/todo.md`, and a folder under `docs/specs/` without `spec.md` is not a cycle.
+
 ## Missing-skill protocol
 
 If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `plugins/sdlc-assist/skills/sdlc/references/missing-skill.md`.
@@ -148,7 +169,7 @@ How the router maps to the six stages of the AI-native SDLC playbook (`#sd-c2`):
 |---|---|---|
 | Plan | `initial`, or an `intent.md` for an idea on existing code (`references/intent.md`). An intent is for an idea or a feature the originator brings; a feature someone else reports as a request goes through the request card | committed `intent.md` |
 | Design | `analysis` (spec, with `Intent:` when one exists; request card for bugs) | spec with `Status: approved` |
-| Build | `planning` then `development` | `tasks/plan.md`, then the merged PR |
+| Build | `planning` then `development` | the cycle's `plan.md`, then the merged PR |
 | Test | `testing` (`sdlc-qa-gate`) | the gate report and `Phase: deployment` |
 | Deploy | `deployment` (`sdlc-release`) | tag and release |
 | Maintain | entry point `references/maintain.md` | a new `intent.md` |
@@ -189,7 +210,7 @@ Node 20 or newer, no dependencies. One command runs the same gates CI runs (`--q
 bash scripts/gates.sh
 ```
 
-`node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`. Listing channels, the directory pre-submission checks and the portal steps are in [`docs/distribution.md`](docs/distribution.md).
+`node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js` runs the ten phase-inference fixtures alone. To try the folder-cycle fixture the CI install-smoke job runs, build it by hand: `git init` a scratch repo, write `docs/specs/2026-10-01-x/spec.md` (`Phase: development`, `Status: approved`), `plan.md` and `tasks.md` with two open boxes beside it, commit, and run `where.js --root <scratch>`; `inferred` is `development` and `signals.todo.path` is the folder's `tasks.md`. Red CI runs and the dogfood record are in `docs/ci-red-runs.md`. Listing channels, the directory pre-submission checks and the portal steps are in [`docs/distribution.md`](docs/distribution.md).
 
 ## Roadmap
 

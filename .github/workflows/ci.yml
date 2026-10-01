@@ -41,6 +41,20 @@ jobs:
           printf 'un cliente se queja de que la app se rompió al pagar' > "$RUNNER_TEMP/msg.txt"
           node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --message-file "$RUNNER_TEMP/msg.txt" > out.json
           node -e "const j=require('./out.json'); if(j.inferred!=='analysis'||j.request.type!=='complaint'||!j.signals.inProduction){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok', j.inferred, j.request.type)"
+      - name: Installed copy reads a folder cycle (plan.md and tasks.md beside spec.md)
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          fx="$RUNNER_TEMP/fx2"; d="docs/specs/2026-10-01-x"; mkdir -p "$fx/src" "$fx/$d"; cd "$fx"
+          git init -q --initial-branch=main
+          git config user.name t; git config user.email t@t
+          echo x > src/index.js
+          printf '# Spec: x\n\nPhase: development\nStatus: approved\n' > "$d/spec.md"
+          printf '# plan\n' > "$d/plan.md"
+          printf -- '- [ ] a\n- [ ] b\n' > "$d/tasks.md"
+          printf -- '- [x] legacy\n' > /dev/null
+          git add -A; git commit -qm init
+          node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --message "continue" > out.json
+          node -e "const j=require('./out.json'); const d='docs/specs/2026-10-01-x'; if(j.inferred!=='development'||j.active.path!==d+'/spec.md'||j.signals.plan.path!==d+'/plan.md'||j.signals.todo.path!==d+'/tasks.md'||j.signals.todo.open!==2||j.warnings.length){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok', j.inferred, j.signals.todo.path)"
       - name: Installed copy reports sdlc-qa-gate for testing and sdlc-debugging for analysis
         run: |
           export HOME="$RUNNER_TEMP/home"; cd "$RUNNER_TEMP/fx"

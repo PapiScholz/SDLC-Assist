@@ -13,7 +13,7 @@ function sig(o = {}) {
 }
 const spec = (path, phase, status, d = {}) => ({ path, header: { phase, status }, tracked: true, firstCommit: 100, lastCommit: 200, dirty: false, mtime: 250, ...d });
 const plan = (d = {}) => ({ exists: true, path: 'tasks/plan.md', tracked: true, lastCommit: 200, dirty: false, mtime: 250, ...d });
-const todo = (open, done) => ({ exists: true, path: 'tasks/todo.md', open, done, total: open + done });
+const todo = (open, done, path = 'tasks/todo.md') => ({ exists: true, path, open, done, total: open + done });
 const req = type => ({ message: '', type });
 const src = { count: 1, sample: [] };
 const hasAlt = (r, phase, kind) => r.alternatives.some(a => a.phase === phase && a.kind === kind);
@@ -143,7 +143,22 @@ check('2: no spec, in production, complaint => analysis, no new-cycle alt', () =
 });
 check('tests unknown and missing todo are stated in evidence', () => {
   const r = infer(sig({ sourceFiles: src, specs: [spec('s.md', null, 'approved')], plan: plan() }), req('unknown'));
-  assert(r.evidence.some(e => e.includes(EVIDENCE.TESTS_NOT_RUN))); assert(r.evidence.some(e => e.includes(EVIDENCE.NO_TODO)));
+  assert(r.evidence.some(e => e.includes(EVIDENCE.TESTS_NOT_RUN))); assert(r.evidence.some(e => e.includes(EVIDENCE.NO_TODO + ' (tasks/todo.md)')), r.evidence.join('|'));
+});
+check('missing todo evidence names the resolved path of a folder cycle', () => {
+  const dir = 'docs/specs/2026-10-02-x';
+  const s = spec(dir + '/spec.md', null, 'approved', { layout: 'folder', plan: plan({ path: dir + '/plan.md' }), todo: { exists: false, path: dir + '/tasks.md', open: 0, done: 0, total: 0 } });
+  const r = infer(sig({ sourceFiles: src, specs: [s], plan: s.plan, todo: s.todo }), req('unknown'));
+  assert(r.evidence.some(e => e === EVIDENCE.NO_TODO + ' (' + dir + '/tasks.md)'), r.evidence.join('|'));
+  assert.strictEqual(r.inferred, 'planning');
+});
+check('folder cycle: plan beside the spec is current even if its last commit predates the spec first commit', () => {
+  const s = spec('docs/specs/d/spec.md', null, 'approved', { layout: 'folder', firstCommit: 300 });
+  assert.strictEqual(planIsCurrent(plan({ path: 'docs/specs/d/plan.md', lastCommit: 100 }), s), true);
+  const flat = spec('docs/specs/f.md', null, 'approved', { layout: 'flat', firstCommit: 300 });
+  assert.strictEqual(planIsCurrent(plan({ lastCommit: 100 }), flat), false);
+  const r = infer(sig({ sourceFiles: src, specs: [s], plan: plan({ path: 'docs/specs/d/plan.md', lastCommit: 100 }), todo: todo(1, 0, 'docs/specs/d/tasks.md') }), req('unknown'));
+  assert(!r.evidence.some(e => e.includes(EVIDENCE.PLAN_STALE)), r.evidence.join('|')); assert.strictEqual(r.inferred, 'development');
 });
 check('plan present, no specs => NO_PLAN_CYCLE evidence; no plan => none', () => {
   const r = infer(sig({ sourceFiles: src, plan: plan(), todo: todo(2, 1) }), req('unknown'));

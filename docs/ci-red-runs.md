@@ -1054,3 +1054,61 @@ all gates ok
 ```
 
 The first repo-wide run (before `--all` existed) flagged the five closed specs and two bullets of the v1.5 spec itself: `IF ... THEN close mode on analysis SHALL` has no component as subject, and `THE ACCEPTANCE CHECK SHALL` needed a subject of more than one word. The spec bullet was rewritten (`THEN THE ROUTER SHALL refuse to close analysis`), the subject pattern widened, and closed specs became records the check skips unless `--all` is given.
+
+### (c) where.js on a folder cycle, scratch repo (branch `v1.5-layout`, working tree over `main` at a026670)
+
+Fixture: `git init`, one source file, `docs/specs/2026-10-01-x/{spec,plan,tasks}.md` with `Phase: development` / `Status: approved` and two open tasks, one commit. The self-tests were red first (`signals.self-test.js`: 2 failed on discovery, then 5 on the per-cycle pair; `todo.self-test.js`: 1 failed on fences; `check-acceptance.self-test.js`: 1 failed on the folder spec, because it carried its own copy of `findSpecs`).
+
+```
+$ node <repo>/plugins/sdlc-assist/skills/sdlc/bin/where.js --root . --message "continue" | grep -E '"inferred"|"layout"|"path": "docs/specs/2026-10-01-x/(spec|plan|tasks).md"|"open"|stale|no active'
+        "path": "docs/specs/2026-10-01-x/spec.md",
+        "layout": "folder",
+          "path": "docs/specs/2026-10-01-x/plan.md",
+          "path": "docs/specs/2026-10-01-x/tasks.md",
+          "open": 2,
+      "path": "docs/specs/2026-10-01-x/plan.md",
+      "path": "docs/specs/2026-10-01-x/tasks.md",
+      "open": 2,
+      "path": "docs/specs/2026-10-01-x/spec.md",
+    "path": "docs/specs/2026-10-01-x/spec.md",
+  "inferred": "development",
+```
+(trimmed to the grep: the first group is `signals.specs[0]`, the second `signals.plan`/`signals.todo`, then `cycles[0]` and `active`; no `stale` or `no active` line matched.) Same fixture with both tasks ticked:
+
+```
+$ node <repo>/plugins/sdlc-assist/skills/sdlc/bin/where.js --root . --message "continue" | grep -E '"inferred"|"open"|"done"|"warnings"|header says'
+          "open": 0,
+          "done": 2,
+      "open": 0,
+      "done": 2,
+  "inferred": "development",
+  "warnings": [
+    "header says development but artifacts say testing"
+```
+(the header stays the phase of record; the warning is what `sdlc close` resolves.) Router keys of the first run:
+
+```
+$ node -e "const j=require('./out.json'); console.log(JSON.stringify({active:{path:j.active.path,phase:j.active.phase,status:j.active.status}, signals:{plan:{exists:j.signals.plan.exists,path:j.signals.plan.path}, todo:j.signals.todo}, inferred:j.inferred, evidence:j.evidence, warnings:j.warnings},null,2))"
+{
+  "active": { "path": "docs/specs/2026-10-01-x/spec.md", "phase": "development", "status": "approved" },
+  "signals": {
+    "plan": { "exists": true, "path": "docs/specs/2026-10-01-x/plan.md" },
+    "todo": { "exists": true, "path": "docs/specs/2026-10-01-x/tasks.md", "open": 2, "done": 0, "total": 2 }
+  },
+  "inferred": "development",
+  "evidence": [
+    "header Phase: development, Status: approved (docs/specs/2026-10-01-x/spec.md)",
+    "fallback: development (candidates: development)",
+    "tests not run (no --run-tests)"
+  ],
+  "warnings": []
+}
+```
+(JSON re-flowed onto fewer lines; values unchanged.) Direction taken for the `active` selection (plan 3 risk): the ranking moved out of `infer()` into `rankCycles`/`pickActive` in `lib/infer.js`, and `signals.js` calls `pickActive` to resolve `signals.plan`/`signals.todo`; `where.js` is untouched and `where.self-test.js` passed unchanged (28/28). Gates on the working tree:
+
+```
+$ bash scripts/gates.sh | tail -3
+ok check-acceptance (advisory)
+ok settings.json
+all gates ok
+```

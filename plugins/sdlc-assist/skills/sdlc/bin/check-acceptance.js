@@ -20,14 +20,8 @@ const root = i !== -1 && argv[i + 1] ? path.resolve(argv[i + 1]) : process.cwd()
 const strict = argv.includes('--strict');
 const all = argv.includes('--all');
 
-function listDir(abs) { try { return fs.readdirSync(abs, { withFileTypes: true }); } catch { return []; } }
-// Same discovery as lib/signals.js findSpecs (kept in step by the self-test that scans the three locations).
-function findSpecs(dir) {
-  const out = [];
-  for (const e of listDir(path.join(dir, 'docs', 'specs'))) if (e.isFile() && /\.md$/i.test(e.name)) out.push('docs/specs/' + e.name);
-  for (const e of listDir(dir)) if (e.isFile() && (/^spec\.md$/i.test(e.name) || /^SPEC-.*\.md$/i.test(e.name))) out.push(e.name);
-  return out.sort();
-}
+// One discovery for the whole skill: flat docs/specs/*.md, folder docs/specs/<dir>/spec.md, root spec.md and SPEC-*.md.
+const { findSpecs } = require('./lib/signals');
 
 const SUBJECT = '(?:the(?:\\s+\\S+){1,3}?|`[^`]+`|[A-Z][A-Za-z0-9_.-]*)';   // THE SYSTEM, THE ACCEPTANCE CHECK, `where.js`, WHERE.JS
 const SHALL = SUBJECT + '\\s+shall\\b';

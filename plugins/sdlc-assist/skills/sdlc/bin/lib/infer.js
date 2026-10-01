@@ -1,7 +1,7 @@
 const { PHASES } = require('./header');
 const EVIDENCE = { NO_RULE: 'no rule matched', PLAN_STALE: 'plan belongs to a closed cycle', NO_TASKS: 'todo has no tasks',
   DEPLOY_HEADER_ONLY: 'deployment is header-only; tie goes to testing', TESTS_NOT_RUN: 'tests not run (no --run-tests)',
-  NO_TODO: 'no tasks/todo.md: planning, development and testing cannot be distinguished',
+  NO_TODO: 'no todo file: planning, development and testing cannot be distinguished',
   CLOSE_CYCLE: 'semver tag on HEAD: recommend closing the cycle',
   NO_PLAN_CYCLE: 'plan present but no active spec to compare against; treated as current' };
 const NEW_CYCLE_TYPES = ['complaint', 'bug', 'feature'];
@@ -16,14 +16,21 @@ function planDate(p) { return p.tracked && p.lastCommit != null ? p.lastCommit :
 function planIsCurrent(p, active) {
   if (!p || !p.exists) return false;
   if (!active) return true;
+  if (active.layout === 'folder') return true;   // the plan beside spec.md belongs to that cycle by construction
   return planDate(p) >= specStart(active);
 }
 function strip(c) { const { _raw, ...rest } = c; return rest; }
-function infer(signals, request) {
-  const evidence = [], warnings = [], alternatives = [];
-  const cycles = signals.specs
+// Newest effective date first; the active cycle is the first one not closed. Shared with signals.js, which
+// resolves the active cycle's plan/todo pair with the same ranking.
+function rankCycles(specs) {
+  return specs
     .map(s => ({ path: s.path, phase: s.header.phase, status: s.header.status, date: effectiveDate(s), tracked: s.tracked, dirty: s.dirty, _raw: s }))
     .sort((a, b) => b.date - a.date || (a.path < b.path ? -1 : 1));
+}
+function pickActive(specs) { const c = rankCycles(specs).find(c => c.status !== 'closed'); return c ? c._raw : null; }
+function infer(signals, request) {
+  const evidence = [], warnings = [], alternatives = [];
+  const cycles = rankCycles(signals.specs);
   const active = cycles.find(c => c.status !== 'closed') || null;
   cycles.forEach(c => { c.active = c === active; });
   const approved = !!active && active.status === 'approved';
@@ -31,7 +38,7 @@ function infer(signals, request) {
   if (signals.plan.exists && !planCurrent && active) evidence.push(`${EVIDENCE.PLAN_STALE}: ${signals.plan.path} last commit ${planDate(signals.plan)} < ${active.path} first commit ${specStart(active._raw)}`);
   if (signals.plan.exists && !active) evidence.push(EVIDENCE.NO_PLAN_CYCLE);
   const todo = planCurrent ? signals.todo : { ...signals.todo, open: 0, done: 0, total: 0 };   // a stale plan drags its todo along
-  if (planCurrent && !signals.todo.exists) evidence.push(EVIDENCE.NO_TODO);
+  if (planCurrent && !signals.todo.exists) evidence.push(`${EVIDENCE.NO_TODO} (${signals.todo.path})`);
   const candidates = [];
   if (signals.sourceFiles.count === 0 && cycles.length === 0) candidates.push('initial');
   if (!approved) candidates.push('analysis');
@@ -60,4 +67,4 @@ function infer(signals, request) {
   if (signals.inProduction) evidence.push(`in production: tag ${signals.git.lastSemverTag.name}`);
   return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, active: active && strip(active), cycles: cycles.map(strip) };
 }
-module.exports = { infer, effectiveDate, planIsCurrent, EVIDENCE };
+module.exports = { infer, effectiveDate, planIsCurrent, rankCycles, pickActive, EVIDENCE };
