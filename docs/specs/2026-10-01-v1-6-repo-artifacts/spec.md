@@ -1,7 +1,7 @@
 # Spec: v1.6 — repo artifacts the router detects and cites (ADRs, ARCHITECTURE.md, hygiene)
 
-Phase: analysis
-Status: draft
+Phase: planning
+Status: approved
 Date: 2026-10-01
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.8.0)
