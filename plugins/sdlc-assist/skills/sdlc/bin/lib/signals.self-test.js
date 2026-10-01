@@ -71,6 +71,27 @@ check('constitution: root CONSTITUTION.md is the fallback; docs/ wins when both 
   write(root, 'docs/constitution.md', '# C\n\n## Principles\n');
   assert.strictEqual(collectSignals(root, {}).constitution.path, 'docs/constitution.md');
 });
+check('architecture absent => exists false, path null, no sections', () => {
+  assert.deepStrictEqual(collectSignals(tmpDir(), {}).architecture, { exists: false, path: null, sections: [] });
+});
+check('architecture: root ARCHITECTURE.md found; sections are the ## headings outside fences', () => {
+  const root = tmpDir();
+  write(root, 'ARCHITECTURE.md', '# Architecture\n\n## Overview\n\n```\n## Not a section\n```\n\n## Structure\n\n## Decisions\n');
+  assert.deepStrictEqual(collectSignals(root, {}).architecture, { exists: true, path: 'ARCHITECTURE.md', sections: ['Overview', 'Structure', 'Decisions'] });
+});
+check('architecture: docs/architecture.md is the fallback; root wins when both exist', () => {
+  const root = tmpDir(); write(root, 'docs/architecture.md', '# A\n\n## Structure\n');
+  assert.deepStrictEqual(collectSignals(root, {}).architecture, { exists: true, path: 'docs/architecture.md', sections: ['Structure'] });
+  write(root, 'ARCHITECTURE.md', '# A\n\n## Overview\n');
+  assert.strictEqual(collectSignals(root, {}).architecture.path, 'ARCHITECTURE.md');
+});
+check('findDoc is shared: constitution and architecture resolve independently in one repo', () => {
+  const root = tmpDir(); write(root, 'docs/constitution.md', '# C\n\n## Principles\n'); write(root, 'ARCHITECTURE.md', '# A\n\n## Overview\n');
+  const s = collectSignals(root, {});
+  assert.strictEqual(s.constitution.path, 'docs/constitution.md'); assert.strictEqual(s.architecture.path, 'ARCHITECTURE.md');
+  const { findDoc } = require('./signals');
+  assert.deepStrictEqual(findDoc(root, ['nope.md', 'ARCHITECTURE.md']), { exists: true, path: 'ARCHITECTURE.md', sections: ['Overview'] });
+});
 check('adr absent => exists false, dir null, count 0, no statuses, no latest', () => {
   assert.deepStrictEqual(collectSignals(tmpDir(), {}).adr, { exists: false, dir: null, count: 0, byStatus: {}, latest: null });
 });

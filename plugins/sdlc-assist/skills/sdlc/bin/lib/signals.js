@@ -19,10 +19,9 @@ function findSpecs(root) {
   for (const e of listDir(root)) if (e.isFile() && (/^spec\.md$/i.test(e.name) || /^SPEC-.*\.md$/i.test(e.name))) out.push(e.name);
   return out.sort();
 }
-// Constitution (Spec Kit's first artifact): detected and cited, never required. First found wins.
-const CONSTITUTION_PATHS = ['docs/constitution.md', 'CONSTITUTION.md'];
-function findConstitution(root) {
-  for (const rel of CONSTITUTION_PATHS) {
+// Cross-cycle documents (constitution, ARCHITECTURE.md): detected and cited, never required, never written. First path found wins.
+function findDoc(root, paths) {
+  for (const rel of paths) {
     const text = readText(path.join(root, rel));
     if (text === null) continue;
     const sections = unfencedLines(text).map(l => /^##\s+(.+?)\s*$/.exec(l)).filter(Boolean).map(m => m[1]);
@@ -30,6 +29,10 @@ function findConstitution(root) {
   }
   return { exists: false, path: null, sections: [] };
 }
+const CONSTITUTION_PATHS = ['docs/constitution.md', 'CONSTITUTION.md'];
+const ARCHITECTURE_PATHS = ['ARCHITECTURE.md', 'docs/architecture.md'];
+function findConstitution(root) { return findDoc(root, CONSTITUTION_PATHS); }
+function findArchitecture(root) { return findDoc(root, ARCHITECTURE_PATHS); }
 // ADRs (Nygard): detected and cited, never written. `docs/adr/` wins over `docs/decisions/`; only `NNNN-slug.md` files count.
 const ADR_DIRS = ['docs/adr', 'docs/decisions'];
 const ADR_FILE = /^(\d{4})-[^/\\]+\.md$/i;
@@ -211,9 +214,9 @@ function collectSignals(repoRoot, opts) {
   const rw = releaseWorkflow(abs);
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   return {
-    root, specs, modules, plan, todo, constitution: findConstitution(abs), adr: findAdrs(abs), git: gitInfo, changelog,
+    root, specs, modules, plan, todo, constitution: findConstitution(abs), architecture: findArchitecture(abs), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };
 }
-module.exports = { collectSignals, findSpecs, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
+module.exports = { collectSignals, findSpecs, findDoc, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
