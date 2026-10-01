@@ -1,5 +1,7 @@
 # Plan — v1.5 SDD alignment
 
+Current cycle (v1.6) lives in `docs/specs/2026-10-01-v1-6-repo-artifacts/plan.md`; this file is the closed v1.5 index and is not updated.
+
 Spec: `docs/specs/2026-09-30-v1-5-sdd-alignment.md`. This file is the index; each plan is its own PR, in this order, each merged before the next starts.
 
 | # | Plan | Branch | Bump | Touches scripts |

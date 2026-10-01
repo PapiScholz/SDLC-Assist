@@ -53,7 +53,7 @@ Plugin path `plugins/sdlc-assist`, branch empty. 0 policy holds, 0 warnings. The
 3. **Listing details**: name and short description come from `plugin.json`, the long description from `README.md`. Edit those files and re-validate to change them.
 4. **Data handling**: the plugin reads no personal data, sends nothing to any service, keeps nothing, and is not intended for people under 18. The scripts read files in the repository being analysed and run read-only git queries; the only network access in the whole repo is `sync-vendored.js --check`, a development gate that fetches `addyosmani/agent-skills` from GitHub and is not part of the plugin's runtime.
 5. **Compliance**: contact email, four acknowledgements.
-6. **Review and submit**: keep **GitHub push webhook** (needs admin on the repo). Submit for review.
+6. **Review and submit**: submit for review. The push webhook is not part of the wizard: on the plugin page, **Set up push updates** shows a payload URL and a one-time secret; in GitHub, `Settings → Webhooks → Add webhook` with that URL, content type `application/json`, the secret, **Just the push event**, Active. GitHub sends a ping on save and the hook shows "Last delivery was successful"; the plugin page then stops saying it polls every 6 hours (done 2026-10-01). Without it, **Check for new commits** on the plugin page pulls `main` by hand.
 
 After the first listing, every push to `main` already publishes a release, and the directory picks up the same commit; `release.sh` raises `version` in `plugin.json` each time, which the directory requires.
 
