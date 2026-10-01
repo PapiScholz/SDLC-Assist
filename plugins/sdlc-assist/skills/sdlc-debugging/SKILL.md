@@ -1,6 +1,6 @@
 ---
 name: sdlc-debugging
-version: 0.9.0
+version: 0.10.0
 description: Localises the cause of a bug or complaint before the short spec is written, so the spec states a cause, not a symptom. Four steps with exit criteria (reproduce, localise, explain, hand off) and no product-code changes. Use on the bug route of Requirements analysis, when sdlc classifies a request as bug or complaint, or when asked why something fails before any fix is attempted.
 ---
 

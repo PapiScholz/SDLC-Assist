@@ -1,6 +1,6 @@
 ---
 name: sdlc-qa-gate
-version: 0.9.0
+version: 0.10.0
 description: Runs every applicable verification layer (static, unit, build, runtime, functional, regression) against the built artifact and reports what was verified, what was not, and the residual risk, without ever saying "green". Use for the Testing phase, before a push or a PR, when the plan's tasks are closed, or when asked how sure we are that nothing breaks.
 ---
 

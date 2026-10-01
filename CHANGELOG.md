@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.0] - 2026-10-01
+
+- Merge pull request #12 from PapiScholz/v1.6-architecture
+- feat: ARCHITECTURE.md detected and cited, never required (architecture signal via shared findDoc) [minor]
+
 ## [0.9.0] - 2026-10-01
 
 - Merge pull request #11 from PapiScholz/v1.6-adr
