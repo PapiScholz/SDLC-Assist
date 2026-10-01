@@ -27,7 +27,7 @@ Run from the repository root:
 bash scripts/gates.sh
 ```
 
-Use `bash scripts/gates.sh --quick` for local loops (it skips `sync-vendored --check`, which needs the network). The script runs, in order and stopping at the first failure: every self-test (`plugins/sdlc-assist/skills/sdlc/bin/lib/`, `plugins/sdlc-assist/skills/sdlc/bin/` and `scripts/hooks/`), `sync-vendored --check`, `check-manifest`, `check-sheets`, `check-frontmatter`, `check-skill-sections`, `check-eol`, and a check that every hook declared in `.claude/settings.json` exists. This is exactly what CI runs on Ubuntu and Windows. `node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js` alone runs the ten phase-inference fixtures with their inversions.
+Use `bash scripts/gates.sh --quick` for local loops (it skips `sync-vendored --check`, which needs the network). The script runs, in order and stopping at the first failure: every self-test (`plugins/sdlc-assist/skills/sdlc/bin/lib/`, `plugins/sdlc-assist/skills/sdlc/bin/` and `scripts/hooks/`), `sync-vendored --check`, `check-manifest`, `check-sheets`, `check-frontmatter`, `check-skill-sections`, `check-eol`, a check that every hook declared in `.claude/settings.json` exists, and the advisory `check-acceptance` (EARS bullets and open questions in open specs; it prints warnings and never fails the run). This is exactly what CI runs on Ubuntu and Windows. `node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js` alone runs the ten phase-inference fixtures with their inversions.
 
 Self-tests are plain Node scripts using `assert` (see `plugins/sdlc-assist/skills/sdlc/bin/lib/header.self-test.js` for the style): write the failing test first, then the implementation.
 

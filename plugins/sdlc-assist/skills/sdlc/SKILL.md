@@ -82,6 +82,8 @@ Triggered by `/sdlc-assist:phase close` or "sdlc close" by intent (also from ses
 | testing | `Phase: deployment` |
 | deployment | `Phase: deployment`, `Status: closed` |
 
+Before writing the `analysis` row, run `node <script dir>/check-acceptance.js --root <root>` and read its lines for `active.path`: when it reports `N open questions`, do not write the header; list each bullet left under `## Open Questions` and ask, per bullet, whether it is answered now (the author moves it to `## Clarifications` with the date) or deferred (a dated line with an owner under `## Decisions`); close again once the section reads `(none)`. When it reports `not EARS` bullets, say so once with the line numbers and continue: the shape is recommended, not required. The template with both sections is `references/spec-template.md`.
+
 Edit the active spec only (`active.path` in the `where.js` output), advancing from the phase the user confirmed even when its header said otherwise: when the confirmed phase is ahead of the header (closes were skipped), write the row of the confirmed phase, never the header's, so a closed spec never keeps a stale `Phase:`. When there is no spec (`active` is null), write nothing and say so. A headerless spec gets the header with the phase that follows the confirmed one. After a hotfix in the same context, update nothing and recommend the QA step. Name the next phase and its skill. Never touch CHANGELOG; that belongs to the release skill.
 
 ## Hotfix threshold
