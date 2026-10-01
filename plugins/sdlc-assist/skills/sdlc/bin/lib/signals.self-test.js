@@ -71,6 +71,37 @@ check('constitution: root CONSTITUTION.md is the fallback; docs/ wins when both 
   write(root, 'docs/constitution.md', '# C\n\n## Principles\n');
   assert.strictEqual(collectSignals(root, {}).constitution.path, 'docs/constitution.md');
 });
+check('adr absent => exists false, dir null, count 0, no statuses, no latest', () => {
+  assert.deepStrictEqual(collectSignals(tmpDir(), {}).adr, { exists: false, dir: null, count: 0, byStatus: {}, latest: null });
+});
+check('adr: docs/adr/NNNN-slug.md files counted by Status; latest is the highest number', () => {
+  const root = tmpDir();
+  write(root, 'docs/adr/0001-x.md', '# 1. X\n\nStatus: accepted\n\n## Context\n');
+  write(root, 'docs/adr/0002-y.md', '# 2. Y\n\nStatus: proposed\n');
+  assert.deepStrictEqual(collectSignals(root, {}).adr, { exists: true, dir: 'docs/adr', count: 2, byStatus: { accepted: 1, proposed: 1 }, latest: { number: 2, path: 'docs/adr/0002-y.md', status: 'proposed' } });
+});
+check('adr: docs/decisions/ is the fallback; docs/adr/ wins when both exist', () => {
+  const root = tmpDir();
+  write(root, 'docs/decisions/0001-a.md', 'Status: accepted\n');
+  assert.strictEqual(collectSignals(root, {}).adr.dir, 'docs/decisions');
+  write(root, 'docs/adr/0001-b.md', 'Status: accepted\n');
+  const a = collectSignals(root, {}).adr;
+  assert.strictEqual(a.dir, 'docs/adr'); assert.strictEqual(a.count, 1); assert.strictEqual(a.latest.path, 'docs/adr/0001-b.md');
+});
+check('adr: a file not named NNNN-slug.md is ignored; an empty dir still exists', () => {
+  const root = tmpDir();
+  write(root, 'docs/adr/README.md', '# ADRs\n'); write(root, 'docs/adr/template.md', 'Status: accepted\n');
+  assert.deepStrictEqual(collectSignals(root, {}).adr, { exists: true, dir: 'docs/adr', count: 0, byStatus: {}, latest: null });
+});
+check('adr: "Status: superseded by 0001" counts as superseded; a missing Status line counts as unknown', () => {
+  const root = tmpDir();
+  write(root, 'docs/adr/0001-old.md', 'Status: superseded by 0002\n');
+  write(root, 'docs/adr/0002-new.md', 'Status:   Accepted  \n');
+  write(root, 'docs/adr/0003-bare.md', '# No status\n');
+  const a = collectSignals(root, {}).adr;
+  assert.deepStrictEqual(a.byStatus, { superseded: 1, accepted: 1, unknown: 1 });
+  assert.deepStrictEqual(a.latest, { number: 3, path: 'docs/adr/0003-bare.md', status: 'unknown' });
+});
 check('plan and todo counts', () => {
   const root = tmpDir();
   write(root, 'tasks/plan.md', '# Plan\n'); write(root, 'tasks/todo.md', '- [ ] a\n- [x] b\n- [X] c\n');

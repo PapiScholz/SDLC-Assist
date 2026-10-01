@@ -3,16 +3,16 @@
 Spec: `spec.md`. Plan: `plan.md`. One PR per plan; a task is ticked when its PR is merged.
 
 ## Step 0 — open the cycle (`v1.6-spec`, docs-only, `[skip release]`)
-- [ ] 0.1 Folder spec, plan, tasks; pointers in `tasks/plan.md` and `tasks/todo.md`; README roadmap names v1.6
-- [ ] 0.2 Dogfood (a) pasted in `docs/ci-red-runs.md` "v1.6 dogfood"; PR merged; `sdlc close` on analysis → `Status: approved`, `Phase: planning`
+- [x] 0.1 Folder spec, plan, tasks; pointers in `tasks/plan.md` and `tasks/todo.md`; README roadmap names v1.6
+- [x] 0.2 Dogfood (a) pasted in `docs/ci-red-runs.md` "v1.6 dogfood"; PR merged; `sdlc close` on analysis → `Status: approved`, `Phase: planning`
 
 ## Plan A — ADRs (`v1.6-adr`, `[minor]` → v0.9.0)
-- [ ] A.1 `findAdrs(root)` signal, self-test cases first (no dir, two ADRs, decisions fallback, precedence, ignored name, superseded)
-- [ ] A.2 `references/adr-template.md` (Nygard, naming, Status values, when a bullet becomes an ADR)
-- [ ] A.3 Sheets: analysis, planning, development, deployment mention ADRs; `check-sheets.js` green
-- [ ] A.4 `SKILL.md` step 6 line; close mode on analysis warns on `[ADR]` without file
-- [ ] A.5 `check-adr.js` + self-test; `gates.sh` advisory line; `CONTRIBUTING.md` gate list
-- [ ] A.6 Five retroactive ADRs in `docs/adr/`; constitution amendment line; install-smoke assertions; dogfood (b)
+- [x] A.1 `findAdrs(root)` signal, self-test cases first (no dir, two ADRs, decisions fallback, precedence, ignored name, superseded)
+- [x] A.2 `references/adr-template.md` (Nygard, naming, Status values, when a bullet becomes an ADR)
+- [x] A.3 Sheets: analysis, planning, development, deployment mention ADRs; `check-sheets.js` green
+- [x] A.4 `SKILL.md` step 6 line; close mode on analysis warns on `[ADR]` without file
+- [x] A.5 `check-adr.js` + self-test; `gates.sh` advisory line; `CONTRIBUTING.md` gate list
+- [x] A.6 Five retroactive ADRs in `docs/adr/`; constitution amendment line; install-smoke assertions; dogfood (b)
 
 ## Plan B — ARCHITECTURE.md (`v1.6-architecture`, `[minor]` → v0.10.0)
 - [ ] B.1 `findDoc(root, paths)` shared by constitution and architecture; self-test cases first

@@ -30,6 +30,28 @@ function findConstitution(root) {
   }
   return { exists: false, path: null, sections: [] };
 }
+// ADRs (Nygard): detected and cited, never written. `docs/adr/` wins over `docs/decisions/`; only `NNNN-slug.md` files count.
+const ADR_DIRS = ['docs/adr', 'docs/decisions'];
+const ADR_FILE = /^(\d{4})-[^/\\]+\.md$/i;
+function adrStatus(text) {
+  const line = unfencedLines(text).map(l => /^Status:\s*(.+?)\s*$/i.exec(l)).find(Boolean);
+  if (!line) return 'unknown';
+  const value = line[1].toLowerCase();
+  return /^superseded\b/.test(value) ? 'superseded' : value;
+}
+function findAdrs(root) {
+  const dir = ADR_DIRS.find(rel => { try { return fs.statSync(path.join(root, rel)).isDirectory(); } catch { return false; } });
+  if (!dir) return { exists: false, dir: null, count: 0, byStatus: {}, latest: null };
+  const byStatus = {}; let latest = null, count = 0;
+  for (const e of listDir(path.join(root, dir))) {
+    const m = e.isFile() && ADR_FILE.exec(e.name);
+    if (!m) continue;
+    const rel = dir + '/' + e.name, number = Number(m[1]), status = adrStatus(readText(path.join(root, rel)) || '');
+    count++; byStatus[status] = (byStatus[status] || 0) + 1;
+    if (!latest || number > latest.number) latest = { number, path: rel, status };
+  }
+  return { exists: true, dir, count, byStatus, latest };
+}
 function countSourceFiles(root) {
   let count = 0; const sample = [];
   (function walk(rel, depth) {
@@ -189,7 +211,7 @@ function collectSignals(repoRoot, opts) {
   const rw = releaseWorkflow(abs);
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   return {
-    root, specs, modules, plan, todo, constitution: findConstitution(abs), git: gitInfo, changelog,
+    root, specs, modules, plan, todo, constitution: findConstitution(abs), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };
