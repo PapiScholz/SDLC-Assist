@@ -1020,3 +1020,18 @@ $ grep -H -m1 -E '^version:|"version"' plugins/sdlc-assist/.claude-plugin/plugin
 ```
 
 The release script rewrote every version line at the new paths (the residual risk in (d) is closed). Deployment closed on this output: `Status: closed`, committed with `[skip release]`. The directory's Validate on `main` with plugin path `plugins/sdlc-assist` is the owner's step and its result goes to `docs/distribution.md`.
+
+## v1.5 dogfood
+
+### (a) where.js on the request that opened the cycle, `main` at a6fd471, before the spec existed
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message-file "$TMPDIR/r5.txt"    # message: SDD alignment cycle v1.5: constitution, EARS, clarifications, per-cycle layout, positioning
+inferred analysis type unknown active null evidence ["plan present but no active spec to compare against; treated as current","fallback: analysis (candidates: analysis, testing)","tests not run (no --run-tests)","in production: tag v0.5.0"]
+```
+(fields read by the router; `unknown` because the request names deliverables and no bug, feature or complaint keyword). After the spec and the todo were committed (1eb7fef):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --message-file "$TMPDIR/w.txt"    # message: where are we
+active docs/specs/2026-09-30-v1-5-sdd-alignment.md inferred analysis todo {"exists":true,"path":"tasks/todo.md","open":28,"done":0,"total":28}
+```

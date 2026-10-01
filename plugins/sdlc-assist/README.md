@@ -1,6 +1,6 @@
 # sdlc-assist
 
-An SDLC phase router for coding agents. It works out which phase of the software development life cycle a work request is in (initial planning, requirements analysis, planning, development, testing, deployment), shows the evidence it read from the repository, asks one confirmation, and points to the skill that does the next step.
+An SDLC phase router for coding agents. It works out which phase of the software development life cycle a work request is in (initial planning, requirements analysis, planning, development, testing, deployment), shows the evidence it read from the repository, asks one confirmation, and points to the skill that does the next step. Spec-anchored: the spec stays the record of decisions and its header tracks the phase; code is not generated from it.
 
 It ships nine skills: the router `sdlc`, three own skills (`sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and five vendored unmodified from `addyosmani/agent-skills` (`spec-driven-development`, `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `context-engineering`).
 

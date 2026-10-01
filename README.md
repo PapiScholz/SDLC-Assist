@@ -21,6 +21,8 @@ How it sits next to the tools you may already have:
 
 The router does not replace any of these. It reads the repo, asks one question, and hands off to whichever of them you have installed.
 
+In the usual taxonomy of spec-driven development (spec-first: the spec is written before the code and may rot afterwards; spec-anchored: the spec is kept and updated to steer the code; spec-as-source: only the spec is edited and the code is generated from it), this router is **spec-anchored**: the spec stays the record of decisions, its `Phase:`/`Status:` header advances through close mode, and every behavior change starts in it, while the code is still written by people and agents. What it adds over a spec-first toolkit is that it infers which step you are on from what the repository already contains, and asks, instead of assuming you know.
+
 | Slug | Phase | Recommended skill |
 |---|---|---|
 | `initial` | Initial planning | spec-driven-development |
@@ -191,7 +193,7 @@ bash scripts/gates.sh
 
 ## Roadmap
 
-v1.2: native command files for Codex and Cursor once their formats are verified.
+v1.5 (spec `docs/specs/2026-09-30-v1-5-sdd-alignment.md`, plans in `docs/plans/`): acceptance criteria in EARS with a warn-only check, a `## Clarifications` section with a close rule for analysis, one plan and one task list per cycle (`docs/specs/<slug>/{spec,plan,tasks}.md`), and a project constitution the router detects and the phase sheets cite. Deferred: native command files for Codex and Cursor once their formats are verified.
 
 ## Security
 
