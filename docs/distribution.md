@@ -32,6 +32,20 @@ $ claude plugin validate .
 
 Since v1.4 the plugin folder is `plugins/sdlc-assist/` (manifest, icon, skills, commands, a short README and a byte copy of `LICENSE` that the manifest gate compares with the root file); `marketplace.json` at the root points there, so the directory validates only what ships and not `CLAUDE.md`, `docs/` or `scripts/`. The pasted checks above ran on the v1.3 layout, where the root was the plugin folder. `plugin.json` declares no hooks and no MCP servers; the `.claude/settings.json` hooks are project settings for this checkout and are not part of the plugin. The scripts under `skills/sdlc/bin` only read the analysed repository (`SECURITY.md`).
 
+### Portal validation record (owner's portal, pasted from the screen)
+
+```
+Validation                                   main @ 59264f8 · 7 checks
+Repository fetched                           ok
+80 files, 240,4kB, within the size limits    ok
+.claude-plugin/plugin.json found and valid   ok
+9 habilidades · 1 command                    ok
+No MCP servers                               ok
+Directory lints passed                       ok
+Name and publisher checks passed             ok
+```
+Plugin path `plugins/sdlc-assist`, branch empty. 0 policy holds, 0 warnings. The path there: `main@18e534a` (root as plugin folder) 7 warnings + 3 holds; `main@a324a9c` (v1.4 subfolder) 0 warnings + 2 holds; two hotfixes removed every `curl` mention and every `process.env` read from the plugin (`1a3713c`, `59264f8`). The vendored `we're` in the planning template only trips the marketplace-root view; fix proposed upstream in `addyosmani/agent-skills#623`.
+
 ### Portal steps
 
 1. **Submit new** → **Plugin bundle**.
