@@ -223,6 +223,8 @@ v1.6 shipped as v0.9.0, v0.10.0 and v0.11.0 (spec `docs/specs/2026-10-01-v1-6-re
 
 Automated skill scanners rate this skill as medium risk because it tells the agent to run scripts. The scripts only read the analysed repository, run read-only git queries, and never install or execute anything on their own; the project's test suite runs only behind an explicit flag. `SECURITY.md` lists exactly what each script touches, the trust boundaries of each install path, and how to report a vulnerability privately. The repository holds no credentials of its own: the only tokens it references are GitHub Actions secrets that `release.yml` uses to publish releases, they never ship with the installed plugin, and nothing in the skills reads them at runtime. `sync-vendored.js` clones a public repository over HTTPS with no credential, and `docs/ci-red-runs.md` is a log of pasted commands, not code that runs on install.
 
+The installed skills need only Node and the agent: the rules (never commit, never install, never block, write only spec headers) are instructions in `SKILL.md`, not hooks or guards that ship with it. Your own hooks and guards reinforce them; they are not required.
+
 ## Contributing
 
 Contributions are welcome. `CONTRIBUTING.md` describes what the repository accepts, the local validation loop (the same gates CI runs on Ubuntu and Windows), and the spec-first rule: behavior changes start in `docs/specs/`. Vendored skills are not edited here; propose changes upstream. By participating you agree to `CODE_OF_CONDUCT.md`.
