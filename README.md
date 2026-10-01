@@ -82,8 +82,9 @@ Overwrite and duplicate notes:
 
 ## How to use
 
-A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slug>/spec.md` with `plan.md` and `tasks.md` beside it, or a legacy flat spec (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) paired with `tasks/plan.md` and `tasks/todo.md`. The router reads that header, the cycle's plan and task list, and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
+A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slug>/spec.md` with `plan.md` and `tasks.md` beside it, or a legacy flat spec (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) paired with `tasks/plan.md` and `tasks/todo.md`. The router reads that header, the cycle's plan and task list, the project constitution when there is one, and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
 
+0. **Optional: a constitution.** `docs/constitution.md` (or root `CONSTITUTION.md`) holds the rules every spec, plan and change obeys; template in `plugins/sdlc-assist/skills/sdlc/references/constitution-template.md`. The router reports it as `signals.constitution` and every phase sheet cites it; without one it says nothing.
 1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and asks one question: `Phase: <inferred>`, up to three evidence lines, warnings, options. Confirm or pick an alternative. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
 2. **Write the spec** with the skill the router names (`spec-driven-development`; `sdlc-debugging` first on the bug route). Right after the H1:
 

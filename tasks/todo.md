@@ -25,17 +25,17 @@ Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, pl
 - [x] 3.5 planning/development sheets, SKILL.md step 6, README example, spec-header.md wording
 - [x] 3.6 Template note on where to save; check-acceptance test for a folder spec
 - [x] 3.7 CI install-smoke: folder-cycle fixture; README Development note
-- [ ] 3.8 Dogfood (c) with a scratch folder cycle; PR with `[minor]`, merge, Re-validate
+- [x] 3.8 Dogfood (c) with a scratch folder cycle; PR with `[minor]`, merge, Re-validate
 
 ## Plan 4 — constitution (`docs/plans/plan-constitution.md`)
-- [ ] 4.1 `constitution` signal in signals.js with tests; where.self-test assertion
-- [ ] 4.2 `references/constitution-template.md`
-- [ ] 4.3 initial/analysis/planning/development sheets cite it; check-sheets ok
-- [ ] 4.4 SKILL.md: `Constitution:` evidence line when present
-- [ ] 4.5 qa-gate regression row lists checkable principles
-- [ ] 4.6 This repo's `docs/constitution.md` from CLAUDE.md; CLAUDE.md links it
-- [ ] 4.7 README step 0, sdlc-flow.md node (Mermaid validated)
-- [ ] 4.8 Dogfood (d) before/after; PR with `[minor]`, merge, Re-validate
+- [x] 4.1 `constitution` signal in signals.js with tests; where.self-test assertion
+- [x] 4.2 `references/constitution-template.md`
+- [x] 4.3 initial/analysis/planning/development sheets cite it; check-sheets ok
+- [x] 4.4 SKILL.md: `Constitution:` evidence line when present
+- [x] 4.5 qa-gate regression row lists checkable principles
+- [x] 4.6 This repo's `docs/constitution.md` from CLAUDE.md; CLAUDE.md links it
+- [x] 4.7 README step 0, sdlc-flow.md node (Mermaid validated)
+- [x] 4.8 Dogfood (d) before/after; PR with `[minor]`, merge, Re-validate
 
 ## Close
 - [ ] Close testing on the qa-gate table of plan 4; close deployment on the last release; `Status: closed` with `[skip release]`
