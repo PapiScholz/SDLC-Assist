@@ -61,12 +61,15 @@ After the first listing, every push to `main` already publishes a release, and t
 
 ```
 Sdlc Assist · Complemento · de PapiScholz · submitted hace 20 horas
-Publicado   Listed in: Claude Code · Cowork · Claude apps
-Enviado (hace 20 horas) → Escaneo de seguridad (hace 14 minutos) → Aprobado → Publicado (hace 14 minutos)
-v0.11.0 · 10b9af8 passed its security scan. It waits for an Anthropic reviewer; [...]
-The live version is still v0.8.0 · ef5bea3.
+Publicado   Listed in: Claude Code · Cowork · Claude apps   Live in the directory.
+Live now        v0.11.0   published hace 5 minutos
+Latest version  v0.11.0
+Latest activity
+  Publicado v0.11.0 · 24ee775     Sistema · hace 5 minutos
+  Scan passed                     Sistema · hace 5 minutos
+  New version detected            Sistema · hace 6 minutos
 ```
-Each new version passes the security scan on its own and then waits for an Anthropic reviewer; the owner's **Publish update** button on the plugin page records the request. Until a reviewer approves it, the directory keeps serving the last approved version.
+After the first listing, a push to `main` reached the directory on its own: the push webhook reported the commit, the security scan ran and the version went live within about a minute, with no reviewer step shown. A plugin page left open goes stale: before the reload it still said "The live version is still v0.8.0" and offered **Publish update** for `10b9af8`, which the portal then rejected as older than the version being served. Reload the page before acting on it.
 
 ## Community lists
 
