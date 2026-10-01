@@ -1,6 +1,6 @@
 # Spec header
 
-A cycle is a spec file: `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md`.
+A cycle is a spec file: `docs/specs/<date>-<slug>/spec.md` (its `plan.md` and `tasks.md` live beside it), a flat `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md` (flat and root specs share `tasks/plan.md` and `tasks/todo.md`). A folder under `docs/specs/` without `spec.md` is not a cycle.
 
 ## Format
 

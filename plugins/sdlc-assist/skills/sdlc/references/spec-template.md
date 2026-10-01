@@ -1,6 +1,6 @@
 # Spec template
 
-What the router reads from a spec: the header (`spec-header.md`), `## Clarifications`, `## Open Questions` and `## Acceptance`. Body sections beyond these (tech stack, boundaries, success criteria, open design) follow the vendored `spec-driven-development` template; this file adds only what the router and the qa-gate consume. Save as `docs/specs/<date>-<slug>.md` (or, from v1.5's layout plan, `docs/specs/<date>-<slug>/spec.md`).
+What the router reads from a spec: the header (`spec-header.md`), `## Clarifications`, `## Open Questions` and `## Acceptance`. Body sections beyond these (tech stack, boundaries, success criteria, open design) follow the vendored `spec-driven-development` template; this file adds only what the router and the qa-gate consume. Save as `docs/specs/<date>-<slug>/spec.md`; the cycle's `plan.md` and `tasks.md` go beside it, and the router reads that pair (a flat `docs/specs/<date>-<slug>.md` still works and keeps `tasks/plan.md` and `tasks/todo.md`).
 
 ```markdown
 # Spec: <cycle name>

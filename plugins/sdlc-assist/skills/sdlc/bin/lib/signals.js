@@ -1,16 +1,21 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive } = require('./infer');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
 const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|conftest\.py|manage\.py|gulpfile\.js|gruntfile\.js|karma\.conf\.js|knexfile\.js)$/i;
 const MAX_FILES = 5000, MAX_DEPTH = 8;
 const PUBLISHED = /^##\s+\[?v?\d+\.\d+\.\d+/m;
+const FOLDER_SPEC = /^docs\/specs\/[^/]+\/spec\.md$/i;
 function readText(abs) { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } }
 function mtimeSec(abs) { try { return Math.floor(fs.statSync(abs).mtimeMs / 1000); } catch { return null; } }
 function listDir(abs) { try { return fs.readdirSync(abs, { withFileTypes: true }); } catch { return []; } }
 function findSpecs(root) {
   const out = [];
-  for (const e of listDir(path.join(root, 'docs', 'specs'))) if (e.isFile() && /\.md$/i.test(e.name)) out.push('docs/specs/' + e.name);
+  // A cycle is a flat `docs/specs/<name>.md` or a folder `docs/specs/<dir>/spec.md`; a folder without spec.md is not a cycle.
+  for (const e of listDir(path.join(root, 'docs', 'specs'))) {
+    if (e.isFile() && /\.md$/i.test(e.name)) out.push('docs/specs/' + e.name);
+    else if (e.isDirectory() && listDir(path.join(root, 'docs', 'specs', e.name)).some(f => f.isFile() && /^spec\.md$/i.test(f.name))) out.push('docs/specs/' + e.name + '/spec.md');
+  }
   for (const e of listDir(root)) if (e.isFile() && (/^spec\.md$/i.test(e.name) || /^SPEC-.*\.md$/i.test(e.name))) out.push(e.name);
   return out.sort();
 }
@@ -143,20 +148,29 @@ function collectSignals(repoRoot, opts) {
   const rootSpecs = found.filter(f => /^SPEC-.*\.md$/i.test(f.rel));
   const modules = rootSpecs.length >= 2 ? rootSpecs.filter(f => !hasHeaderLine(f.text)).map(f => f.rel) : [];
   const cycleFiles = found.filter(f => !modules.includes(f.rel));
-  const planPath = 'tasks/plan.md', todoPath = 'tasks/todo.md';
-  const planExists = fs.existsSync(path.join(abs, planPath));
-  const batch = gitInfo.isRepo ? fileDatesBatch(abs, [...cycleFiles.map(f => f.rel), ...(planExists ? [planPath] : [])]) : new Map();
+  // Per-cycle layout: a folder cycle (docs/specs/<dir>/spec.md) takes plan.md and tasks.md from its folder, with
+  // no fallback to the global pair; a flat spec, and the "no active cycle" case, keep tasks/plan.md and tasks/todo.md.
+  const GLOBAL = { plan: 'tasks/plan.md', todo: 'tasks/todo.md' };
+  const pairOf = rel => FOLDER_SPEC.test(rel) ? { plan: path.posix.dirname(rel) + '/plan.md', todo: path.posix.dirname(rel) + '/tasks.md' } : GLOBAL;
+  const planPaths = [...new Set([GLOBAL.plan, ...cycleFiles.map(f => pairOf(f.rel).plan)])].filter(p => fs.existsSync(path.join(abs, p)));
+  const batch = gitInfo.isRepo ? fileDatesBatch(abs, [...cycleFiles.map(f => f.rel), ...planPaths]) : new Map();
   const dates = rel => batch.get(rel) || { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime: mtimeSec(path.join(abs, rel)) };
-  const specs = cycleFiles.map(f => ({ path: f.rel, header: parseHeader(f.text), ...dates(f.rel) }));
-  let plan = { exists: false, path: planPath };
-  if (planExists) {
-    const d = dates(planPath);
-    plan = { exists: true, path: planPath, tracked: d.tracked, lastCommit: d.lastCommit, dirty: d.dirty, mtime: d.mtime };
-  }
-  const todoText = readText(path.join(abs, todoPath));
-  const todo = todoText === null
-    ? { exists: false, path: todoPath, open: 0, done: 0, total: 0 }
-    : { exists: true, path: todoPath, ...countTasks(todoText) };
+  const planInfo = rel => {
+    if (!planPaths.includes(rel)) return { exists: false, path: rel };
+    const d = dates(rel);
+    return { exists: true, path: rel, tracked: d.tracked, lastCommit: d.lastCommit, dirty: d.dirty, mtime: d.mtime };
+  };
+  const todoInfo = rel => {
+    const text = readText(path.join(abs, rel));
+    return text === null ? { exists: false, path: rel, open: 0, done: 0, total: 0 } : { exists: true, path: rel, ...countTasks(text) };
+  };
+  const specs = cycleFiles.map(f => {
+    const pair = pairOf(f.rel);
+    return { path: f.rel, layout: FOLDER_SPEC.test(f.rel) ? 'folder' : 'flat', header: parseHeader(f.text), plan: planInfo(pair.plan), todo: todoInfo(pair.todo), ...dates(f.rel) };
+  });
+  const active = pickActive(specs);
+  const plan = active ? active.plan : planInfo(GLOBAL.plan);
+  const todo = active ? active.todo : todoInfo(GLOBAL.todo);
   const clText = readText(path.join(abs, 'CHANGELOG.md'));
   const changelog = { exists: clText !== null, path: 'CHANGELOG.md', hasPublishedVersion: clText !== null && PUBLISHED.test(clText) };
   const testRunner = detectTestRunner(abs);
@@ -169,4 +183,4 @@ function collectSignals(repoRoot, opts) {
     testRunner, tests, inProduction, notes,
   };
 }
-module.exports = { collectSignals, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
+module.exports = { collectSignals, findSpecs, SOURCE_EXTENSIONS, EXCLUDED_DIRS };

@@ -36,6 +36,27 @@ check('specs: docs/specs/*.md, spec.md, SPEC-*.md with headers; untracked => fir
   assert.strictEqual(s.specs[1].firstCommit, null);
   assert.strictEqual(typeof s.specs[1].mtime, 'number');
 });
+check('folder cycle: docs/specs/<dir>/spec.md is a spec with that path and its header', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/2026-10-02-v1-6-x/spec.md', '# X\nPhase: planning\nStatus: approved\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), ['docs/specs/2026-10-02-v1-6-x/spec.md']);
+  assert.deepStrictEqual(s.specs[0].header, { phase: 'planning', status: 'approved' });
+});
+check('folder without spec.md is ignored (plan.md or notes alone are not a cycle)', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/orphan/plan.md', '# P\n'); write(root, 'docs/specs/orphan/notes.md', 'n\n');
+  write(root, 'docs/specs/empty/.keep', '');
+  assert.deepStrictEqual(collectSignals(root, { runTests: false }).specs, []);
+});
+check('flat spec and folder spec coexist, sorted by path', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/2026-09-30-flat.md', '# F\nPhase: analysis\nStatus: draft\n');
+  write(root, 'docs/specs/2026-10-02-folder/spec.md', '# G\nPhase: planning\nStatus: approved\n');
+  write(root, 'docs/specs/2026-10-02-folder/tasks.md', '- [ ] a\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), ['docs/specs/2026-09-30-flat.md', 'docs/specs/2026-10-02-folder/spec.md']);
+});
 check('plan and todo counts', () => {
   const root = tmpDir();
   write(root, 'tasks/plan.md', '# Plan\n'); write(root, 'tasks/todo.md', '- [ ] a\n- [x] b\n- [X] c\n');
@@ -148,6 +169,16 @@ check('capability map: 3 headerless SPEC-*.md are modules, the headed one is the
   const r = infer(s, { message: '', type: 'unknown' });
   assert.strictEqual(r.active.path, 'SPEC-app.md'); assert.deepStrictEqual(r.cycles.map(c => c.path), ['SPEC-app.md']);
 });
+check('capability map: a headerless docs/specs/<dir>/spec.md is a draft cycle, never a module, even beside 2+ root modules', () => {
+  const root = tmpDir();
+  for (const m of ['auth', 'billing']) write(root, `SPEC-${m}.md`, `# ${m}\n\nModule text.\n`);
+  write(root, 'docs/specs/2026-10-02-draft/spec.md', '# Draft\n\nNo header yet.\n');
+  const s = collectSignals(root, {});
+  assert.deepStrictEqual(s.modules, ['SPEC-auth.md', 'SPEC-billing.md']);
+  assert.deepStrictEqual(s.specs.map(x => [x.path, x.layout, x.header.status]), [['docs/specs/2026-10-02-draft/spec.md', 'folder', 'draft']]);
+  const { infer } = require('./infer');
+  assert.strictEqual(infer(s, { message: '', type: 'unknown' }).active.path, 'docs/specs/2026-10-02-draft/spec.md');
+});
 check('inversion: a single headerless SPEC-*.md is still a cycle; docs/specs never become modules', () => {
   const root = tmpDir(); write(root, 'SPEC-only.md', '# Only\n'); write(root, 'docs/specs/x.md', '# X\n');
   const s = collectSignals(root, {});
@@ -169,6 +200,62 @@ check('non-ASCII spec path is tracked and listed unquoted', () => {
   const s = collectSignals(root, {});
   assert.strictEqual(s.specs[0].path, 'docs/specs/diseño.md'); assert.strictEqual(s.specs[0].tracked, true);
   assert.ok(s.git.commits[0].paths.includes('docs/specs/diseño.md'));
+});
+console.log('per-cycle plan and todo');
+const { infer } = require('./infer');
+check('folder cycle: plan.md and tasks.md beside spec.md; 2 open tasks => development', () => {
+  const root = tmpDir(); const dir = 'docs/specs/2026-10-02-v1-6-x';
+  write(root, dir + '/spec.md', '# X\nStatus: approved\n'); write(root, dir + '/plan.md', '# P\n'); write(root, dir + '/tasks.md', '- [ ] a\n- [ ] b\n- [x] c\n');
+  write(root, 'tasks/todo.md', '- [x] legacy\n');   // global pair must not leak into a folder cycle
+  const s = collectSignals(root, { runTests: false });
+  assert.strictEqual(s.specs[0].layout, 'folder');
+  assert.deepStrictEqual([s.specs[0].plan.exists, s.specs[0].plan.path], [true, dir + '/plan.md']);
+  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: dir + '/tasks.md', open: 2, done: 1, total: 3 });
+  assert.strictEqual(s.plan.path, dir + '/plan.md'); assert.strictEqual(s.todo.path, dir + '/tasks.md');
+  assert.strictEqual(infer(s, { message: '', type: 'unknown' }).inferred, 'development');
+});
+check('folder cycle with all tasks done => testing', () => {
+  const root = tmpDir(); const dir = 'docs/specs/2026-10-02-v1-6-x';
+  write(root, dir + '/spec.md', '# X\nStatus: approved\n'); write(root, dir + '/plan.md', '# P\n'); write(root, dir + '/tasks.md', '- [x] a\n- [x] b\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.strictEqual(infer(s, { message: '', type: 'unknown' }).inferred, 'testing');
+});
+check('folder cycle without plan.md: no plan, no fallback to tasks/plan.md', () => {
+  const root = tmpDir(); const dir = 'docs/specs/2026-10-02-v1-6-x';
+  write(root, dir + '/spec.md', '# X\nStatus: approved\n'); write(root, 'tasks/plan.md', '# global\n'); write(root, 'tasks/todo.md', '- [ ] g\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.plan, { exists: false, path: dir + '/plan.md' });
+  assert.deepStrictEqual(s.todo, { exists: false, path: dir + '/tasks.md', open: 0, done: 0, total: 0 });
+  assert.strictEqual(infer(s, { message: '', type: 'unknown' }).inferred, 'planning');
+});
+check('flat spec keeps the global pair; closed folder cycle does not steal it', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/2026-09-30-flat.md', '# F\nStatus: approved\n'); write(root, 'tasks/plan.md', '# P\n'); write(root, 'tasks/todo.md', '- [ ] a\n');
+  write(root, 'docs/specs/2026-08-01-old/spec.md', '# Old\nPhase: deployment\nStatus: closed\n'); write(root, 'docs/specs/2026-08-01-old/tasks.md', '- [x] z\n');
+  const s = collectSignals(root, { runTests: false });
+  const flat = s.specs.find(x => x.layout === 'flat');
+  assert.deepStrictEqual([flat.plan.path, flat.todo.path], ['tasks/plan.md', 'tasks/todo.md']);
+  assert.deepStrictEqual([s.plan.path, s.todo.path, s.todo.open], ['tasks/plan.md', 'tasks/todo.md', 1]);
+  const r = infer(s, { message: '', type: 'unknown' });
+  assert.strictEqual(r.active.path, 'docs/specs/2026-09-30-flat.md'); assert.strictEqual(r.inferred, 'development');
+});
+check('two folder cycles, both planned: the newest open one is active, no warning, no stale plan', () => {
+  const root = initRepo();
+  for (const [d, iso] of [['docs/specs/2026-01-01-a', T1], ['docs/specs/2026-02-01-b', T2]]) {
+    write(root, d + '/spec.md', '# C\nPhase: development\nStatus: approved\n'); write(root, d + '/plan.md', '# P\n'); write(root, d + '/tasks.md', '- [ ] t\n');
+    commit(root, d, iso);
+  }
+  const s = collectSignals(root, { runTests: false });
+  const r = infer(s, { message: '', type: 'unknown' });
+  assert.strictEqual(r.active.path, 'docs/specs/2026-02-01-b/spec.md');
+  assert.strictEqual(s.plan.path, 'docs/specs/2026-02-01-b/plan.md'); assert.strictEqual(s.plan.tracked, true);
+  assert.deepStrictEqual(r.warnings, []); assert.strictEqual(r.inferred, 'development');
+  assert.ok(!r.evidence.some(e => /stale|no active spec/.test(e)), r.evidence.join(' | '));
+});
+check('no cycle at all: global pair is reported', () => {
+  const root = tmpDir(); write(root, 'tasks/plan.md', '# P\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.strictEqual(s.plan.path, 'tasks/plan.md'); assert.strictEqual(s.plan.exists, true); assert.strictEqual(s.todo.path, 'tasks/todo.md');
 });
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

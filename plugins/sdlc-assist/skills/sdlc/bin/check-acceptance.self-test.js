@@ -108,6 +108,15 @@ check('multi-word subjects: THE ACCEPTANCE CHECK SHALL, the plugin directory sha
   assert.ok(/2 bullets, 0 not EARS/.test(r.all), r.all);
 });
 
+check('folder cycle docs/specs/<dir>/spec.md is checked; a plan.md beside it is not', () => {
+  const r = run({
+    'docs/specs/2026-10-02-x/spec.md': spec('- THE SYSTEM SHALL list it.\n- prose bullet'),
+    'docs/specs/2026-10-02-x/plan.md': '# Plan\n\n## Acceptance\n\n- not a spec\n',
+  });
+  assert.ok(/1 specs?, 2 bullets, 1 not EARS/.test(r.all), r.all);
+  assert.ok(r.all.includes('docs/specs/2026-10-02-x/spec.md'), r.all);
+});
+
 check('no specs at all: summary with zeros, exit 0', () => {
   const r = run({});
   assert.strictEqual(r.status, 0, r.all);

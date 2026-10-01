@@ -1,9 +1,13 @@
-const OPEN = /^\s*(?:[-*]|\d+\.)\s+\[[ \-~]\]/gm;
-const DONE = /^\s*(?:[-*]|\d+\.)\s+\[x\]/gim;
+const { unfencedLines } = require('./unfenced');
+const OPEN = /^\s*(?:[-*]|\d+\.)\s+\[[ \-~]\]/;
+const DONE = /^\s*(?:[-*]|\d+\.)\s+\[x\]/i;
+// Checkboxes inside ``` fences are samples (a plan quoting a checklist), not tasks.
 function countTasks(markdown) {
-  const text = String(markdown || '');
-  const open = (text.match(OPEN) || []).length;
-  const done = (text.match(DONE) || []).length;
+  let open = 0, done = 0;
+  for (const line of unfencedLines(markdown || '')) {
+    if (OPEN.test(line)) open++;
+    else if (DONE.test(line)) done++;
+  }
   return { open, done, total: open + done };
 }
 module.exports = { countTasks };

@@ -13,6 +13,10 @@ check('nested checkboxes count, including under non-checkbox parents', () => {
 check('non-checkbox bullets and prose are ignored', () => {
   assert.deepStrictEqual(countTasks('# Todo\n\n- plain bullet\n- [] not a checkbox\n[ ] no bullet\ntext [x] inline\n'), { open: 0, done: 0, total: 0 });
 });
+check('checkboxes inside ``` fences are not tasks (a plan with a sample checklist)', () => {
+  assert.deepStrictEqual(countTasks('- [ ] real\n\n```markdown\n- [ ] sample a\n- [x] sample b\n```\n\n- [x] done\n'), { open: 1, done: 1, total: 2 });
+  assert.deepStrictEqual(countTasks('```\n- [ ] only fenced\n'), { open: 0, done: 0, total: 0 });   // unclosed fence swallows the rest
+});
 check('CRLF input', () => { assert.deepStrictEqual(countTasks('- [ ] a\r\n- [x] b\r\n'), { open: 1, done: 1, total: 2 }); });
 check('empty and non-string', () => {
   assert.deepStrictEqual(countTasks(''), { open: 0, done: 0, total: 0 });

@@ -15,16 +15,16 @@ Cycle: v1.5 SDD alignment (spec: docs/specs/2026-09-30-v1-5-sdd-alignment.md, pl
 - [x] 2.4 `gates.sh` and CONTRIBUTING name the check (warn-only)
 - [x] 2.5 SKILL.md close rule for analysis; spec-header.md row; analysis sheet names the template
 - [x] 2.6 qa-gate functional row reads Acceptance bullets; check-skill-sections still ok
-- [ ] 2.7 Repo-wide check output pasted and dogfood (b) done; pending: PR with `[minor]`, merge, Re-validate
+- [x] 2.7 Dogfood (b); PR #6 merged (332e419), released as v0.6.0; portal Re-validate pending (owner)
 
 ## Plan 3 — per-cycle layout (`docs/plans/plan-layout.md`)
-- [ ] 3.1 `findSpecs` discovers `docs/specs/<dir>/spec.md` (tests first)
-- [ ] 3.2 Per-cycle `plan`/`todo` resolution; `signals.plan`/`todo` follow the active cycle; `countTasks` ignores fences
-- [ ] 3.3 infer.js evidence strings name the resolved paths; infer tests
-- [ ] 3.4 Headerless folder spec is a draft cycle, not a module
-- [ ] 3.5 planning/development sheets, SKILL.md step 6, README example, spec-header.md wording
-- [ ] 3.6 Template note on where to save; check-acceptance test for a folder spec
-- [ ] 3.7 CI install-smoke: folder-cycle fixture; README Development note
+- [x] 3.1 `findSpecs` discovers `docs/specs/<dir>/spec.md` (tests first)
+- [x] 3.2 Per-cycle `plan`/`todo` resolution; `signals.plan`/`todo` follow the active cycle; `countTasks` ignores fences
+- [x] 3.3 infer.js evidence strings name the resolved paths; infer tests
+- [x] 3.4 Headerless folder spec is a draft cycle, not a module
+- [x] 3.5 planning/development sheets, SKILL.md step 6, README example, spec-header.md wording
+- [x] 3.6 Template note on where to save; check-acceptance test for a folder spec
+- [x] 3.7 CI install-smoke: folder-cycle fixture; README Development note
 - [ ] 3.8 Dogfood (c) with a scratch folder cycle; PR with `[minor]`, merge, Re-validate
 
 ## Plan 4 — constitution (`docs/plans/plan-constitution.md`)
