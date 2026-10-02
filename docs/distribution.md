@@ -69,7 +69,9 @@ Latest activity
   Scan passed                     Sistema · hace 5 minutos
   New version detected            Sistema · hace 6 minutos
 ```
-After the first listing, a push to `main` reached the directory on its own: the push webhook reported the commit, the security scan ran and the version went live within about a minute, with no reviewer step shown. A plugin page left open goes stale: before the reload it still said "The live version is still v0.8.0" and offered **Publish update** for `10b9af8`, which the portal then rejected as older than the version being served. Reload the page before acting on it.
+After the first listing, a push to `main` reached the directory on its own: the push webhook reported the commit, the security scan ran and the version went live within about a minute, with no reviewer step shown in the activity (`536640b` again the same day: "Publicado v0.11.0 · 536640b, Sistema"). The same page's **Source and publishing** card says otherwise: "Auto-publish: Doesn't apply for now: no version of this plugin goes live without an Anthropic reviewer". Both were on screen on 2026-10-01; do not assume a push skips review, and do not assume it waits for one.
+
+Support, privacy and terms links are not edited in the portal: it reads them from `plugin.json` keys `supportUrl`, `privacyPolicyUrl` and `termsOfServiceUrl` (the portal names the keys under each empty field). Set since 2026-10-01 to the issues page, `PRIVACY.md` and `LICENSE`. A plugin page left open goes stale: before the reload it still said "The live version is still v0.8.0" and offered **Publish update** for `10b9af8`, which the portal then rejected as older than the version being served. Reload the page before acting on it.
 
 ## Community lists
 

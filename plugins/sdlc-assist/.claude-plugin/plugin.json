@@ -6,6 +6,9 @@
   "homepage": "https://github.com/PapiScholz/SDLC-Assist",
   "repository": "https://github.com/PapiScholz/SDLC-Assist",
   "license": "MIT",
+  "supportUrl": "https://github.com/PapiScholz/SDLC-Assist/issues",
+  "privacyPolicyUrl": "https://github.com/PapiScholz/SDLC-Assist/blob/main/PRIVACY.md",
+  "termsOfServiceUrl": "https://github.com/PapiScholz/SDLC-Assist/blob/main/LICENSE",
   "keywords": ["sdlc", "spec-driven-development", "workflow", "planning", "release", "agent-skills"],
   "skills": ["./skills"],
   "commands": ["./commands"]
