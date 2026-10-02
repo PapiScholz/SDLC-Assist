@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.11.1] - 2026-10-02
+
+- docs(distribution): portal warnings from listing URL keys; v0.11.1 tests listing refresh
+- chore(plugin): support, privacy and terms URLs in plugin.json [skip release]
+- docs: add privacy policy [skip release]
+- docs(distribution): directory auto-publishes pushes; v0.11.0 live [skip release]
+- docs(distribution): Anthropic directory listing live [skip release]
+- docs(distribution): community lists checked 2026-10-01 [skip release]
+- docs(readme): icon header and badges [skip release]
+- docs(readme): installed skills need only Node; user hooks reinforce, not required [skip release]
+- Merge pull request #14 from PapiScholz/v1.6-close [skip release]
+- docs: close cycle v1.6 (qa-gate record, dogfood (d), roadmap)
+
 ## [0.11.0] - 2026-10-01
 
 - Merge pull request #13 from PapiScholz/v1.6-hygiene
