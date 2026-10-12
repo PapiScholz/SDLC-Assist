@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Claude%20Code%20%C2%B7%20OpenCode%20%C2%B7%20Codex%20%C2%B7%20Cursor-hosts-3A2812" alt="hosts">
 </p>
 
-An agent skill, `sdlc`, that works out which phase of the software development life cycle a work request is in, shows the evidence, asks one confirmation, and points to the skill that does the next step.
+An agent skill, `sdlc`, that tells the agent where work on a code repository stands, in four plain steps and per stage of a staged plan, and points to the skill that does the next step.
 
 It reads the repo (spec headers, the cycle's `plan.md` and `tasks.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
 
@@ -28,11 +28,11 @@ How it sits next to the tools you may already have:
 | Tool | What it does | What `sdlc` adds |
 |---|---|---|
 | [Superpowers](https://github.com/obra/superpowers) | A full method: brainstorm, plan, TDD, subagents, review | Tells you which phase you are in from what the repo already contains, then recommends Superpowers' skills when they are installed |
-| [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) | Agile roles (PM, architect, dev, QA) and 50+ workflows | One question instead of a ceremony; no roles, no new folders |
+| [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) | Agile roles (PM, architect, dev, QA) and 50+ workflows | One plain sentence instead of a ceremony; no roles, no new folders |
 | [Spec Kit](https://github.com/github/spec-kit) | Specify, plan, tasks, implement, with its own CLI and templates | Works on specs you already have, whatever wrote them, and knows when a request is a hotfix or a complaint rather than a feature |
 | Standalone spec skills (`write-tech-spec`, `tlc-spec-driven`, ...) | Write one spec well | The routing around the spec: what enters, when it is approved, what closes each phase, what to do after the release |
 
-The router does not replace any of these. It reads the repo, asks one question, and hands off to whichever of them you have installed.
+The router does not replace any of these. It reads the repo, says where the work is, and hands off to whichever of them you have installed.
 
 In the usual taxonomy of spec-driven development (spec-first: the spec is written before the code and may rot afterwards; spec-anchored: the spec is kept and updated to steer the code; spec-as-source: only the spec is edited and the code is generated from it), this router is **spec-anchored**: the spec stays the record of decisions, its `Phase:`/`Status:` header advances through close mode, and every behavior change starts in it, while the code is still written by people and agents. What it adds over a spec-first toolkit is that it infers which step you are on from what the repository already contains, and asks, instead of assuming you know.
 
@@ -51,7 +51,7 @@ In the usual taxonomy of spec-driven development (spec-first: the spec is writte
 cd ~ && npx skills add PapiScholz/SDLC-Assist -y
 ```
 
-Then open any repo with your agent and describe the work, or say "where are we". The router answers with the inferred phase, the evidence, and one question. Confirm the phase and follow the skill it names. When the phase's artifact exists, say "sdlc close". Other install paths (Claude Code plugin, manual copy, OpenCode command) are in Install below.
+Then open any repo with your agent and describe the work, or say "where are we". The agent tells you in one sentence where the work is (stage, step) and what comes next, and follows the skill it names. When the phase's artifact exists, say "sdlc close". Other install paths (Claude Code plugin, manual copy, OpenCode command) are in Install below.
 
 ```mermaid
 flowchart TD
@@ -86,6 +86,8 @@ Run the skills.sh command from `~`, not from inside a project: the CLI installs 
 
 Codex and Cursor get the skill by intent only in v1; native command files for them are on the roadmap.
 
+The `papischolz` marketplace is one catalog with both of the author's plugins, `sdlc-assist` and `search-visibility-kit`, and both repositories publish it. Add either repository once; the other plugin installs from the same catalog (`claude plugin install search-visibility-kit@papischolz`).
+
 Overwrite and duplicate notes:
 
 - skills.sh overwrites same-named skills already in `~/.agents/skills`. Back up local edits first.
@@ -97,8 +99,14 @@ Overwrite and duplicate notes:
 
 A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slug>/spec.md` with `plan.md` and `tasks.md` beside it, or a legacy flat spec (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) paired with `tasks/plan.md` and `tasks/todo.md`. The router reads that header, the cycle's plan and task list, the project constitution when there is one, and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
 
+The developer's workflow has four steps: (1) state the situation, (2) the agent writes the spec and the developer approves it, (3) the agent writes the plan and the developer approves it, (4) implement, test and ship. A large plan splits into stages; each stage repeats steps 3 and 4. The six internal phases map onto those steps (`initial` 1, `analysis` 2, `planning` 3, `development`/`testing`/`deployment` 4). The skill informs the agent; the agent tells the developer in one plain sentence, in their language, and proceeds.
+
+**Runs on its own in Claude Code.** Installing the plugin from the marketplace enables a `UserPromptSubmit` hook that adds one line (stage, step, next action) to the agent's context on every prompt inside a repository with an active cycle, and prints nothing anywhere else. Installing the skills with `npx skills add` does not install the hook; then the skill is invoked by name.
+
+**Not for research or non-code tasks.** It acts only on work about a code repository with specs.
+
 0. **Day one (optional): constitution, architecture, repo hygiene.** `docs/constitution.md` (or root `CONSTITUTION.md`) holds the rules every spec, plan and change obeys; `ARCHITECTURE.md` is the current shape of the repo (template in `plugins/sdlc-assist/skills/sdlc/references/architecture-template.md`); the nine hygiene files (`LICENSE`, `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, `ARCHITECTURE.md`) are listed when missing, in `initial` and before a first release only (`references/repo-hygiene.md`). The router detects all three, cites them, and never writes them. Constitution: template in `plugins/sdlc-assist/skills/sdlc/references/constitution-template.md`. The router reports it as `signals.constitution` and every phase sheet cites it; without one it says nothing.
-1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and asks one question: `Phase: <inferred>`, up to three evidence lines, warnings, options. Confirm or pick an alternative. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
+1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and the agent tells you in one sentence where the work is (stage, step) and what comes next, then proceeds. It asks only when the request looks like a new topic while a stage is in flight: keep it apart as a new cycle, or fold it into the current stage. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
 2. **Write the spec** with the skill the router names (`spec-driven-development`; `sdlc-debugging` first on the bug route). A `## Decisions` bullet that amends a principle, adds or removes a technology or changes a public contract gets `[ADR]` and its own file in `docs/adr/` (`references/adr-template.md`). Right after the H1:
 
    ```
@@ -118,7 +126,7 @@ A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slu
    | testing | `Phase: deployment` |
    | deployment | `Phase: deployment`, `Status: closed` |
 
-   It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
+   In a staged plan, closing a stage that is not the last one writes `[x]` and the date on that stage's line in `plan.md` and leaves the header alone. It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
 4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
 5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
 
@@ -148,7 +156,7 @@ Output, trimmed to the keys the router reads:
 }
 ```
 
-The agent turns that into one question (`Phase: analysis`, the evidence lines, `Warnings: none`, `Options: [confirm analysis]`; no `new cycle` option because there is no active cycle). `inProduction` adds the note "keep the running version safe".
+The agent turns that into one sentence (step 2, the spec: a short spec from the request card); it asks nothing, because there is no active cycle for the complaint to collide with. `inProduction` adds the note "keep the running version safe".
 
 The same run on a repo with a folder cycle (`docs/specs/2026-10-01-x/spec.md` with `Phase: development` / `Status: approved`, `plan.md` and `tasks.md` beside it with two open tasks), trimmed to the cycle keys:
 
@@ -173,7 +181,7 @@ The plan and the task list are the files beside that spec; a flat spec keeps `ta
 
 ## Missing-skill protocol
 
-If none of a phase's recommended skills (or alternatives) is installed, the router asks one extra question: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `plugins/sdlc-assist/skills/sdlc/references/missing-skill.md`.
+If none of a phase's recommended skills (or alternatives) is installed, the router says so in one line and continues; when you ask what to do, the options are: install a known one (only when the install table in `missing-skill.md` has a verified command for it), search (`npx skills find <term>` or the `find-skills` skill), create it along the way, or continue without it. Continuing is announced once and never blocks. See `plugins/sdlc-assist/skills/sdlc/references/missing-skill.md`.
 
 ## Playbook mapping
 

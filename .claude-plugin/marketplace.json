@@ -1,12 +1,22 @@
 {
   "name": "papischolz",
-  "owner": { "name": "Ezequiel Scholz" },
-  "description": "Skills by Ezequiel Scholz: an SDLC phase router with the spec-driven-development family bundled.",
+  "owner": {
+    "name": "Ezequiel Scholz"
+  },
+  "description": "Plugins by Ezequiel Scholz: sdlc-assist (SDLC router with the spec-driven-development family) and search-visibility-kit (Search Console, GA4, IndexNow).",
   "plugins": [
     {
       "name": "sdlc-assist",
       "source": "./plugins/sdlc-assist",
-      "description": "Infers which SDLC phase a work request is in from the repo, asks one question, and routes to the skill for the next step."
+      "description": "SDLC router: tells the agent where work on a code repository stands (four steps, per stage) and what comes next, with a hook that adds that line on each prompt."
+    },
+    {
+      "name": "search-visibility-kit",
+      "source": {
+        "source": "github",
+        "repo": "PapiScholz/search-visibility-kit"
+      },
+      "description": "Google Search Console + GA4 + IndexNow for any website: guided setup, SEO audits, indexing workflows."
     }
   ]
 }

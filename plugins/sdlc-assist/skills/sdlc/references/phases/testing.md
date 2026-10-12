@@ -7,6 +7,7 @@ design: none
 ---
 # Testing
 
+**Step:** 4 of 4, implement (test). In a staged plan: test this stage, then close it with [x] in plan.md.
 **Enters when:** a current plan and todo exist with at least one task and none open. It is also the default when the header is absent and the tie cannot be broken.
 **Produces:** the QA gate report: every applicable layer run or listed as not run, with the residual risk.
 **Do now:** run `sdlc-qa-gate`: diff map, every applicable layer, the report table with residual risk. Alternative when it is not installed: `qa-push` (missing-skill protocol in `../missing-skill.md`).

@@ -7,6 +7,7 @@ design: in the spec's Objective and Tech Stack
 ---
 # Initial planning
 
+**Step:** 1 of 4, situation.
 **Enters when:** there are no source files (only config, lockfiles, scaffolding) and no spec.
 **Produces:** the first spec, with the header `Phase: analysis` / `Status: draft` (see `../spec-header.md`). `initial` has no header of its own: it ends the moment that spec exists.
 **Do now:** run `spec-driven-development` and write the first spec; design lives in its Objective and Tech Stack. When `constitution.exists` is false, offer `../constitution-template.md` as `docs/constitution.md` first (optional; the first spec is the one that ends `initial`). When `architecture.exists` is false, offer `../architecture-template.md` as `ARCHITECTURE.md` next to it (optional as well). When `hygiene.missing` is not empty, list it once (`../repo-hygiene.md` says why each file exists and where its canonical source is); `.gitignore` and `.gitattributes` go in before the first commit.

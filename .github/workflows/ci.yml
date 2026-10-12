@@ -59,6 +59,19 @@ jobs:
           node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --message "continue" > out.json
           node -e "const j=require('./out.json'); const d='docs/specs/2026-10-01-x'; if(j.inferred!=='development'||j.active.path!==d+'/spec.md'||j.signals.plan.path!==d+'/plan.md'||j.signals.todo.path!==d+'/tasks.md'||j.signals.todo.open!==2||j.warnings.length||j.signals.adr.count!==2||j.signals.adr.byStatus.proposed!==1||j.signals.adr.latest.number!==2||!j.signals.architecture.exists||j.signals.architecture.path!=='ARCHITECTURE.md'||j.signals.architecture.sections.length!==2||j.signals.hygiene.missing.length!==0||!j.signals.hygiene.license){console.error(JSON.stringify(j,null,1));process.exit(1)}; console.log('ok', j.inferred, j.signals.todo.path)"
           node "$HOME/.agents/skills/sdlc/bin/check-adr.js" --root "$fx" | tee adr.txt; grep -q '^check-adr: docs/adr, 2 ADRs$' adr.txt
+      - name: Installed copy plans the next stage of a staged plan
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          fx="$RUNNER_TEMP/fx3"; d="docs/specs/2026-10-08-lms"; mkdir -p "$fx/src" "$fx/$d"; cd "$fx"
+          git init -q --initial-branch=main
+          git config user.name t; git config user.email t@t
+          echo x > src/index.js
+          printf '# Spec\n\nPhase: development\nStatus: approved\n' > "$d/spec.md"
+          printf '# Plan\n\n## Etapas\n\n| # | Etapa |\n|---|---|\n| 3 | **Ingreso** [x] 2026-10-12 |\n| 4 | **Catalogo** |\n' > "$d/plan.md"
+          printf '# Etapa 3 - Ingreso\n\n- [x] a\n' > "$d/tasks.md"
+          git add -A; git commit -qm init
+          node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --brief | tee brief.txt
+          grep -q '^sdlc: stage 4 "Catalogo" (1/2 closed) · step 3/4 plan · next: write the plan for this stage$' brief.txt
       - name: Installed copy reports sdlc-qa-gate for testing and sdlc-debugging for analysis
         run: |
           export HOME="$RUNNER_TEMP/home"; cd "$RUNNER_TEMP/fx"

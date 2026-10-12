@@ -16,4 +16,8 @@ State which phase was skipped and which condition allowed it. Close mode in the 
 
 ## Transitions
 
-None are blocked. Development without an approved spec, or deployment without testing, produce a warning line with the evidence inside the confirmation question. A header that disagrees with the fallback evidence is also a warning, never silently resolved.
+None are blocked. Development without an approved spec, or deployment without testing, produce a warning in the status sentence, in plain words. A header that disagrees with the fallback evidence is also a warning, never silently resolved.
+
+## Staged plans
+
+A plan with two or more stages (a table under a Stages/Etapas/Phases/Fases heading, or one `Stage|Etapa|Phase|Fase N` heading per stage) is read per stage once a stage is closed with `[x]` or `tasks.md` names its stage in its H1 (`# Etapa 3 — ...`). Then: open tasks, build that stage; all done and the stage not closed, test it; the stage closed and others open, plan the next open one. Task checkboxes under a stage heading never close it.

@@ -2,7 +2,7 @@
 
 The recommended skill and the alternatives per phase live only in the frontmatter of `phases/<slug>.md` (`recommends:`, `alternatives:`). `bin/which.js` reads them and reports what is installed on this host.
 
-When nothing is installed for a phase, ask once, with these options:
+When nothing is installed for a phase, say so in one line and continue; when the developer asks what to do, these are the options:
 
 1. **Install a known one**, only when the table below has a command for it.
 2. **Search**:

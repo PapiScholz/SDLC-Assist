@@ -7,6 +7,7 @@ design: none
 ---
 # Deployment
 
+**Step:** 4 of 4, implement (ship).
 **Enters when:** only via the `Phase: deployment` header; `sdlc` never initiates it. Without a header the tie goes to testing.
 **Produces:** a release, a tag and the CHANGELOG entry, all owned by the release skill.
 **Do now:** run `sdlc-release`: it detects the repo's release mechanism and drives it, or classifies, updates, validates and publishes step by step. Alternative: `release-engineer`. Nothing is pushed or tagged without the user's explicit request in the current turn.
