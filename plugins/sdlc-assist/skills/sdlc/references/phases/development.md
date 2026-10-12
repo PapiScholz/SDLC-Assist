@@ -7,6 +7,7 @@ design: none new; deviations go back to the spec
 ---
 # Development
 
+**Step:** 4 of 4, implement (build).
 **Enters when:** a current plan and todo exist with open tasks. A hotfix enters here directly, with no spec and no cycle.
 **Produces:** code with unit tests (TDD), one task at a time.
 **Do now:** run `incremental-implementation` and `test-driven-development` against the open tasks. A change that deviates from the spec goes back to the spec first.

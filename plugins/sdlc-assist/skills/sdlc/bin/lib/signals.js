@@ -1,5 +1,6 @@
 const fs = require('fs'); const path = require('path');
 const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive } = require('./infer'); const { unfencedLines } = require('./unfenced');
+const { parseStages, stageOfTasks } = require('./stages');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
 const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|conftest\.py|manage\.py|gulpfile\.js|gruntfile\.js|karma\.conf\.js|knexfile\.js)$/i;
@@ -217,6 +218,10 @@ function collectSignals(repoRoot, opts) {
   const active = pickActive(specs);
   const plan = active ? active.plan : planInfo(GLOBAL.plan);
   const todo = active ? active.todo : todoInfo(GLOBAL.todo);
+  // Stages of the active cycle's plan, and the stage its tasks.md names in its H1 (lib/stages.js).
+  const planText = plan.exists ? readText(path.join(abs, plan.path)) : null;
+  const todoText = todo.exists ? readText(path.join(abs, todo.path)) : null;
+  const stages = { list: parseStages(planText), tasksStage: stageOfTasks(todoText) };
   const clText = readText(path.join(abs, 'CHANGELOG.md'));
   const changelog = { exists: clText !== null, path: 'CHANGELOG.md', hasPublishedVersion: clText !== null && PUBLISHED.test(clText) };
   const testRunner = detectTestRunner(abs);
@@ -225,7 +230,7 @@ function collectSignals(repoRoot, opts) {
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   const architecture = findArchitecture(abs);
   return {
-    root, specs, modules, plan, todo, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
+    root, specs, modules, plan, todo, stages, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };

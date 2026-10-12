@@ -345,5 +345,17 @@ check('no cycle at all: global pair is reported', () => {
   const s = collectSignals(root, { runTests: false });
   assert.strictEqual(s.plan.path, 'tasks/plan.md'); assert.strictEqual(s.plan.exists, true); assert.strictEqual(s.todo.path, 'tasks/todo.md');
 });
+console.log('stages signal');
+check('folder cycle: stages from its plan.md, tasksStage from its tasks.md H1', () => {
+  const root = tmpDir(); const d = 'docs/specs/2026-10-08-lms';
+  write(root, d + '/spec.md', '# Spec\nPhase: development\nStatus: approved\n');
+  write(root, d + '/plan.md', '# Plan\n\n## Etapas\n\n| # | Etapa |\n|---|---|\n| 3 | **Ingreso** [x] 2026-10-12 |\n| 4 | **Catálogo** |\n');
+  write(root, d + '/tasks.md', '# Etapa 3 — Ingreso\n\n- [x] a\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.stages, { list: [{ number: 3, name: 'Ingreso', closed: true }, { number: 4, name: 'Catálogo', closed: false }], tasksStage: 3 });
+});
+check('no plan: empty stages, tasksStage null', () => {
+  assert.deepStrictEqual(collectSignals(tmpDir(), { runTests: false }).stages, { list: [], tasksStage: null });
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

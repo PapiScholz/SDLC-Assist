@@ -176,5 +176,50 @@ check('alternatives capped at 3: max reachable case hits the cap, sweep never ex
           assert(r.alternatives.length <= 3, JSON.stringify(r.alternatives));
         }
 });
+const { stepOf } = require('./steps');
+console.log('steps and staged plans');
+const fspec = (phase = 'development') => spec('docs/specs/x/spec.md', phase, 'approved', { layout: 'folder' });
+const stages = (closed, tasksStage) => ({ list: [0, 1, 2, 3].map(n => ({ number: n, name: 'S' + n, closed: closed.includes(n) })), tasksStage });
+const staged = (todoArgs, st, phase) => sig({ specs: [fspec(phase)], plan: plan({ path: 'docs/specs/x/plan.md' }), todo: todo(...todoArgs, 'docs/specs/x/tasks.md'), sourceFiles: src, stages: st });
+check('stepOf maps six phases to four steps', () => {
+  assert.deepStrictEqual(['initial', 'analysis', 'planning', 'development', 'testing', 'deployment'].map(p => { const s = stepOf(p); return [s.number, s.name, s.detail]; }),
+    [[1, 'situation', null], [2, 'spec', null], [3, 'plan', null], [4, 'implement', 'build'], [4, 'implement', 'test'], [4, 'implement', 'ship']]);
+});
+check('tasks of a closed stage all done, a later stage open: plan the first open stage, no header warning', () => {
+  const r = infer(staged([0, 50], stages([0, 1], 1)), req('unknown'));
+  assert.strictEqual(r.inferred, 'planning'); assert.deepStrictEqual(r.stage, { number: 2, name: 'S2', closed: 2, total: 4 });
+  assert.strictEqual(r.step.number, 3); assert.deepStrictEqual(r.warnings, []);
+});
+check('open tasks: build the stage the tasks name', () => {
+  const r = infer(staged([3, 5], stages([0], 1)), req('unknown'));
+  assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.stage.number, 1); assert.strictEqual(r.step.detail, 'build');
+});
+check('all done, their stage not closed: test that stage', () => {
+  const r = infer(staged([0, 8], stages([0], 1)), req('unknown'));
+  assert.strictEqual(r.inferred, 'testing'); assert.strictEqual(r.stage.number, 1); assert.deepStrictEqual(r.warnings, []);
+});
+check('all done, a stage closed, tasks.md names no stage: test the first open stage with a warning', () => {
+  const r = infer(staged([0, 8], stages([0], null)), req('unknown'));
+  assert.strictEqual(r.inferred, 'testing'); assert.strictEqual(r.stage.number, 1);
+  assert.ok(r.warnings.some(w => /tasks\.md names no stage/.test(w)));
+});
+check('no tasks file content yet in staged mode: plan the first open stage', () => {
+  const r = infer(staged([0, 0], stages([0, 1], null)), req('unknown'));
+  assert.strictEqual(r.inferred, 'planning'); assert.strictEqual(r.stage.number, 2);
+});
+check('single-pass plan with Phase headings (none closed, tasks name none): same as v0.11.1, no new warning', () => {
+  const withStages = infer(staged([0, 8], stages([], null)), req('unknown'));
+  const without = infer(staged([0, 8], undefined), req('unknown'));
+  assert.strictEqual(withStages.inferred, without.inferred); assert.deepStrictEqual(withStages.warnings, without.warnings);
+  assert.strictEqual(withStages.stage, null);
+});
+check('every stage closed: existing rules (deployment header ties with testing)', () => {
+  const r = infer(staged([0, 8], stages([0, 1, 2, 3], 3), 'deployment'), req('unknown'));
+  assert.strictEqual(r.inferred, 'deployment'); assert.strictEqual(r.stage, null);
+});
+check('REVIEW: every stage closed and header development: no header-disagreement warning', () => {
+  const r = infer(staged([0, 8], stages([0, 1, 2, 3], 3), 'development'), req('unknown'));
+  assert.deepStrictEqual(r.warnings, []); assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.stage, null);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

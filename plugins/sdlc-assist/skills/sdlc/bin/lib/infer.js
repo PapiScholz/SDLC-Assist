@@ -1,4 +1,5 @@
 const { PHASES } = require('./header');
+const { stepOf } = require('./steps');
 const EVIDENCE = { NO_RULE: 'no rule matched', PLAN_STALE: 'plan belongs to a closed cycle', NO_TASKS: 'todo has no tasks',
   DEPLOY_HEADER_ONLY: 'deployment is header-only; tie goes to testing', TESTS_NOT_RUN: 'tests not run (no --run-tests)',
   NO_TODO: 'no todo file: planning, development and testing cannot be distinguished',
@@ -28,6 +29,21 @@ function rankCycles(specs) {
     .sort((a, b) => b.date - a.date || (a.path < b.path ? -1 : 1));
 }
 function pickActive(specs) { const c = rankCycles(specs).find(c => c.status !== 'closed'); return c ? c._raw : null; }
+// Staged mode: 2+ stages and an explicit signal (a closed stage, or tasks.md naming its stage). Without that signal a
+// plan with `### Phase 1:` headings is a single-pass plan and keeps v0.11.1 behavior. Returns null outside staged mode.
+function stagedView(stages, eligible, todo) {
+  const list = (stages && stages.list) || [];
+  const tasksStage = stages ? stages.tasksStage : null;
+  if (!eligible || list.length < 2 || (!list.some(s => s.closed) && tasksStage == null)) return null;
+  const firstOpen = list.find(s => !s.closed) || null;
+  const own = tasksStage == null ? null : list.find(s => s.number === tasksStage) || null;
+  const view = { total: list.length, closed: list.filter(s => s.closed).length, current: null, phase: null, warning: null };
+  if (!firstOpen) return view;
+  if (todo.open > 0) return { ...view, current: own || firstOpen, phase: 'development' };
+  if (todo.total === 0 || (own && own.closed)) return { ...view, current: firstOpen, phase: 'planning' };
+  return { ...view, current: own || firstOpen, phase: 'testing',
+    warning: own ? null : `tasks.md names no stage: its finished tasks are counted toward stage ${firstOpen.number}` };
+}
 function infer(signals, request) {
   const evidence = [], warnings = [], alternatives = [];
   const cycles = rankCycles(signals.specs);
@@ -46,18 +62,24 @@ function infer(signals, request) {
   if (planCurrent && todo.open > 0) candidates.push('development');
   if (planCurrent && todo.total > 0 && todo.open === 0) candidates.push('testing');
   candidates.sort((a, b) => phaseIndex(a) - phaseIndex(b));
-  const fallback = candidates[0] || 'analysis';
+  const st = stagedView(signals.stages, approved && planCurrent, todo);
+  const fallback = (st && st.phase) || candidates[0] || 'analysis';
+  if (st && st.current) evidence.push(`stage ${st.current.number} "${st.current.name}" (${st.closed}/${st.total} closed)`);
+  if (st && st.warning) warnings.push(st.warning);
   if (!candidates.length) evidence.push(EVIDENCE.NO_RULE);
   if (approved && planCurrent && todo.total === 0) evidence.push(EVIDENCE.NO_TASKS);
   const headerPhase = active && active.phase;
   const deployTie = headerPhase === 'deployment' && fallback === 'testing';   // deployment is header-only: testing is its expected fallback
   if (deployTie || (fallback === 'testing' && !headerPhase)) evidence.push(EVIDENCE.DEPLOY_HEADER_ONLY);
   evidence.push(`fallback: ${fallback} (candidates: ${candidates.join(', ') || 'none'})`);
+  // While stages are detected the header records the cycle, not the work: no disagreement warning for dev/test/deploy.
+  const stagedHeader = !!(st && ['development', 'testing', 'deployment'].includes(headerPhase));
+  const stageWins = stagedHeader && !!st.phase;
   let inferred = fallback;
   if (active && active.phase) {
-    inferred = active.phase;
+    inferred = stageWins ? fallback : active.phase;
     evidence.unshift(`header Phase: ${active.phase}, Status: ${active.status} (${active.path})`);
-    if (active.phase !== fallback && !deployTie) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
+    if (active.phase !== fallback && !deployTie && !stagedHeader) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
     if (['development', 'testing', 'deployment'].includes(active.phase) && !approved) warnings.push(`header ${active.phase} without an approved spec`);
     if (active.phase === 'deployment' && signals.git.tagOnHead) evidence.push(EVIDENCE.CLOSE_CYCLE);
   }
@@ -65,6 +87,9 @@ function infer(signals, request) {
   for (const c of candidates) if (c !== inferred && !alternatives.some(a => a.phase === c)) alternatives.push({ phase: c, kind: 'candidate', reason: 'fallback row also holds' });
   if (signals.tests.status === 'unknown') evidence.push(EVIDENCE.TESTS_NOT_RUN);
   if (signals.inProduction) evidence.push(`in production: tag ${signals.git.lastSemverTag.name}`);
-  return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, active: active && strip(active), cycles: cycles.map(strip) };
+  return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, active: active && strip(active), cycles: cycles.map(strip),
+    step: stepOf(inferred),
+    stage: st && st.current ? { number: st.current.number, name: st.current.name, closed: st.closed, total: st.total } : null,
+  };
 }
-module.exports = { infer, effectiveDate, planIsCurrent, rankCycles, pickActive, EVIDENCE };
+module.exports = { infer, effectiveDate, planIsCurrent, rankCycles, pickActive, stagedView, EVIDENCE };

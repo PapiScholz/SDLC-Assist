@@ -30,6 +30,7 @@ flowchart TD
     D -->|sdlc close| E
     E -->|sdlc close| F
     F -->|sdlc close| G
+    E -->|next stage| C
 ```
 
 What each close writes into the spec header:
@@ -64,9 +65,9 @@ flowchart LR
 flowchart TD
     S([Work request]) --> W["Run where.js<br/>read-only: spec headers, plan and tasks,<br/>constitution, ADRs, architecture, hygiene, git"]
     W --> I["Inferred phase<br/>+ evidence + warnings"]
-    I --> Q["Ask ONE question<br/>confirm phase or pick an alternative"]
+    I --> Q["Say where the work is in one sentence<br/>stage and step; ask only for a new topic"]
     Q --> K["Run which.js<br/>is the phase skill installed?"]
-    K -->|no| M["Second question:<br/>install, search, create,<br/>or continue without"]
+    K -->|no| M["One line:<br/>which skill would help<br/>and how to get it"]
     K -->|yes| N
     M --> N["Read the phase sheet<br/>state the next step and its skill"]
     N --> Z([Do the work with that skill])
@@ -74,14 +75,14 @@ flowchart TD
 
 Rules that hold throughout:
 
-- Warnings never block. Development without an approved spec, or deployment without testing, become warning lines inside the question.
+- Warnings never block. Development without an approved spec, or deployment without testing, are said in the same sentence, in plain words.
 - Tests run only when the user asks in the current turn; otherwise the evidence says `tests not run`.
-- The skill writes only spec files created through the SDD flow and header updates on a confirmed close. It never runs a state-changing git command and never releases on its own.
+- The skill writes only spec files created through the SDD flow, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`. It never runs a state-changing git command and never releases on its own.
 - Each folder cycle (`docs/specs/<date>-<slug>/`) owns its `plan.md` and `tasks.md`. Flat specs share `tasks/plan.md` and `tasks/todo.md`, so only one flat cycle is planned at a time: a new one waits for the active one to close or for the user to switch.
 
 ## Day to day
 
 1. Install once: `npx skills add PapiScholz/SDLC-Assist -y`, or the Claude Code plugin.
-2. Describe the work, or say "where are we". Answer the one question.
+2. Describe the work, or say "where are we". The agent says where the work is and proceeds.
 3. Follow the recommended skill. New specs get the header right under the H1.
 4. When the phase's artifact exists, say "sdlc close". Repeat until `Status: closed`.

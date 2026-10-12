@@ -1457,3 +1457,81 @@ sdlc-release
 spec-driven-development
 test-driven-development
 ```
+
+## v1.7 dogfood
+
+### (a) acceptance probe on the owner's repositories (branch `v1-7-plain-steps-and-stages`, 2026-10-12)
+
+Sr-Lievito marks its closed stages with the legacy check emoji; the line still reads 4/9.
+
+```
+$ for r in Sr-Lievito NANDI Almacen; do node plugins/sdlc-assist/skills/sdlc/bin/where.js --root "$HOME/Github/$r" --brief; done
+sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: write the plan for this stage
+sdlc: step 4/4 implement (test) · next: test the change
+sdlc: step 2/4 spec · next: finish docs/specs/2026-10-08-feedback-cc-redondeo-duplicar/spec.md and get it approved
+```
+
+### (b) hook invoked directly with Claude Code's stdin shape
+
+Inputs written as files (`in1.json` Sr-Lievito root, `in2.json` its `src/` subdirectory, `in3.json` `C:\Users\ezesc\Downloads`, not a git repository). Shell-built JSON was dropped: Git Bash `echo` collapses `\\` into `\`, the JSON fails to parse and the hook falls back to `process.cwd()`, which looked like a wrong answer and was not one.
+
+```
+$ for f in in1 in2 in3; do node plugins/sdlc-assist/hooks/sdlc-status.js < "$SP/$f.json"; echo "exit=$?"; done
+sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)
+exit=0
+sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)
+exit=0
+exit=0
+$ for i in 1 2; do echo '{"cwd":"C:/Users/ezesc/Github/SDLC-Assist","prompt":"seguí"}' | node plugins/sdlc-assist/hooks/sdlc-status.js; done   # latency, timed outside: 790 ms and 802 ms
+sdlc: step 4/4 implement (build) · next: implement the open tasks (applies only when the request is about this repository's work)
+sdlc: step 4/4 implement (build) · next: implement the open tasks (applies only when the request is about this repository's work)
+```
+
+### (c) self-tests and gates
+
+```
+$ for t in <the six touched self-tests>; do echo "$t: $(node $t | tail -1)"; done
+plugins/sdlc-assist/skills/sdlc/bin/lib/stages.self-test.js: 7 passed, 0 failed
+plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js: 5 passed, 0 failed
+plugins/sdlc-assist/skills/sdlc/bin/lib/infer.self-test.js: 37 passed, 0 failed
+plugins/sdlc-assist/skills/sdlc/bin/lib/signals.self-test.js: 46 passed, 0 failed
+plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js: 34 passed, 0 failed
+plugins/sdlc-assist/hooks/sdlc-status.self-test.js: 5 passed, 0 failed
+$ bash scripts/gates.sh   # 32 lines, trimmed to the non-"ok" lines and the tail
+  check-acceptance: 1 specs, 19 bullets, 0 not EARS
+  check-adr: docs/adr, 5 ADRs
+ok check-adr (advisory)
+ok settings.json
+all gates ok
+```
+
+### (d) final whole-branch review: four Important findings fixed, each RED then GREEN
+
+Correction to (b): the `process.cwd()` fallback on malformed stdin was a real defect, not only a shell artifact. Inside a repo with an active cycle it printed the line. Fixed: malformed stdin now prints nothing.
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/stages.self-test.js | grep -E 'FAIL|passed'   # before the fix
+  FAIL REVIEW: a marker in a separate status column closes the stage; name stays the name cell
+  FAIL REVIEW: the stage word must lead the tasks.md H1 (optionally after "Tasks:" / "Tasks for")
+7 passed, 2 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/infer.self-test.js | grep -E 'FAIL|passed'
+  FAIL REVIEW: every stage closed and header development: no header-disagreement warning
+37 passed, 1 failed
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js | grep -E 'FAIL|passed'
+  FAIL REVIEW: stdin that is not JSON prints nothing even when the process cwd is a repo with an active cycle
+5 passed, 1 failed
+```
+
+After the fix:
+
+```
+plugins/sdlc-assist/skills/sdlc/bin/lib/stages.self-test.js: 9 passed, 0 failed
+plugins/sdlc-assist/skills/sdlc/bin/lib/infer.self-test.js: 38 passed, 0 failed
+plugins/sdlc-assist/hooks/sdlc-status.self-test.js: 6 passed, 0 failed
+$ for r in Sr-Lievito NANDI Almacen; do node plugins/sdlc-assist/skills/sdlc/bin/where.js --root "$HOME/Github/$r" --brief; done
+sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: write the plan for this stage
+sdlc: step 4/4 implement (test) · next: test the change
+sdlc: step 2/4 spec · next: finish docs/specs/2026-10-08-feedback-cc-redondeo-duplicar/spec.md and get it approved
+$ bash scripts/gates.sh --quick | tail -1
+all gates ok
+```

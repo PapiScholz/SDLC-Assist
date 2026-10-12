@@ -48,7 +48,7 @@ check('exit 2 with stderr message when --root is not a directory', () => {
 });
 check('output has the documented top-level keys, in order; JSON valid with Windows paths', () => {
   const r = runWhere(tmpDir(), 'hi');
-  assert.deepStrictEqual(Object.keys(r), ['signals', 'cycles', 'active', 'inferred', 'evidence', 'alternatives', 'warnings', 'request']);
+  assert.deepStrictEqual(Object.keys(r), ['signals', 'cycles', 'active', 'inferred', 'step', 'stage', 'evidence', 'alternatives', 'warnings', 'request']);
   assert.deepStrictEqual(r.request, { message: 'hi', type: 'unknown' });
   assert(!r.signals.root.includes('\\'));
 });
@@ -257,5 +257,13 @@ else {
     assert.strictEqual(r.signals.tests.status, 'failed'); assert.strictEqual(r.signals.tests.exitCode, 3);
   });
 }
+check('--brief prints one sdlc: line and no JSON', () => {
+  const r = spawnSync(process.execPath, [WHERE, '--root', tmpDir(), '--message', 'x', '--brief'], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0); assert.match(r.stdout, /^sdlc: step \d\/4 /); assert.strictEqual(r.stdout.trim().split('\n').length, 1);
+});
+check('JSON keeps v0.11.1 fields and adds step and stage', () => {
+  const j = runWhere(tmpDir(), 'x');
+  for (const k of ['signals', 'cycles', 'active', 'inferred', 'evidence', 'alternatives', 'warnings', 'request', 'step', 'stage']) assert.ok(k in j, k);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
