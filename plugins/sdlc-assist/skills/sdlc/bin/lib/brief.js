@@ -11,13 +11,19 @@ function nextAction(r) {
     default: return 'ship and close the cycle';
   }
 }
+// Stage names, paths and warnings come from the analysed repo and reach the agent's context through the hook:
+// strip control characters, drop quotes from names and cap the length, so repo text cannot pass as a long instruction.
+function safe(text, max) {
+  const s = String(text).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+  return s.length > max ? s.slice(0, max - 3) + '...' : s;
+}
 function briefLine(r) {
   const parts = [];
-  if (r.stage) parts.push(`stage ${r.stage.number} "${r.stage.name}" (${r.stage.closed}/${r.stage.total} closed)`);
+  if (r.stage) parts.push(`stage ${r.stage.number} "${safe(String(r.stage.name).replace(/"/g, "'"), 60)}" (${r.stage.closed}/${r.stage.total} closed)`);
   parts.push(`step ${r.step.number}/4 ${r.step.name}${r.step.detail ? ' (' + r.step.detail + ')' : ''}`);
-  parts.push('next: ' + nextAction(r));
+  parts.push('next: ' + safe(nextAction(r), 160));
   if ((r.alternatives || []).some(a => a.kind === 'new-cycle')) parts.push('this request may be a new topic: ask whether to keep it apart');
-  if ((r.warnings || []).length) parts.push('note: ' + r.warnings[0]);
+  if ((r.warnings || []).length) parts.push('note: ' + safe(r.warnings[0], 120));
   return 'sdlc: ' + parts.join(' · ');
 }
 module.exports = { briefLine, nextAction };

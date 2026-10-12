@@ -1535,3 +1535,20 @@ sdlc: step 2/4 spec · next: finish docs/specs/2026-10-08-feedback-cc-redondeo-d
 $ bash scripts/gates.sh --quick | tail -1
 all gates ok
 ```
+
+### (e) push security review: repo text reaching the agent through the hook
+
+The background security review of the pushed branch flagged prompt injection in `hooks/sdlc-status.js`: stage names, paths and warnings are text from the analysed repository and went into the agent's context unchanged. `briefLine` now strips control characters, replaces quotes in stage names, and caps stage names at 60 characters, the next action at 160 and the note at 120.
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js | grep -E 'FAIL|passed' -A1   # before the fix
+  FAIL SECURITY: repo-authored text is capped and stripped of control characters
+       stage name capped at 60
+5 passed, 1 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js | tail -1   # after
+6 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --root "$HOME/Github/Sr-Lievito" --brief
+sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: write the plan for this stage
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```
