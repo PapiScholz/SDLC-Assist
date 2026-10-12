@@ -1,6 +1,6 @@
 ---
 name: sdlc
-version: 0.11.1
+version: 0.12.0
 description: Tells the agent where work on a code repository stands, in four steps (situation, spec, plan, implement) and per stage of a staged plan, and what comes next; routes to spec-driven-development and its family. Use when working on a repository that has specs under docs/specs, when asked "where are we", or "sdlc close". Not for research, browsing, or non-code tasks.
 ---
 

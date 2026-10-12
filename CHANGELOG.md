@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.0] - 2026-10-12
+
+- Merge pull request #15 from PapiScholz/v1-7-plain-steps-and-stages
+- chore(marketplace): one papischolz catalog with both plugins; real-session hook record
+- fix(hook): sanitise repo-authored text in the brief line
+- feat(sdlc): four plain steps, staged plans and a Claude Code hook [minor]
+- docs: ROADMAP.md deferred backlog; distribution adds karanb192 list [skip release]
+- docs(distribution): listing URL keys are official; portal warning and refresh request [skip release]
+
 ## [0.11.1] - 2026-10-02
 
 - docs(distribution): portal warnings from listing URL keys; v0.11.1 tests listing refresh
