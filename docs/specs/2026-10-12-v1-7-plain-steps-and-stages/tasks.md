@@ -9,4 +9,4 @@ Spec: `spec.md`. Plan: `plan.md`. One branch (`v1-7-plain-steps-and-stages`), on
 - [x] 5 Hook: `hooks/hooks.json`, `hooks/sdlc-status.js` (silent, exit 0, subdirectory, new-topic note); self-test; gates loop and `CONTRIBUTING.md`
 - [x] 6 `SKILL.md` (description, overview, protocol without the default question, close mode for a stage, Never), six sheets with a Step line, `entry-points.md`, `plugin.json`; doc gates green
 - [x] 7 Both READMEs, `docs/sdlc-flow.md` loop, install-smoke staged repo
-- [ ] 8 Dogfood on Sr-Lievito, NANDI, Almacén and the hook in a real session; record in `docs/ci-red-runs.md`; commit and PR with the owner's verb
+- [x] 8 Dogfood on Sr-Lievito, NANDI, Almacén and the hook in a real session; record in `docs/ci-red-runs.md`; commit and PR with the owner's verb

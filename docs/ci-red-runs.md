@@ -1572,3 +1572,47 @@ result: "NONE"
 ```
 
 In Sr-Lievito the hook ran and exited 0, and its line reached the model's context. In the folder that is not a repository it printed nothing (no `sdlc-status` hook output) and the model saw no line.
+
+### (g) installed from the papischolz catalog, real sessions, and cycle close (2026-10-12)
+
+After PR #15 merged (v0.12.0) and both repositories published one `papischolz` catalog listing both plugins. The first install failed because this machine has no GitHub SSH key and `owner/repo` sources probe SSH first; the documented `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` fixed it.
+
+```
+$ claude plugin marketplace update papischolz
+✔ Successfully updated marketplace: papischolz
+$ claude plugin install sdlc-assist@papischolz
+fatal: Could not read from remote repository.
+$ ssh -T -o BatchMode=yes git@github.com
+Host key verification failed.
+$ CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1 claude plugin install sdlc-assist@papischolz
+✔ Successfully installed plugin: sdlc-assist@papischolz (scope: user)
+$ claude plugin list | grep -A3 sdlc-assist@papischolz
+  ❯ sdlc-assist@papischolz
+    Version: 0.12.0
+    Scope: user
+    Status: ✔ enabled
+```
+
+Same probe as (f), plugin installed (no `--plugin-dir`), Haiku, one turn. In Sr-Lievito the hook ran on all four runs with the same stdout (`sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · ...`); the model quoted it on two runs and answered NONE on the other two. The stream does not show what the model received, so those NONE answers are attributed to Haiku not following the copy instruction, not to the hook. In the folder that is not a repository the hook printed nothing.
+
+```
+$ node parse-hook.js inst-lievito.jsonl inst-l1.jsonl inst-l2.jsonl inst-l3.jsonl inst-norepo.jsonl   # trimmed to hook and result lines
+hook hook_response UserPromptSubmit exit=0 outcome=success stdout=<sdlc line>   # x4, one per Sr-Lievito run
+result: "NONE"            # inst-lievito
+result: "sdlc: stage 4 \"Catálogo y contenido\" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)"   # inst-l1
+result: "sdlc: stage 4 \"Catálogo y contenido\" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)"   # inst-l2
+result: "NONE"            # inst-l3
+result: "NONE"            # inst-norepo, no hook output
+```
+
+Cycle close ("sdlc close"; confirmed phase deployment, tag v0.12.0 on HEAD):
+
+```
+$ git tag --points-at HEAD
+v0.12.0
+$ sed -n 3,4p docs/specs/2026-10-12-v1-7-plain-steps-and-stages/spec.md
+Phase: deployment
+Status: closed
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --brief
+sdlc: step 2/4 spec · next: write the spec for this request
+```

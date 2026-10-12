@@ -1,7 +1,7 @@
 # Spec: v1.7 — four plain steps, staged plans, and a router that runs on its own
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-10-12
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.11.1)
