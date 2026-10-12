@@ -86,6 +86,8 @@ Run the skills.sh command from `~`, not from inside a project: the CLI installs 
 
 Codex and Cursor get the skill by intent only in v1; native command files for them are on the roadmap.
 
+The `papischolz` marketplace is one catalog with both of the author's plugins, `sdlc-assist` and `search-visibility-kit`, and both repositories publish it. Add either repository once; the other plugin installs from the same catalog (`claude plugin install search-visibility-kit@papischolz`).
+
 Overwrite and duplicate notes:
 
 - skills.sh overwrites same-named skills already in `~/.agents/skills`. Back up local edits first.

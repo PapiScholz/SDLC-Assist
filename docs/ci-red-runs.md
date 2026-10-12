@@ -1552,3 +1552,23 @@ sdlc: stage 4 "Catálogo y contenido" (4/9 closed) · step 3/4 plan · next: wri
 $ bash scripts/gates.sh | tail -1
 all gates ok
 ```
+
+### (f) the hook in a real Claude Code session (2.1.296, plugin loaded from this checkout)
+
+Headless sessions with the plugin passed through `--plugin-dir` (the installed configuration is untouched), one in Sr-Lievito and one in a scratch folder that is not a git repository. The prompt asks the model to copy any `sdlc:` line from its context, or answer NONE. The output below is summarised from the stream-json transcripts by a small parser; the plugin list in `init` is trimmed to the plugin under test.
+
+```
+$ Q='Without using any tool: if your context contains a line that starts with "sdlc:", copy that whole line verbatim as your entire answer. Otherwise answer exactly NONE.'
+$ (cd ~/Github/Sr-Lievito && claude -p --plugin-dir "$PD" --model haiku --max-turns 1 --output-format stream-json --verbose --include-hook-events "$Q" > hook-lievito.jsonl)
+$ (cd "$NR" && claude -p --plugin-dir "$PD" --model haiku --max-turns 1 --output-format stream-json --verbose --include-hook-events "$Q" > hook-norepo.jsonl)
+$ node parse-hook.js hook-lievito.jsonl hook-norepo.jsonl
+== hook-lievito.jsonl
+hook hook_response UserPromptSubmit exit=0 outcome=success stdout="sdlc: stage 4 \"Catálogo y contenido\" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)\n"
+init plugins: sdlc-assist@C:\Users\ezesc\Github\SDLC-Assist\plugins\sdlc-assist, ... (trimmed)
+result: "sdlc: stage 4 \"Catálogo y contenido\" (4/9 closed) · step 3/4 plan · next: write the plan for this stage (applies only when the request is about this repository's work)"
+== hook-norepo.jsonl
+init plugins: sdlc-assist@C:\Users\ezesc\Github\SDLC-Assist\plugins\sdlc-assist, ... (trimmed)
+result: "NONE"
+```
+
+In Sr-Lievito the hook ran and exited 0, and its line reached the model's context. In the folder that is not a repository it printed nothing (no `sdlc-status` hook output) and the model saw no line.
