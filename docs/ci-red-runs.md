@@ -1639,3 +1639,22 @@ Replay of the v1.7 case on this repository's real signals (tag v0.12.0 and the v
 tag: v0.12.0 1791844143 | v1.7 spec firstCommit: 1791842266 tracked: true
 sdlc: step 4/4 implement (build) · next: implement the open tasks · note: release v0.12.0 came out after this cycle started: if it shipped, run sdlc close
 ```
+
+### Released as v0.12.1 (PR #17), dogfooded and closed
+
+The new note fired on this repository once the release tag was fetched (the first run, right after the merge, still saw v0.12.0 locally), then disappeared after the close.
+
+```
+$ git describe --tags --abbrev=0
+v0.12.0
+$ git pull --ff-only --tags && git describe --tags --abbrev=0
+v0.12.1
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --brief
+sdlc: step 4/4 implement (build) · next: implement the open tasks · note: release v0.12.1 came out after this cycle started: if it shipped, run sdlc close
+$ # sdlc close: confirmed phase deployment, tag v0.12.1 on HEAD
+$ sed -n 3,4p docs/specs/2026-10-12-router-suggest-close/spec.md
+Phase: deployment
+Status: closed
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --brief
+sdlc: step 2/4 spec · next: write the spec for this request
+```
