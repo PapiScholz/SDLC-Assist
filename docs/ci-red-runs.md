@@ -1616,3 +1616,26 @@ Status: closed
 $ node plugins/sdlc-assist/skills/sdlc/bin/where.js --brief
 sdlc: step 2/4 spec · next: write the spec for this request
 ```
+
+## Router suggests closing a shipped cycle (2026-10-12, branch `router-suggest-close`)
+
+Spec: `docs/specs/2026-10-12-router-suggest-close/spec.md`. RED, then GREEN:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/infer.self-test.js | grep -E 'FAIL|passed'   # before
+  FAIL a release after the spec started, header development: first warning suggests sdlc close; inference unchanged
+40 passed, 1 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/signals.self-test.js | grep -E 'FAIL|passed'   # before
+  FAIL repo with commits, tag, dates, dirty, commits with paths
+45 passed, 1 failed
+$ # after
+infer: 41 passed, 0 failed
+signals: 46 passed, 0 failed
+```
+
+Replay of the v1.7 case on this repository's real signals (tag v0.12.0 and the v1.7 spec's real first commit), with the v1.7 header set back in memory to `development` / `approved`, as it was before the close:
+
+```
+tag: v0.12.0 1791844143 | v1.7 spec firstCommit: 1791842266 tracked: true
+sdlc: step 4/4 implement (build) · next: implement the open tasks · note: release v0.12.0 came out after this cycle started: if it shipped, run sdlc close
+```
