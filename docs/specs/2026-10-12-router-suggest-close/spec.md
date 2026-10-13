@@ -1,7 +1,7 @@
 # Spec: the router suggests closing a cycle that already shipped
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-10-12
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.12.0)
