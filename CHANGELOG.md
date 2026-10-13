@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.2] - 2026-10-13
+
+- ci: fail when the plugin changes without a version bump
+- Merge pull request #18 from PapiScholz/close-router-suggest [skip release]
+- docs: close the router-suggest-close cycle (v0.12.1)
+
 ## [0.12.1] - 2026-10-13
 
 - Merge pull request #17 from PapiScholz/router-suggest-close
