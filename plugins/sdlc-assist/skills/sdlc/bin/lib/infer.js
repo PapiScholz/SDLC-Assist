@@ -82,6 +82,12 @@ function infer(signals, request) {
     if (active.phase !== fallback && !deployTie && !stagedHeader) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
     if (['development', 'testing', 'deployment'].includes(active.phase) && !approved) warnings.push(`header ${active.phase} without an approved spec`);
     if (active.phase === 'deployment' && signals.git.tagOnHead) evidence.push(EVIDENCE.CLOSE_CYCLE);
+    // A release cut after the cycle opened: the cycle may have shipped without a close. First, so --brief shows it.
+    const tag = signals.git.lastSemverTag, start = active._raw.tracked ? active._raw.firstCommit : null;
+    if (['development', 'testing', 'deployment'].includes(active.phase) && tag && tag.date && start != null && tag.date > start) {
+      warnings.unshift(`release ${tag.name} came out after this cycle started: if it shipped, run sdlc close`);
+      evidence.push(`release ${tag.name} (${tag.date}) is newer than ${active.path} first commit (${start})`);
+    }
   }
   if (active && NEW_CYCLE_TYPES.includes(request.type)) alternatives.push({ phase: 'analysis', kind: 'new-cycle', reason: `request type ${request.type} while a cycle is active` });
   for (const c of candidates) if (c !== inferred && !alternatives.some(a => a.phase === c)) alternatives.push({ phase: c, kind: 'candidate', reason: 'fallback row also holds' });

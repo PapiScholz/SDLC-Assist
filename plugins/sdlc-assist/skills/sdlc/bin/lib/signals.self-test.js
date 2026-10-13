@@ -209,7 +209,7 @@ check('repo with commits, tag, dates, dirty, commits with paths', () => {
   assert.deepStrictEqual(s.git.commits.map(c => c.subject), ['three', 'two', 'one']);
   assert.deepStrictEqual(s.git.commits[1].paths, ['docs/specs/s.md', 'tasks/plan.md']);
   assert.strictEqual(s.git.commits[0].date, S3);
-  assert.strictEqual(s.git.lastSemverTag.name, 'v1.2.0'); assert.strictEqual(s.git.tagOnHead, false); assert.strictEqual(s.git.commitsAfterTag, 1);
+  assert.strictEqual(s.git.lastSemverTag.name, 'v1.2.0'); assert.ok(Number.isInteger(s.git.lastSemverTag.date) && s.git.lastSemverTag.date > 0, 'tag date'); assert.strictEqual(s.git.tagOnHead, false); assert.strictEqual(s.git.commitsAfterTag, 1);
   const spec = s.specs[0];
   assert.deepStrictEqual([spec.tracked, spec.firstCommit, spec.lastCommit, spec.dirty], [true, S1, S2, false]);
   assert.deepStrictEqual([s.plan.tracked, s.plan.lastCommit, s.plan.dirty], [true, S2, true]);

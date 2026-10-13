@@ -165,7 +165,8 @@ function lastSemverTag(root) {
     .map(t => ({ name: t.name, key: [+t.m[1], +t.m[2], +t.m[3]] }))
     .sort((a, b) => b.key[0] - a.key[0] || b.key[1] - a.key[1] || b.key[2] - a.key[2]);
   if (!tags.length) return null;
-  return { name: tags[0].name, sha: (git(root, ['rev-list', '-n', '1', tags[0].name]) || '').trim() };
+  const date = Number((git(root, ['log', '-1', '--format=%ct', tags[0].name]) || '').trim()) || null;   // committer time of the tag's commit
+  return { name: tags[0].name, sha: (git(root, ['rev-list', '-n', '1', tags[0].name]) || '').trim(), date };
 }
 function collectGit(root, notes) {
   const info = repoInfo(root, notes);

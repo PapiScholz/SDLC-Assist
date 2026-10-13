@@ -221,5 +221,24 @@ check('REVIEW: every stage closed and header development: no header-disagreement
   const r = infer(staged([0, 8], stages([0, 1, 2, 3], 3), 'development'), req('unknown'));
   assert.deepStrictEqual(r.warnings, []); assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.stage, null);
 });
+console.log('shipped cycle: suggest close');
+const shipped = (phase, tag, d = {}) => sig({ specs: [spec('docs/specs/x/spec.md', phase, 'approved', { layout: 'folder', ...d })],
+  plan: plan({ path: 'docs/specs/x/plan.md' }), todo: todo(1, 7, 'docs/specs/x/tasks.md'), sourceFiles: src,
+  git: { isRepo: true, branch: 'main', commits: [], lastSemverTag: tag, tagOnHead: false, commitsAfterTag: 0 } });
+check('a release after the spec started, header development: first warning suggests sdlc close; inference unchanged', () => {
+  const base = infer(shipped('development', null), req('unknown'));
+  const r = infer(shipped('development', { name: 'v0.12.0', sha: 'abc', date: 300 }), req('unknown'));
+  assert.match(r.warnings[0], /v0\.12\.0/); assert.match(r.warnings[0], /sdlc close/);
+  assert.strictEqual(r.inferred, base.inferred); assert.deepStrictEqual(r.step, base.step); assert.deepStrictEqual(r.stage, base.stage);
+});
+check('no suggestion: tag older than the spec, no tag, tag without date, untracked spec', () => {
+  for (const s of [shipped('testing', { name: 'v1.0.0', sha: 'a', date: 50 }), shipped('testing', null),
+    shipped('testing', { name: 'v1.0.0', sha: 'a' }), shipped('testing', { name: 'v1.0.0', sha: 'a', date: 300 }, { tracked: false, firstCommit: null })])
+    assert.ok(!infer(s, req('unknown')).warnings.some(w => /sdlc close/.test(w)));
+});
+check('no suggestion while the header is analysis or planning', () => {
+  for (const p of ['analysis', 'planning'])
+    assert.ok(!infer(shipped(p, { name: 'v1.0.0', sha: 'a', date: 300 }), req('unknown')).warnings.some(w => /sdlc close/.test(w)));
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
