@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1] - 2026-10-13
+
+- Merge pull request #17 from PapiScholz/router-suggest-close
+- feat(sdlc): suggest sdlc close when a release follows the active cycle
+- Merge pull request #16 from PapiScholz/v1-7-close [skip release]
+- docs(v1.7): close the cycle; record the installed plugin in real sessions
+
 ## [0.12.0] - 2026-10-12
 
 - Merge pull request #15 from PapiScholz/v1-7-plain-steps-and-stages
