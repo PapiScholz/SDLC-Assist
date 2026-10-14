@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.12.3] - 2026-10-14
+
+- feat: add PNG listing icon next to the SVG
+- ci: drop version-guard, the release workflow already bumps every push [skip release]
+
 ## [0.12.2] - 2026-10-13
 
 - ci: fail when the plugin changes without a version bump
