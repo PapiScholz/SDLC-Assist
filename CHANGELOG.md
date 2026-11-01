@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.12.4] - 2026-11-01
+
+- fix(hook): print the status line only when it changes within a session
+
 ## [0.12.3] - 2026-10-14
 
 - feat: add PNG listing icon next to the SVG
