@@ -21,9 +21,19 @@ function status(cwd, prompt) {
   if (!r.active) return '';
   return briefLine({ ...r, warnings: [...r.warnings, ...s.notes] }) + " (applies only when the request is about this repository's work)";
 }
+// Only when the line changes within a session: repeating the same status on every prompt cost context
+// for nothing (96 of 96 prompts in one session carried the identical line). State: one file per
+// session_id in the OS temp dir holding the last line printed. Without a session_id, print as before.
+function changed(sessionId, line) {
+  if (typeof sessionId !== 'string' || !/^[\w-]{1,128}$/.test(sessionId)) return true;
+  const file = path.join(require('os').tmpdir(), 'sdlc-assist-status', sessionId + '.txt');
+  try { if (fs.readFileSync(file, 'utf8') === line) return false; } catch { /* first prompt of the session */ }
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, line); } catch { /* still print */ }
+  return true;
+}
 try {
   const j = input();
   const line = j && status(typeof j.cwd === 'string' ? j.cwd : process.cwd(), typeof j.prompt === 'string' ? j.prompt : '');
-  if (line) process.stdout.write(line + '\n');
+  if (line && changed(j.session_id, line)) process.stdout.write(line + '\n');
 } catch { /* never surface an error into the prompt */ }
 process.exitCode = 0;

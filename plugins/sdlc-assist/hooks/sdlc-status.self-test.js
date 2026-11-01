@@ -48,5 +48,15 @@ check('REVIEW: stdin that is not JSON prints nothing even when the process cwd i
   const r = run('not json', stagedRepo());
   assert.deepStrictEqual([r.stdout, r.status], ['', 0]);
 });
+check('same session, same status: printed once, then silent until it changes', () => {
+  const root = stagedRepo(); const sid = 'selftest-' + process.pid + '-' + Date.now();
+  const a = run(JSON.stringify({ cwd: root, prompt: 'seguimos', session_id: sid }));
+  const b = run(JSON.stringify({ cwd: root, prompt: 'seguimos', session_id: sid }));
+  const c = run(JSON.stringify({ cwd: root, prompt: 'un cliente se queja de que el botón no anda', session_id: sid }));
+  const d = run(JSON.stringify({ cwd: root, prompt: 'seguimos', session_id: 'otra-' + sid }));
+  assert.match(a.stdout, /^sdlc: stage 4 /); assert.strictEqual(b.stdout, '');
+  assert.match(c.stdout, /new topic/); assert.match(d.stdout, /^sdlc: stage 4 /);
+  assert.deepStrictEqual([a.status, b.status, c.status, d.status], [0, 0, 0, 0]);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
