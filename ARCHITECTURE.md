@@ -14,7 +14,7 @@ SDLC-Assist is a Claude Code plugin (`sdlc-assist`) whose core is one skill, `sd
 | `plugins/sdlc-assist/skills/sdlc-*` | Own skills for the phases: `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`. |
 | `plugins/sdlc-assist/skills/<vendored>` | Vendored skills pinned by `bin/sync-vendored.js` (`spec-driven-development`, `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `context-engineering`). Never edited here. |
 | `scripts/` | `gates.sh` (the single verification target CI runs) and `hooks/` (git hooks for this checkout: EOL guard, git authorization). |
-| `docs/specs/` | One cycle per spec; folder cycles carry `plan.md` and `tasks.md` beside `spec.md` (ADR 0005). |
+| `docs/specs/` | One cycle per spec; folder cycles carry `plan.md` and `tasks.md` beside `spec.md` or a capability map with module specs (ADR 0005). |
 | `docs/adr/` | Decisions that outlive a cycle, Nygard format, numbered, never deleted. |
 | `docs/` (rest) | `constitution.md`, `ci-red-runs.md` (append-only pasted records), `sdlc-flow.md` (diagrams), `distribution.md`, `plans/` and `intents/` and `ideas/` (legacy locations, read-only). |
 | `tasks/` | Legacy `plan.md` and `todo.md` of the flat cycles; pointer to the current folder cycle, not updated. |
@@ -24,7 +24,8 @@ SDLC-Assist is a Claude Code plugin (`sdlc-assist`) whose core is one skill, `sd
 
 - `where.js`: entry point. Takes `--root` and a message (`--message` or `--message-file`), calls `collectSignals` and `infer`, prints one JSON. No network, no environment read, no writes.
 - `lib/signals.js`: every fact about the repo (specs and their headers, plan and todo pair, constitution, architecture, ADRs, source files, test runner, git tags and dates, changelog). Read-only; git through `execFileSync` only for metadata. Depends on the other `lib/` modules, never on `where.js` or `which.js`.
-- `lib/infer.js`: ranks cycles and picks the active one (ADR 0004), infers the phase from signals and the request type, lists warnings. Pure functions over the signals object.
+- `lib/infer.js`: ranks cycles by last activity and picks the active one (ADR 0004, ADR 0006), infers the phase from signals and the request type, lists warnings. Pure functions over the signals object.
+- `lib/confidence.js`: how sure the router is of that pick (`high` / `low` with reasons: orphan spec, stale cycle, contested cycles, release after the cycle). Pure; never changes the inference. `lib/brief.js` turns `low` into a line without a next step.
 - `which.js`: which skills are installed for a phase and where (`lib/skilldirs.js`); reads the phase sheets' frontmatter for `recommends` and `alternatives`.
 - `check-*.js`: gates on this repo's own artifacts (manifest, sheets, frontmatter, skill sections, EOL, acceptance bullets, ADRs). Each ships with a `*.self-test.js`; advisory ones exit 0 and take `--strict`.
 - `references/phases/<slug>.md`: one sheet per phase with a fixed set of labels (`check-sheets.js` enforces them); the only place a phase's behavior is described, so "never nag" is a property of which sheet mentions a signal.
@@ -41,3 +42,4 @@ A request arrives as text. `where.js` writes nothing: it reads the repo into `si
 - ADR 0003: cross-cycle artifacts (constitution, ADRs, this file) are detected and cited, never required, never written by the router.
 - ADR 0004: the active cycle is the newest non-closed spec by effective date, computed once in `lib/infer.js`.
 - ADR 0005: a folder cycle owns its `plan.md` and `tasks.md`; the legacy flat layout is read but never migrated.
+- ADR 0006: cycles rank by last activity (every file of a folder cycle, the spec alone for a flat one); a tie goes to the larger path.

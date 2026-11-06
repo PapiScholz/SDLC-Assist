@@ -71,7 +71,7 @@ jobs:
           printf '# Etapa 3 - Ingreso\n\n- [x] a\n' > "$d/tasks.md"
           git add -A; git commit -qm init
           node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --brief | tee brief.txt
-          grep -q '^sdlc: stage 4 "Catalogo" (1/2 closed) · step 3/4 plan · next: write the plan for this stage$' brief.txt
+          grep -q '^sdlc: cycle 2026-10-08-lms (today) · stage 4 "Catalogo" (1/2 closed) · step 3/4 plan · next: write the plan for this stage$' brief.txt
       - name: Installed copy reports sdlc-qa-gate for testing and sdlc-debugging for analysis
         run: |
           export HOME="$RUNNER_TEMP/home"; cd "$RUNNER_TEMP/fx"

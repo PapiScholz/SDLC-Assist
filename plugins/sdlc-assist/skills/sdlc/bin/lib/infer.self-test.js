@@ -240,5 +240,36 @@ check('no suggestion while the header is analysis or planning', () => {
   for (const p of ['analysis', 'planning'])
     assert.ok(!infer(shipped(p, { name: 'v1.0.0', sha: 'a', date: 300 }), req('unknown')).warnings.some(w => /sdlc close/.test(w)));
 });
+console.log('ranking by last activity and confidence');
+const { rankCycles } = require('./infer');
+check('rankCycles uses lastActivity when present', () => {
+  const a = spec('docs/specs/a/spec.md', null, 'approved', { lastCommit: 300, lastActivity: 300 });
+  const b = spec('docs/specs/b/spec.md', null, 'approved', { lastCommit: 200, lastActivity: 400 });
+  assert.deepStrictEqual(rankCycles([a, b]).map(c => [c.path, c.date]), [['docs/specs/b/spec.md', 400], ['docs/specs/a/spec.md', 300]]);
+});
+check('rankCycles tie: the larger path (newer date-prefixed slug) first', () => {
+  const a = spec('docs/specs/2026-10-01-a/spec.md', null, 'approved'), b = spec('docs/specs/2026-10-02-b/spec.md', null, 'approved');
+  assert.deepStrictEqual(rankCycles([a, b]).map(c => c.path), ['docs/specs/2026-10-02-b/spec.md', 'docs/specs/2026-10-01-a/spec.md']);
+});
+check('confidence high by default; inference fields unchanged', () => {
+  const s = sig({ sourceFiles: src, specs: [spec('s.md', 'development', 'approved')], plan: plan(), todo: todo(1, 0) });
+  const r = infer(s, req('unknown'));
+  assert.deepStrictEqual(r.confidence, { level: 'high', reasons: [] }); assert.strictEqual(r.inferred, 'development');
+});
+check('newer orphan: low, its warning first, inferred/step/stage identical to the high run', () => {
+  const s = sig({ sourceFiles: src, specs: [spec('s.md', 'development', 'approved')], plan: plan(), todo: todo(1, 0), now: 1000 });
+  const hi = infer(s, req('unknown'));
+  const lo = infer({ ...s, orphanSpecs: { total: 1, list: [{ path: 'docs/spec-new.md', lastActivity: 900, hasHeader: false }] } }, req('unknown'));
+  assert.strictEqual(lo.confidence.level, 'low'); assert.deepStrictEqual(lo.confidence.reasons.map(x => x.kind), ['orphan']);
+  assert.match(lo.warnings[0], /docs\/spec-new\.md/);
+  assert.deepStrictEqual([lo.inferred, lo.step, lo.stage], [hi.inferred, hi.step, hi.stage]);
+});
+check('released stays one warning and becomes a reason after the orphan', () => {
+  const s = shipped('development', { name: 'v0.12.0', sha: 'abc', date: 300 });
+  const r = infer({ ...s, orphanSpecs: { total: 1, list: [{ path: 'docs/spec-n.md', lastActivity: 9999 }] } }, req('unknown'));
+  assert.deepStrictEqual(r.confidence.reasons.map(x => x.kind), ['orphan', 'released']);
+  assert.match(r.warnings[0], /spec-n/); assert.match(r.warnings[1], /v0\.12\.0/);
+  assert.strictEqual(r.warnings.filter(w => /v0\.12\.0/.test(w)).length, 1);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

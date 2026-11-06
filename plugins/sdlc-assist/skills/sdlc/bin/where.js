@@ -33,8 +33,8 @@ function main() {
   const signals = collectSignals(args.root, { runTests: args.runTests });
   const request = { message: args.message, type: classifyRequest(args.message) };
   const r = infer(signals, request);
-  const out = { signals, cycles: r.cycles, active: r.active, inferred: r.inferred, step: r.step, stage: r.stage, evidence: r.evidence, alternatives: r.alternatives, warnings: [...r.warnings, ...signals.notes], request };
-  if (args.brief) { process.stdout.write(require('./lib/brief').briefLine(out) + '\n'); return 0; }
+  const out = { signals, cycles: r.cycles, active: r.active, inferred: r.inferred, step: r.step, stage: r.stage, evidence: r.evidence, alternatives: r.alternatives, warnings: [...r.warnings, ...signals.notes], confidence: r.confidence, request };
+  if (args.brief) { process.stdout.write(require('./lib/brief').briefLine({ ...out, now: signals.now }) + '\n'); return 0; }
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
   return 0;
 }

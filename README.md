@@ -177,7 +177,7 @@ The same run on a repo with a folder cycle (`docs/specs/2026-10-01-x/spec.md` wi
 }
 ```
 
-The plan and the task list are the files beside that spec; a flat spec keeps `tasks/plan.md` and `tasks/todo.md`, and a folder under `docs/specs/` without `spec.md` is not a cycle.
+The plan and the task list are the files beside that spec, in any case (`PLAN.md` works); a flat spec keeps `tasks/plan.md` and `tasks/todo.md`. A folder with a capability map (`MAPA.md`, `MAP.md`, `CAPABILITY-MAP.md`) and `SPEC-<module>.md` files is one cycle whose header lives in the map; a folder with only a plan or notes is not a cycle. The cycle touched last (any of its files) is the active one, and the JSON carries `confidence`: `low` when a spec outside `docs/specs/` is newer, the cycle has sat for 7 days while 10 commits landed elsewhere, another open cycle was touched within a day, or a release followed it. On `low` the hook's line names the cycle and the reason instead of a next step.
 
 ## Missing-skill protocol
 

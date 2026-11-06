@@ -1,6 +1,6 @@
 # Spec header
 
-A cycle is a spec file: `docs/specs/<date>-<slug>/spec.md` (its `plan.md` and `tasks.md` live beside it), a flat `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md` (flat and root specs share `tasks/plan.md` and `tasks/todo.md`). A folder under `docs/specs/` without `spec.md` is not a cycle.
+A cycle is a spec file: `docs/specs/<date>-<slug>/spec.md` (its `plan.md` and `tasks.md` live beside it), a flat `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md` (flat and root specs share `tasks/plan.md` and `tasks/todo.md`). A folder under `docs/specs/` is also a cycle when it holds a capability map (`MAPA.md`, `MAP.md` or `CAPABILITY-MAP.md`) or `SPEC-*.md` module specs: its header lives in `spec.md`, else the map, else the first `SPEC-*.md`, and the other `SPEC-*.md` are modules. File names match in any case (`PLAN.md`, `TASKS.md`). A folder with only a plan or notes is not a cycle. Spec-like files elsewhere under `docs/` (`docs/spec-x.md`) are reported as orphans and lower the router's confidence when newer than the active cycle; they are never cycles.
 
 ## Format
 
