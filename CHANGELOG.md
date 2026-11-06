@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.0] - 2026-11-06
+
+- Merge pull request #22 from PapiScholz/cycle-confidence
+- ci: install-smoke expects the cycle prefix on the brief line
+- feat(sdlc): the router knows how sure it is of the active cycle [minor]
+
 ## [0.12.4] - 2026-11-01
 
 - fix(hook): print the status line only when it changes within a session
