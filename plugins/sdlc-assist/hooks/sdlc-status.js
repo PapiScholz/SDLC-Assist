@@ -19,7 +19,7 @@ function status(cwd, prompt) {
   const s = collectSignals(root, { runTests: false });
   const r = infer(s, { message: prompt || '', type: classifyRequest(prompt || '') });
   if (!r.active) return '';
-  return briefLine({ ...r, warnings: [...r.warnings, ...s.notes] }) + " (applies only when the request is about this repository's work)";
+  return briefLine({ ...r, now: s.now, warnings: [...r.warnings, ...s.notes] }) + " (applies only when the request is about this repository's work)";
 }
 // Only when the line changes within a session: repeating the same status on every prompt cost context
 // for nothing (96 of 96 prompts in one session carried the identical line). State: one file per

@@ -14,3 +14,5 @@ Several cycles can be in flight once specs live in folders. The router, the acce
 ## Consequences
 
 A tie on the effective date falls back to the smaller path, which makes the older dated slug win when two specs land in the same second (deferred in the v1.5 spec's `## Decisions`; to be reversed for date-prefixed slugs in the first cycle that touches `lib/infer.js`). Changing the ranking changes every consumer at once, which is the point.
+
+Amended by ADR 0006 (2026-11-06): the ranking date is the cycle's last activity, and a tie goes to the larger path.

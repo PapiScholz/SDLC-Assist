@@ -357,5 +357,99 @@ check('folder cycle: stages from its plan.md, tasksStage from its tasks.md H1', 
 check('no plan: empty stages, tasksStage null', () => {
   assert.deepStrictEqual(collectSignals(tmpDir(), { runTests: false }).stages, { list: [], tasksStage: null });
 });
+
+console.log('discovery: map folders, module-only folders, plan pair in any case (#21)');
+check('MAPA.md + SPEC-*.md: one cycle whose path is the map; the SPEC files are modules; PLAN.md found', () => {
+  const root = tmpDir(), d = 'docs/specs/03-fase1';
+  write(root, d + '/MAPA.md', '# Mapa\nPhase: development\nStatus: approved\n'); write(root, d + '/SPEC-b.md', '# B\n'); write(root, d + '/SPEC-a.md', '# A\n');
+  write(root, d + '/PLAN.md', '# P\n'); write(root, d + '/TASKS.md', '- [ ] a\n- [x] b\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), [d + '/MAPA.md']);
+  assert.deepStrictEqual([s.specs[0].layout, s.specs[0].header.phase, s.specs[0].header.status], ['folder', 'development', 'approved']);
+  assert.deepStrictEqual(s.modules, [d + '/SPEC-a.md', d + '/SPEC-b.md']);
+  assert.deepStrictEqual([s.specs[0].plan.exists, s.specs[0].plan.path], [true, d + '/PLAN.md']);
+  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: d + '/TASKS.md', open: 1, done: 1, total: 2 });
+});
+check('module-only folder: the alphabetically first SPEC-*.md is the cycle, the rest are modules', () => {
+  const root = tmpDir(), d = 'docs/specs/02-cobro';
+  write(root, d + '/SPEC-correos.md', '# C\n'); write(root, d + '/SPEC-archivar.md', '# A\nStatus: approved\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), [d + '/SPEC-archivar.md']);
+  assert.deepStrictEqual(s.modules, [d + '/SPEC-correos.md']);
+});
+check('spec.md wins over a map in the same folder; MAP.md and CAPABILITY-MAP.md are maps', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/a/spec.md', '# S\n'); write(root, 'docs/specs/a/MAP.md', '# M\n');
+  write(root, 'docs/specs/b/capability-map.md', '# M\n');
+  assert.deepStrictEqual(collectSignals(root, { runTests: false }).specs.map(x => x.path), ['docs/specs/a/spec.md', 'docs/specs/b/capability-map.md']);
+});
+check('uppercase SPEC.md, PLAN.md, TASKS.md carry their git dates', () => {
+  const root = initRepo(), d = 'docs/specs/01-iac';
+  write(root, d + '/SPEC.md', '# S\nStatus: approved\n'); write(root, d + '/PLAN.md', '# P\n'); write(root, d + '/TASKS.md', '- [x] a\n'); commit(root, 'one', T1);
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), [d + '/SPEC.md']);
+  assert.deepStrictEqual([s.specs[0].plan.path, s.specs[0].plan.tracked, s.specs[0].plan.lastCommit], [d + '/PLAN.md', true, S1]);
+});
+check('findSpecs (check-acceptance) sees the map folder by its map', () => {
+  const root = tmpDir(); write(root, 'docs/specs/x/MAPA.md', '# M\n'); write(root, 'docs/specs/x/SPEC-a.md', '# A\n');
+  assert.deepStrictEqual(require('./signals').findSpecs(root), ['docs/specs/x/MAPA.md']);
+});
+
+console.log('last activity');
+check('folder cycle: last activity is its newest file; the one with the newer PLAN.md is active', () => {
+  const root = initRepo();
+  write(root, 'docs/specs/01-a/MAPA.md', '# A\nStatus: approved\n'); commit(root, 'a', T1);
+  write(root, 'docs/specs/02-b/spec.md', '# B\nStatus: approved\n'); commit(root, 'b', T2);
+  write(root, 'docs/specs/01-a/PLAN.md', '# P\n'); commit(root, 'plan a', T3);
+  const s = collectSignals(root, { runTests: false });
+  const byPath = Object.fromEntries(s.specs.map(x => [x.path, x.lastActivity]));
+  assert.deepStrictEqual(byPath, { 'docs/specs/01-a/MAPA.md': S3, 'docs/specs/02-b/spec.md': S2 });
+  assert.strictEqual(s.plan.path, 'docs/specs/01-a/PLAN.md');
+});
+check('flat spec: last activity is the spec alone, not tasks/plan.md', () => {
+  const root = initRepo();
+  write(root, 'docs/specs/s.md', '# S\nStatus: approved\n'); commit(root, 'one', T1);
+  write(root, 'tasks/plan.md', '# P\n'); commit(root, 'two', T2);
+  assert.strictEqual(collectSignals(root, { runTests: false }).specs[0].lastActivity, S1);
+});
+
+console.log('orphan specs');
+check('spec-like files under docs/ outside docs/specs/ are orphans, never cycles', () => {
+  const root = tmpDir();
+  for (const f of ['docs/spec-x.md', 'docs/notes/specs-old.md', 'docs/a/b/my_spec.md', 'docs/specs/a.md', 'docs/inspection.md', 'docs/respect.md', 'docs/spectrum.md', 'docs/a/b/c/spec-deep.md', 'docs/spec-x.txt', 'node_modules/docs/spec.md'])
+    write(root, f, '# X\n');
+  write(root, 'docs/spec-h.md', '# H\nPhase: analysis\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => x.path), ['docs/specs/a.md']);
+  assert.deepStrictEqual(s.orphanSpecs.list.map(o => o.path).sort(), ['docs/a/b/my_spec.md', 'docs/notes/specs-old.md', 'docs/spec-h.md', 'docs/spec-x.md']);
+  assert.strictEqual(s.orphanSpecs.total, 4);
+  assert.deepStrictEqual(s.orphanSpecs.list.filter(o => o.hasHeader).map(o => o.path), ['docs/spec-h.md']);
+  assert.ok(s.orphanSpecs.list.every(o => typeof o.lastActivity === 'number'));
+});
+check('orphans: newest first by git date, capped at 20 with the full total', () => {
+  const root = initRepo();
+  write(root, 'docs/spec-old.md', '# O\n'); commit(root, 'one', T1);
+  write(root, 'docs/spec-new.md', '# N\n'); commit(root, 'two', T2);
+  assert.deepStrictEqual(collectSignals(root, { runTests: false }).orphanSpecs.list.map(o => [o.path, o.lastActivity]), [['docs/spec-new.md', S2], ['docs/spec-old.md', S1]]);
+  const many = tmpDir(); for (let i = 0; i < 25; i++) write(many, `docs/spec-${String(i).padStart(2, '0')}.md`, '# x\n');
+  const o = collectSignals(many, { runTests: false }).orphanSpecs;
+  assert.deepStrictEqual([o.total, o.list.length], [25, 20]);
+});
+
+console.log('activity of the active cycle');
+check('a cycle untouched for 7+ days: commitsElsewhere counts later commits that touch none of its files', () => {
+  const root = initRepo(), d = 'docs/specs/2020-01-x';
+  write(root, d + '/spec.md', '# X\nPhase: testing\nStatus: approved\n'); write(root, d + '/plan.md', '# P\n'); commit(root, 'cycle', T1);
+  for (let i = 0; i < 3; i++) { write(root, `src/f${i}.js`, String(i)); commit(root, 'src ' + i, T2); }
+  write(root, 'src/g.js', 'g'); commit(root, 'src g', T3);
+  const s = collectSignals(root, { runTests: false });
+  assert.ok(Number.isInteger(s.now) && s.now > S3);
+  assert.deepStrictEqual(s.activity, { path: d + '/spec.md', lastActivity: S1, commitsElsewhere: 4 });
+});
+check('no active cycle, or one touched recently: activity is null', () => {
+  assert.strictEqual(collectSignals(tmpDir(), { runTests: false }).activity, null);
+  const root = initRepo(); write(root, 'docs/specs/s/spec.md', '# S\n'); commit(root, 'one', new Date().toISOString());
+  assert.strictEqual(collectSignals(root, { runTests: false }).activity, null);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

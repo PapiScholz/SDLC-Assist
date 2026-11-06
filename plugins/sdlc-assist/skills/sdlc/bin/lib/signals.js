@@ -1,21 +1,36 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive } = require('./infer'); const { unfencedLines } = require('./unfenced');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive, effectiveDate } = require('./infer'); const { unfencedLines } = require('./unfenced');
 const { parseStages, stageOfTasks } = require('./stages');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
 const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|conftest\.py|manage\.py|gulpfile\.js|gruntfile\.js|karma\.conf\.js|knexfile\.js)$/i;
 const MAX_FILES = 5000, MAX_DEPTH = 8;
 const PUBLISHED = /^##\s+\[?v?\d+\.\d+\.\d+/m;
-const FOLDER_SPEC = /^docs\/specs\/[^/]+\/spec\.md$/i;
+const SPEC_FILE = /^spec\.md$/i, MAP_FILE = /^(?:mapa|map|capability-map)\.md$/i, MODULE_FILE = /^SPEC-.*\.md$/i;
+const PLAN_FILE = /^plan\.md$/i, TASKS_FILE = /^tasks\.md$/i;
+const byName = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function readText(abs) { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } }
 function mtimeSec(abs) { try { return Math.floor(fs.statSync(abs).mtimeMs / 1000); } catch { return null; } }
 function listDir(abs) { try { return fs.readdirSync(abs, { withFileTypes: true }); } catch { return []; } }
+// A folder `docs/specs/<dir>/` is a cycle when it holds spec.md, a capability map (MAPA.md, MAP.md, CAPABILITY-MAP.md)
+// or SPEC-*.md files, in any case. Its document of record is spec.md, else the map, else the first SPEC-*.md; the
+// other SPEC-*.md are module specs. plan.md and tasks.md are found in any case, with their on-disk names (the git
+// lookup is exact). Returns null when the folder is not a cycle (plan.md or notes alone).
+function folderCycle(root, dir) {
+  const names = listDir(path.join(root, 'docs', 'specs', dir)).filter(f => f.isFile()).map(f => f.name).sort(byName);
+  const spec = names.find(n => SPEC_FILE.test(n)), map = names.find(n => MAP_FILE.test(n)), mods = names.filter(n => MODULE_FILE.test(n));
+  const record = spec || map || mods[0];
+  if (!record) return null;
+  const base = 'docs/specs/' + dir + '/';
+  return { record: base + record, map: map ? base + map : null, modules: mods.filter(n => n !== record).map(n => base + n),
+    plan: base + (names.find(n => PLAN_FILE.test(n)) || 'plan.md'), todo: base + (names.find(n => TASKS_FILE.test(n)) || 'tasks.md') };
+}
 function findSpecs(root) {
   const out = [];
-  // A cycle is a flat `docs/specs/<name>.md` or a folder `docs/specs/<dir>/spec.md`; a folder without spec.md is not a cycle.
+  // A cycle is a flat `docs/specs/<name>.md` or a folder cycle (folderCycle).
   for (const e of listDir(path.join(root, 'docs', 'specs'))) {
     if (e.isFile() && /\.md$/i.test(e.name)) out.push('docs/specs/' + e.name);
-    else if (e.isDirectory() && listDir(path.join(root, 'docs', 'specs', e.name)).some(f => f.isFile() && /^spec\.md$/i.test(f.name))) out.push('docs/specs/' + e.name + '/spec.md');
+    else if (e.isDirectory()) { const c = folderCycle(root, e.name); if (c) out.push(c.record); }
   }
   for (const e of listDir(root)) if (e.isFile() && (/^spec\.md$/i.test(e.name) || /^SPEC-.*\.md$/i.test(e.name))) out.push(e.name);
   return out.sort();
@@ -65,6 +80,20 @@ function findAdrs(root) {
     if (!latest || number > latest.number) latest = { number, path: rel, status };
   }
   return { exists: true, dir, count, byStatus, latest };
+}
+// Spec-like markdown under docs/ (3 levels) outside docs/specs/: the router cannot follow them as cycles, so they are
+// reported, never ranked. "spec" or "specs" must be a whole word of the basename: inspection, respect, spectrum do not count.
+const ORPHAN_NAME = /(?:^|[-_.])specs?(?:[-_.]|$)/i;
+function findOrphanSpecs(root) {
+  const out = [];
+  (function walk(rel, depth) {
+    for (const e of listDir(path.join(root, rel))) {
+      const child = rel + '/' + e.name;
+      if (e.isDirectory()) { if (depth < 3 && !EXCLUDED_DIRS.includes(e.name) && child.toLowerCase() !== 'docs/specs') walk(child, depth + 1); }
+      else if (e.isFile() && /\.md$/i.test(e.name) && ORPHAN_NAME.test(e.name.slice(0, -3))) out.push(child);
+    }
+  })('docs', 1);
+  return out.sort(byName);
 }
 function countSourceFiles(root) {
   let count = 0; const sample = [];
@@ -176,6 +205,22 @@ function collectGit(root, notes) {
   const commitsAfterTag = tag ? toInt((git(root, ['rev-list', '--count', tag.name + '..HEAD']) || '').trim()) : null;
   return { isRepo: true, toplevel: info.toplevel, branch: branch(root), commits: recentCommits(root), lastSemverTag: tag, tagOnHead, commitsAfterTag };
 }
+// Commits after the active cycle's last activity that touch none of its files (at most 1000 read). One git spawn,
+// and only for a cycle untouched for STALE_DAYS or more: below that the count cannot change the confidence.
+function cycleActivity(root, active, files, now) {
+  const { STALE_DAYS } = require('./confidence');
+  if (active.lastActivity == null || now - active.lastActivity < STALE_DAYS * 86400) return null;
+  const since = '--since=' + new Date((active.lastActivity + 1) * 1000).toISOString();
+  const out = git(root, ['log', since, '--max-count=1000', '--format=@@%H', '--name-only', 'HEAD']);   // a bare "@@" is not a valid format
+  if (out === null) return null;
+  const own = new Set(files); let elsewhere = 0, touches = null;
+  for (const line of out.split(/\r?\n/)) {
+    if (line.startsWith('@@')) { if (touches === false) elsewhere++; touches = false; continue; }
+    if (line.trim() && own.has(line.trim())) touches = true;
+  }
+  if (touches === false) elsewhere++;
+  return { path: active.path, lastActivity: active.lastActivity, commitsElsewhere: elsewhere };
+}
 function runTests(root, runner) {
   if (!runner.kind) return { status: 'no-runner', exitCode: null, tail: [] };
   // shell:true because on Windows `npm` is npm.cmd; the command string comes from the fixed runner table, never from input.
@@ -192,16 +237,25 @@ function collectSignals(repoRoot, opts) {
   const gitInfo = collectGit(abs, notes);
   // Capability map proxy (v1): with 2+ root SPEC-*.md, only those carrying a Phase:/Status: line are cycles;
   // the headerless ones are module specs, listed in `modules` and kept out of active ranking.
+  const now = Math.floor(Date.now() / 1000);
   const found = findSpecs(abs).map(rel => ({ rel, text: readText(path.join(abs, rel)) }));
   const rootSpecs = found.filter(f => /^SPEC-.*\.md$/i.test(f.rel));
-  const modules = rootSpecs.length >= 2 ? rootSpecs.filter(f => !hasHeaderLine(f.text)).map(f => f.rel) : [];
-  const cycleFiles = found.filter(f => !modules.includes(f.rel));
-  // Per-cycle layout: a folder cycle (docs/specs/<dir>/spec.md) takes plan.md and tasks.md from its folder, with
-  // no fallback to the global pair; a flat spec, and the "no active cycle" case, keep tasks/plan.md and tasks/todo.md.
+  const rootModules = rootSpecs.length >= 2 ? rootSpecs.filter(f => !hasHeaderLine(f.text)).map(f => f.rel) : [];
+  const cycleFiles = found.filter(f => !rootModules.includes(f.rel));
+  const folders = new Map();
+  for (const f of cycleFiles) if (f.rel.startsWith('docs/specs/') && f.rel.split('/').length === 4) folders.set(f.rel, folderCycle(abs, f.rel.split('/')[2]));
+  const modules = [...rootModules, ...[...folders.values()].flatMap(c => c.modules)];
+  // Per-cycle layout: a folder cycle takes its plan and task list from its folder, with no fallback to the global
+  // pair; a flat spec, and the "no active cycle" case, keep tasks/plan.md and tasks/todo.md.
   const GLOBAL = { plan: 'tasks/plan.md', todo: 'tasks/todo.md' };
-  const pairOf = rel => FOLDER_SPEC.test(rel) ? { plan: path.posix.dirname(rel) + '/plan.md', todo: path.posix.dirname(rel) + '/tasks.md' } : GLOBAL;
+  const pairOf = rel => folders.has(rel) ? { plan: folders.get(rel).plan, todo: folders.get(rel).todo } : GLOBAL;
   const planPaths = [...new Set([GLOBAL.plan, ...cycleFiles.map(f => pairOf(f.rel).plan)])].filter(p => fs.existsSync(path.join(abs, p)));
-  const batch = gitInfo.isRepo ? fileDatesBatch(abs, [...cycleFiles.map(f => f.rel), ...planPaths]) : new Map();
+  // Every file of a folder cycle counts toward its last activity; a flat spec counts alone (ADR 0006).
+  const filesOf = rel => { const c = folders.get(rel); return c ? [rel, c.map, ...c.modules, c.plan, c.todo].filter(p => p && fs.existsSync(path.join(abs, p))) : [rel]; };
+  const orphanPaths = findOrphanSpecs(abs);
+  const orphanBatch = orphanPaths.map(p => ({ p, m: mtimeSec(path.join(abs, p)) || 0 })).sort((a, b) => b.m - a.m).slice(0, 200).map(o => o.p);
+  const batchRels = [...new Set([...cycleFiles.flatMap(f => filesOf(f.rel)), ...planPaths, ...orphanBatch])];
+  const batch = gitInfo.isRepo ? fileDatesBatch(abs, batchRels) : new Map();
   const dates = rel => batch.get(rel) || { tracked: false, firstCommit: null, lastCommit: null, dirty: false, mtime: mtimeSec(path.join(abs, rel)) };
   const planInfo = rel => {
     if (!planPaths.includes(rel)) return { exists: false, path: rel };
@@ -212,11 +266,17 @@ function collectSignals(repoRoot, opts) {
     const text = readText(path.join(abs, rel));
     return text === null ? { exists: false, path: rel, open: 0, done: 0, total: 0 } : { exists: true, path: rel, ...countTasks(text) };
   };
+  const lastActivityOf = rels => { const ds = rels.map(r => effectiveDate(dates(r))).filter(d => d != null); return ds.length ? Math.max(...ds) : null; };
   const specs = cycleFiles.map(f => {
     const pair = pairOf(f.rel);
-    return { path: f.rel, layout: FOLDER_SPEC.test(f.rel) ? 'folder' : 'flat', header: parseHeader(f.text), plan: planInfo(pair.plan), todo: todoInfo(pair.todo), ...dates(f.rel) };
+    return { path: f.rel, layout: folders.has(f.rel) ? 'folder' : 'flat', header: parseHeader(f.text), plan: planInfo(pair.plan), todo: todoInfo(pair.todo), ...dates(f.rel),
+      lastActivity: lastActivityOf(filesOf(f.rel)) };
   });
   const active = pickActive(specs);
+  const orphanSpecs = { total: orphanPaths.length, list: orphanBatch.map(p => ({ path: p, lastActivity: effectiveDate(dates(p)) }))
+    .sort((a, b) => (b.lastActivity || 0) - (a.lastActivity || 0) || byName(a.path, b.path)).slice(0, 20)
+    .map(o => ({ ...o, hasHeader: hasHeaderLine(readText(path.join(abs, o.path))) })) };
+  const activity = gitInfo.isRepo && active ? cycleActivity(abs, active, filesOf(active.path), now) : null;
   const plan = active ? active.plan : planInfo(GLOBAL.plan);
   const todo = active ? active.todo : todoInfo(GLOBAL.todo);
   // Stages of the active cycle's plan, and the stage its tasks.md names in its H1 (lib/stages.js).
@@ -231,7 +291,7 @@ function collectSignals(repoRoot, opts) {
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   const architecture = findArchitecture(abs);
   return {
-    root, specs, modules, plan, todo, stages, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
+    root, now, specs, modules, orphanSpecs, activity, plan, todo, stages, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };

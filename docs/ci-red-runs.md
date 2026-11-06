@@ -1658,3 +1658,39 @@ Status: closed
 $ node plugins/sdlc-assist/skills/sdlc/bin/where.js --brief
 sdlc: step 2/4 spec · next: write the spec for this request
 ```
+
+## 2026-11-06 — cycle confidence (#21, #20), branch `cycle-confidence`
+
+Spec: `docs/specs/2026-11-06-cycle-confidence/spec.md`. Dogfood on scratch repos only (the owner asked not to run it on macritex): `issue21` reproduces #21's layout (01- with `SPEC.md` + `PLAN.md`, 02- closed map folder, 03- with `MAPA.md`, `PLAN.md`, `TASKS.md` and two `SPEC-*.md`, touched last); `abandoned` reproduces #20 (folder cycle committed 12 days ago, 30 later commits in `src/`, today's `docs/spec-issues-ronda-2.md`); `big` has 5000 source files and one folder cycle. v0.12.4 runs from a `git worktree` on the tag.
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --root <scratch>/issue21 --brief
+sdlc: cycle 03-fase1-servicio (2 days ago) · step 4/4 implement (build) · next: implement the open tasks
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --root <scratch>/abandoned --brief
+sdlc: cycle 2026-10-05-sesion-y-menu (12 days ago) · not sure this is the current work: newer spec outside docs/specs/: docs/spec-issues-ronda-2.md · run /sdlc for the detail
+$ v0.12.4 on the same repos:
+sdlc: step 2/4 spec · next: finish docs/specs/01-iac-replicable/spec.md and get it approved
+sdlc: step 4/4 implement (test) · next: test the change · note: header says testing but artifacts say development
+$ where.js --root <scratch>/abandoned --brief   (orphan removed)
+sdlc: cycle 2026-10-05-sesion-y-menu (12 days ago) · not sure this is the current work: 2026-10-05-sesion-y-menu untouched for 12 days and 30 commits · run /sdlc for the detail
+```
+
+Red seen during the run: the first single-spawn version of the stale count used `git log --format=@@`, which git rejects (`fatal: invalid --pretty format: @@`); the signals self-test caught it (`+ null`), the orphan dogfood did not (the orphan reason masked it). Fixed with `--format=@@%H`.
+
+Hook timing, median of 10 runs after one warm-up, v0.12.4 hook against the branch hook on the same repo:
+
+```
+== big
+v0.12.4 median 532 ms, branch median 538 ms, delta 5 ms over 10 runs
+== abandoned, stale path (1 git spawn)
+v0.12.4 median 505 ms, branch median 558 ms, delta 53 ms over 10 runs
+```
+
+The 5000-file repo is within the +50 ms budget. A cycle untouched for 7+ days pays one extra `git log` (about 50 ms on this Windows machine); a recent cycle never runs it.
+
+```
+$ bash scripts/gates.sh   (trimmed to the non-ok lines)
+  check-acceptance: 1 specs, 19 bullets, 0 not EARS
+  check-adr: docs/adr, 6 ADRs
+all gates ok
+```

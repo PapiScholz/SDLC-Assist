@@ -1,5 +1,12 @@
 const { PHASES } = require('./header');
 const { stepOf } = require('./steps');
+const { assessConfidence, shortName } = require('./confidence');
+// What the agent should do about each reason that lowers the confidence; `released` keeps its own warning.
+const REASON_HINT = {
+  orphan: d => `${d}: if that is the current work, move it to docs/specs/<date>-<slug>/spec.md with a header`,
+  stale: d => `${d}: is it still the current work? if not, run sdlc close or open a new cycle`,
+  contested: d => `${d}: ask which cycle is the current one`,
+};
 const EVIDENCE = { NO_RULE: 'no rule matched', PLAN_STALE: 'plan belongs to a closed cycle', NO_TASKS: 'todo has no tasks',
   DEPLOY_HEADER_ONLY: 'deployment is header-only; tie goes to testing', TESTS_NOT_RUN: 'tests not run (no --run-tests)',
   NO_TODO: 'no todo file: planning, development and testing cannot be distinguished',
@@ -21,12 +28,13 @@ function planIsCurrent(p, active) {
   return planDate(p) >= specStart(active);
 }
 function strip(c) { const { _raw, ...rest } = c; return rest; }
-// Newest effective date first; the active cycle is the first one not closed. Shared with signals.js, which
-// resolves the active cycle's plan/todo pair with the same ranking.
+// Newest last activity first (every file of a folder cycle, the spec alone for a flat one: ADR 0006); the active
+// cycle is the first one not closed. On a tie the larger path wins, so a newer date-prefixed slug beats an older one.
+// Shared with signals.js, which resolves the active cycle's plan/todo pair with the same ranking.
 function rankCycles(specs) {
   return specs
-    .map(s => ({ path: s.path, phase: s.header.phase, status: s.header.status, date: effectiveDate(s), tracked: s.tracked, dirty: s.dirty, _raw: s }))
-    .sort((a, b) => b.date - a.date || (a.path < b.path ? -1 : 1));
+    .map(s => ({ path: s.path, phase: s.header.phase, status: s.header.status, date: s.lastActivity != null ? s.lastActivity : effectiveDate(s), tracked: s.tracked, dirty: s.dirty, _raw: s }))
+    .sort((a, b) => b.date - a.date || (a.path < b.path ? 1 : a.path > b.path ? -1 : 0));
 }
 function pickActive(specs) { const c = rankCycles(specs).find(c => c.status !== 'closed'); return c ? c._raw : null; }
 // Staged mode: 2+ stages and an explicit signal (a closed stage, or tasks.md naming its stage). Without that signal a
@@ -75,7 +83,7 @@ function infer(signals, request) {
   // While stages are detected the header records the cycle, not the work: no disagreement warning for dev/test/deploy.
   const stagedHeader = !!(st && ['development', 'testing', 'deployment'].includes(headerPhase));
   const stageWins = stagedHeader && !!st.phase;
-  let inferred = fallback;
+  let inferred = fallback, released = null;
   if (active && active.phase) {
     inferred = stageWins ? fallback : active.phase;
     evidence.unshift(`header Phase: ${active.phase}, Status: ${active.status} (${active.path})`);
@@ -85,15 +93,19 @@ function infer(signals, request) {
     // A release cut after the cycle opened: the cycle may have shipped without a close. First, so --brief shows it.
     const tag = signals.git.lastSemverTag, start = active._raw.tracked ? active._raw.firstCommit : null;
     if (['development', 'testing', 'deployment'].includes(active.phase) && tag && tag.date && start != null && tag.date > start) {
-      warnings.unshift(`release ${tag.name} came out after this cycle started: if it shipped, run sdlc close`);
+      released = `release ${tag.name} came out after this cycle started: if it shipped, run sdlc close`;
+      warnings.unshift(released);
       evidence.push(`release ${tag.name} (${tag.date}) is newer than ${active.path} first commit (${start})`);
     }
   }
+  // Confidence in the pick; its reasons go first in `warnings`, in order, ahead of the release one already there.
+  const confidence = assessConfidence({ active, cycles, orphanSpecs: signals.orphanSpecs, activity: signals.activity, now: signals.now, released });
+  for (const r of confidence.reasons.slice().reverse()) if (REASON_HINT[r.kind]) warnings.unshift(`cycle ${shortName(active.path)}: ${REASON_HINT[r.kind](r.detail)}`);
   if (active && NEW_CYCLE_TYPES.includes(request.type)) alternatives.push({ phase: 'analysis', kind: 'new-cycle', reason: `request type ${request.type} while a cycle is active` });
   for (const c of candidates) if (c !== inferred && !alternatives.some(a => a.phase === c)) alternatives.push({ phase: c, kind: 'candidate', reason: 'fallback row also holds' });
   if (signals.tests.status === 'unknown') evidence.push(EVIDENCE.TESTS_NOT_RUN);
   if (signals.inProduction) evidence.push(`in production: tag ${signals.git.lastSemverTag.name}`);
-  return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, active: active && strip(active), cycles: cycles.map(strip),
+  return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, confidence, active: active && strip(active), cycles: cycles.map(strip),
     step: stepOf(inferred),
     stage: st && st.current ? { number: st.current.number, name: st.current.name, closed: st.closed, total: st.total } : null,
   };
