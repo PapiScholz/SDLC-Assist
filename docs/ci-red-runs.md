@@ -1814,3 +1814,21 @@ SDLC-Assist same
 ```
 
 After the fixes: `bash scripts/gates.sh` printed `all gates ok`, and the 13-repository regression against v0.13.0 printed `same` for all 13 again.
+
+### Delivery and close (2026-11-07)
+
+PR #24 merged (`30271b0`); the release workflow published v0.14.0. The install-smoke step for a feature cycle ran in CI on the PR head:
+
+```
+sdlc: cycle 2026-11-07-export (today) · step 4/4 implement (build) · next: T2 write the CSV
+check-evidence: 1 task lists, 1 done tasks, 1 without evidence
+```
+
+`sdlc close` on `docs/specs/2026-11-07-proportional-cycles/spec.md`: confirmed phase deployment, task 7b ticked.
+
+```
+$ where.js --message-file <tmp> --brief   (before)
+sdlc: cycle 2026-11-07-proportional-cycles (today) · not sure this is the current work: release v0.14.0 came out after this cycle started: if it shipped, run sdlc close · run /sdlc for the detail
+$ where.js --message-file <tmp> --brief   (after)
+sdlc: step 2/4 spec · next: write the spec for this request
+```
