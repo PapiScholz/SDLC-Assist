@@ -22,6 +22,23 @@ check('analysis names the spec to finish; the first warning is appended', () => 
 check('a new-cycle alternative adds the new-topic note', () => {
   assert.ok(/new topic/.test(briefLine({ ...base, alternatives: [{ phase: 'analysis', kind: 'new-cycle', reason: 'r' }] })));
 });
+console.log('briefLine: next task and feature cycles');
+const dev = { ...base, stage: null, inferred: 'development', step: { number: 4, name: 'implement', detail: 'build' } };
+check('development with a next task names it; without one keeps the generic action', () => {
+  assert.strictEqual(briefLine({ ...dev, nextTask: 'T2 do b' }), 'sdlc: cycle x · step 4/4 implement (build) · next: T2 do b');
+  assert.strictEqual(briefLine(dev), 'sdlc: cycle x · step 4/4 implement (build) · next: implement the open tasks');
+});
+check('the task text is sanitised and capped like any repo text', () => {
+  const l = briefLine({ ...dev, nextTask: 'T1 a\u0007b ' + 'z'.repeat(300) });
+  assert.ok(!/\u0007/.test(l)); assert.ok(/next: T1 a b z+\.\.\.$/.test(l)); assert.ok(l.length < 260);
+});
+check('feature cycle: analysis names feature.md; planning asks for its tasks', () => {
+  const f = { ...base, stage: null, active: { path: 'docs/specs/f/feature.md', kind: 'feature' } };
+  assert.strictEqual(briefLine({ ...f, inferred: 'analysis', step: { number: 2, name: 'spec', detail: null } }),
+    'sdlc: cycle f · step 2/4 spec · next: finish docs/specs/f/feature.md and get it approved');
+  assert.strictEqual(briefLine({ ...f, inferred: 'planning', step: { number: 3, name: 'plan', detail: null } }),
+    'sdlc: cycle f · step 3/4 plan · next: add the tasks to docs/specs/f/feature.md');
+});
 console.log('briefLine: cycle prefix and confidence');
 const DAY = 86400, NOW = 100 * DAY;
 check('the cycle and its age lead the line: today, 1 day ago, 12 days ago', () => {

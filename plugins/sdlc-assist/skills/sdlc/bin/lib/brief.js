@@ -2,12 +2,12 @@ const { shortName } = require('./confidence');
 // One line for the agent: where the work is (stage, step) and what comes next. The agent says it to the developer
 // in their own language; this line is never shown verbatim as a question.
 function nextAction(r) {
-  const staged = !!r.stage;
+  const staged = !!r.stage, feature = !!(r.active && r.active.kind === 'feature');
   switch (r.inferred) {
     case 'initial': return 'write the first spec from the situation';
     case 'analysis': return r.active ? `finish ${r.active.path} and get it approved` : 'write the spec for this request';
-    case 'planning': return staged ? 'write the plan for this stage' : 'write the plan';
-    case 'development': return 'implement the open tasks';
+    case 'planning': return feature ? `add the tasks to ${r.active.path}` : staged ? 'write the plan for this stage' : 'write the plan';
+    case 'development': return r.nextTask || 'implement the open tasks';   // the first open task: where to resume
     case 'testing': return staged ? 'test this stage, then mark it [x] in plan.md' : 'test the change';
     default: return 'ship and close the cycle';
   }

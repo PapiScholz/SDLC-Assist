@@ -123,5 +123,32 @@ check('no specs at all: summary with zeros, exit 0', () => {
   assert.ok(/0 specs, 0 bullets, 0 not EARS/.test(r.all), r.all);
 });
 
+console.log('check-acceptance: feature.md');
+const FEAT = 'docs/specs/2026-11-07-f/feature.md';
+const feature = (specs, open = '(none)') => HEADER + '## Objective\n\nx\n\n## Specs\n\n' + specs + '\n\n## Open Questions\n\n' + open + '\n\n## Tasks\n\n- [ ] T1 a\n';
+check('complete S# entries: no warning, no "no ## Acceptance", counted as entries', () => {
+  const r = run({ [FEAT]: feature('S1. Export\n   Quote: "quiero CSV"\n   Outcome: the button downloads a CSV\n   Check: node t.js fails today') });
+  assert.strictEqual(r.status, 0);
+  assert.ok(!/warn/.test(r.all), r.all);
+  assert.ok(/1 specs, 1 bullets, 0 not EARS/.test(r.all), r.all);
+});
+check('an S# missing Check and Quote warns once per field with its line', () => {
+  const r = run({ [FEAT]: feature('S1. Export\n   Outcome: the button downloads a CSV\nS2. Ok\n   Quote: "x"\n   Outcome: y\n   Check: z') });
+  assert.ok(new RegExp(FEAT.replace(/[.]/g, '\\.') + ':12 S1 missing Quote').test(r.all), r.all);
+  assert.ok(/:12 S1 missing Check/.test(r.all), r.all);
+  assert.ok(!/S2 missing/.test(r.all), r.all);
+});
+check('## Specs with text but no S# entry warns instead of passing clean (review #3)', () => {
+  const r = run({ [FEAT]: feature('S1: Export\n   Quote: "x"\n### S2 Other') });
+  assert.ok(/no S# entries under ## Specs/.test(r.all), r.all);
+});
+check('bold and inline fields count; the entry line itself is searched (review #4)', () => {
+  const r = run({ [FEAT]: feature('S1. Export\n   **Quote:** "x"\n   **Outcome**: y\n   - Check: z\nS2. Inline — Quote: "a" Outcome: b Check: c') });
+  assert.ok(!/missing/.test(r.all), r.all);
+});
+check('feature.md without ## Specs warns; open questions are counted as for spec.md', () => {
+  const r = run({ [FEAT]: HEADER + '## Open Questions\n\n- which separator?\n' });
+  assert.ok(/no ## Specs/.test(r.all), r.all); assert.ok(/1 open question/.test(r.all), r.all);
+});
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

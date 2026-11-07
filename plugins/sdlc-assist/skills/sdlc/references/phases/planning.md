@@ -8,7 +8,7 @@ design: in the plan, component boundaries and interfaces
 # Planning
 
 **Step:** 3 of 4, plan. In a staged plan: the plan of the next open stage.
-**Enters when:** the active spec is approved and there is no current plan, or the plan's todo has no tasks. A plan older than the spec's first commit belongs to a closed cycle and counts as absent.
+**Enters when:** the active spec is approved and there is no current plan, or the plan's todo has no tasks. A plan older than the spec's first commit belongs to a closed cycle and counts as absent. A feature cycle (`feature.md`) skips this phase: its tasks live in its own `## Tasks`, and an approved `feature.md` with no tasks only needs them added there.
 **Produces:** `plan.md` and `tasks.md` beside the spec (`docs/specs/<date>-<slug>/`). Legacy: a flat spec (`docs/specs/<name>.md`, root `spec.md`, `SPEC-*.md`) keeps `tasks/plan.md` and `tasks/todo.md`.
 **Do now:** run `planning-and-task-breakdown`; keep component boundaries and interfaces in the plan. Point it at the cycle's folder when the spec lives in one.
 **Next phase:** development (`sdlc close` writes `Phase: development`).

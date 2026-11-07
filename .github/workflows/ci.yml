@@ -72,6 +72,19 @@ jobs:
           git add -A; git commit -qm init
           node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --brief | tee brief.txt
           grep -q '^sdlc: cycle 2026-10-08-lms (today) · stage 4 "Catalogo" (1/2 closed) · step 3/4 plan · next: write the plan for this stage$' brief.txt
+      - name: Installed copy reads a feature cycle and names its next task
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          fx="$RUNNER_TEMP/fx-feature"; d="docs/specs/2026-11-07-export"; mkdir -p "$fx/src" "$fx/$d"; cd "$fx"
+          git init -q --initial-branch=main
+          git config user.name t; git config user.email t@t
+          echo x > src/index.js
+          printf -- '# Feature\n\nPhase: development\nStatus: approved\n\n## Tasks\n\n- [x] T1 parse\n- [ ] T2 write the CSV\n' > "$d/feature.md"
+          git add -A; git commit -qm init
+          node "$HOME/.agents/skills/sdlc/bin/where.js" --root "$fx" --brief | tee brief.txt
+          grep -q '^sdlc: cycle 2026-11-07-export (today) · step 4/4 implement (build) · next: T2 write the CSV$' brief.txt
+          node "$HOME/.agents/skills/sdlc/bin/check-evidence.js" --root "$fx" | tee ev.txt
+          grep -q '^check-evidence: 1 task lists, 1 done tasks, 1 without evidence$' ev.txt
       - name: Installed copy reports sdlc-qa-gate for testing and sdlc-debugging for analysis
         run: |
           export HOME="$RUNNER_TEMP/home"; cd "$RUNNER_TEMP/fx"

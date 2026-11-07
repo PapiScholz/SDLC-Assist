@@ -52,11 +52,13 @@ flowchart LR
     R2["New idea<br/>on existing code"] --> P1[analysis]
     R3["Complaint, bug<br/>or feature"] -->|request card| P1
     R4["Production signal<br/>alert, finding, ticket"] -->|maintain.md<br/>writes an intent| P1
-    R5["Hotfix under<br/>the threshold"] -->|no spec, no cycle| P3[development]
+    R5["Small work<br/>resumable from the diff"] -->|no spec, no cycle| P3[development]
+    R6["Medium work"] -->|one feature.md,<br/>one approval| P1
+    R7["Question, review,<br/>proposal"] -->|read-only| P9[nothing written]
 ```
 
 - **Request card** (five lines): who asks, what happens, expected, where, urgency. The agent asks for any missing line and never invents one.
-- **Hotfix threshold**: unambiguous and self-contained, and either a typo or doc fix or at most 20 lines in at most 2 files with no new dependency. Anything else goes to `analysis`.
+- **Size** (ADR 0007): small when unambiguous, contained, with no new dependency or contract change and resumable from the request plus `git diff`; medium when it needs a written record but no open architectural decision (one `feature.md`, whose approval goes straight to `development`); large or ambiguous otherwise (`spec.md`, `plan.md`, `tasks.md`). Line counts never decide.
 - **Production signals** never skip the loop: `maintain.md` turns the signal into an `intent.md`, then a new cycle opens in `analysis`.
 
 ## 3. What the agent does on every request

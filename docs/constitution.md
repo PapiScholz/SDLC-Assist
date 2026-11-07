@@ -4,7 +4,7 @@ Product rules every spec, plan and change in this repository obeys. Agent workin
 
 ## Principles
 
-- Spec first: behavior changes start in `docs/specs/` with the header `Phase: analysis` / `Status: draft`. Hotfixes under the threshold in `SKILL.md` may skip it and must say so.
+- Spec proportional to the work: behavior changes start in `docs/specs/` with the header `Phase: analysis` / `Status: draft`, as one `feature.md` for medium work or `spec.md` with its plan and tasks for large or ambiguous work. Small work (Size in `SKILL.md`) may skip it and must say so.
 - Dogfood first: every work request on this repo goes through the skill's own router (`where.js`) before any edit; the active spec's header is the phase of record and advances only through close mode.
 - Records are pasted output, not prose: every run recorded in `docs/ci-red-runs.md` shows the exact command and its real stdout, trimmed and marked when trimmed.
 - Bump markers, not conventional prefixes: `[minor]`, `[major]` or `BREAKING CHANGE` in a commit since the last tag decide the version; `feat:` alone never bumps.
@@ -30,3 +30,4 @@ Product rules every spec, plan and change in this repository obeys. Agent workin
 
 - 2026-10-01: created from `CLAUDE.md` (v1.5 plan 4). `CLAUDE.md` keeps the agent-specific mechanics and links here.
 - 2026-10-01: decisions that outlive a cycle are recorded in `docs/adr/` (v1.6 plan A); the five retroactive ADRs cover v1.4 and v1.5.
+- 2026-11-07: "Spec first" becomes "Spec proportional to the work": three sizes replace the hotfix threshold (ADR 0007, `docs/specs/2026-11-07-proportional-cycles/spec.md`).

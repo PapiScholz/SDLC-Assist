@@ -1,6 +1,6 @@
 # Spec header
 
-A cycle is a spec file: `docs/specs/<date>-<slug>/spec.md` (its `plan.md` and `tasks.md` live beside it), a flat `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md` (flat and root specs share `tasks/plan.md` and `tasks/todo.md`). A folder under `docs/specs/` is also a cycle when it holds a capability map (`MAPA.md`, `MAP.md` or `CAPABILITY-MAP.md`) or `SPEC-*.md` module specs: its header lives in `spec.md`, else the map, else the first `SPEC-*.md`, and the other `SPEC-*.md` are modules. File names match in any case (`PLAN.md`, `TASKS.md`). A folder with only a plan or notes is not a cycle. Spec-like files elsewhere under `docs/` (`docs/spec-x.md`) are reported as orphans and lower the router's confidence when newer than the active cycle; they are never cycles.
+A cycle is a spec file: `docs/specs/<date>-<slug>/spec.md` (its `plan.md` and `tasks.md` live beside it), a flat `docs/specs/*.md`, root `spec.md`, or root `SPEC-*.md` (flat and root specs share `tasks/plan.md` and `tasks/todo.md`). A folder under `docs/specs/` is also a cycle when it holds a capability map (`MAPA.md`, `MAP.md` or `CAPABILITY-MAP.md`) or `SPEC-*.md` module specs: its header lives in `spec.md`, else the map, else the first `SPEC-*.md`, and the other `SPEC-*.md` are modules. A folder holding `feature.md` and no `spec.md` is a feature cycle (medium work): the header lives in `feature.md`, which is also its plan and task list. File names match in any case (`PLAN.md`, `TASKS.md`). A folder with only a plan or notes is not a cycle. Spec-like files elsewhere under `docs/` (`docs/spec-x.md`) are reported as orphans and lower the router's confidence when newer than the active cycle; they are never cycles.
 
 ## Format
 
@@ -26,7 +26,7 @@ Close mode runs the inference, uses the phase the user confirmed, and advances f
 | Confirmed phase | Writes |
 |---|---|
 | initial | nothing (the produced spec already reads `Phase: analysis`) |
-| analysis | `Status: approved`, `Phase: planning`; only when `## Open Questions` reads `(none)` (see `spec-template.md`) |
+| analysis | `Status: approved`, `Phase: planning`; only when `## Open Questions` reads `(none)` (see `spec-template.md`). A feature cycle writes `Phase: development` instead: its tasks are its plan |
 | planning | `Phase: development` |
 | development | `Phase: testing` |
 | testing | `Phase: deployment` |

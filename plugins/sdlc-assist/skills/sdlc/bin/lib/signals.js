@@ -1,5 +1,5 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks } = require('./todo'); const { pickActive, effectiveDate } = require('./infer'); const { unfencedLines } = require('./unfenced');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks, firstOpen, withoutEvidence } = require('./todo'); const { pickActive, effectiveDate } = require('./infer'); const { unfencedLines } = require('./unfenced');
 const { parseStages, stageOfTasks } = require('./stages');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
@@ -7,22 +7,27 @@ const CONFIG_FILE = /^(?:.*\.config\.[cm]?[jt]s|\..*rc\.[cm]?js|setup\.py|confte
 const MAX_FILES = 5000, MAX_DEPTH = 8;
 const PUBLISHED = /^##\s+\[?v?\d+\.\d+\.\d+/m;
 const SPEC_FILE = /^spec\.md$/i, MAP_FILE = /^(?:mapa|map|capability-map)\.md$/i, MODULE_FILE = /^SPEC-.*\.md$/i;
-const PLAN_FILE = /^plan\.md$/i, TASKS_FILE = /^tasks\.md$/i;
+const PLAN_FILE = /^plan\.md$/i, TASKS_FILE = /^tasks\.md$/i, FEATURE_FILE = /^feature\.md$/i;
 const byName = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function readText(abs) { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } }
 function mtimeSec(abs) { try { return Math.floor(fs.statSync(abs).mtimeMs / 1000); } catch { return null; } }
 function listDir(abs) { try { return fs.readdirSync(abs, { withFileTypes: true }); } catch { return []; } }
-// A folder `docs/specs/<dir>/` is a cycle when it holds spec.md, a capability map (MAPA.md, MAP.md, CAPABILITY-MAP.md)
-// or SPEC-*.md files, in any case. Its document of record is spec.md, else the map, else the first SPEC-*.md; the
-// other SPEC-*.md are module specs. plan.md and tasks.md are found in any case, with their on-disk names (the git
-// lookup is exact). Returns null when the folder is not a cycle (plan.md or notes alone).
+// A folder `docs/specs/<dir>/` is a cycle when it holds spec.md, feature.md, a capability map (MAPA.md, MAP.md,
+// CAPABILITY-MAP.md) or SPEC-*.md files, in any case. Its document of record is spec.md, else feature.md, else the map,
+// else the first SPEC-*.md; the other SPEC-*.md are module specs. A feature cycle (feature.md is the record) keeps its
+// specs, decisions and tasks in that one file, so its plan and task list are feature.md too (kind 'feature'); every
+// other cycle is kind 'spec'. plan.md and tasks.md are found in any case, with their on-disk names (the git lookup is
+// exact). Returns null when the folder is not a cycle (plan.md or notes alone).
 function folderCycle(root, dir) {
   const names = listDir(path.join(root, 'docs', 'specs', dir)).filter(f => f.isFile()).map(f => f.name).sort(byName);
-  const spec = names.find(n => SPEC_FILE.test(n)), map = names.find(n => MAP_FILE.test(n)), mods = names.filter(n => MODULE_FILE.test(n));
-  const record = spec || map || mods[0];
+  const spec = names.find(n => SPEC_FILE.test(n)), feature = names.find(n => FEATURE_FILE.test(n));
+  const map = names.find(n => MAP_FILE.test(n)), mods = names.filter(n => MODULE_FILE.test(n));
+  const record = spec || feature || map || mods[0];
   if (!record) return null;
   const base = 'docs/specs/' + dir + '/';
-  return { record: base + record, map: map ? base + map : null, modules: mods.filter(n => n !== record).map(n => base + n),
+  if (record === feature) return { record: base + record, kind: 'feature', map: null, modules: [], plan: base + record, todo: base + record };
+  // A feature cycle that grew into a full one keeps its old feature.md beside spec.md: say it is no longer read.
+  return { record: base + record, kind: 'spec', shadowed: spec && feature ? base + feature : null, map: map ? base + map : null, modules: mods.filter(n => n !== record).map(n => base + n),
     plan: base + (names.find(n => PLAN_FILE.test(n)) || 'plan.md'), todo: base + (names.find(n => TASKS_FILE.test(n)) || 'tasks.md') };
 }
 function findSpecs(root) {
@@ -245,13 +250,14 @@ function collectSignals(repoRoot, opts) {
   const folders = new Map();
   for (const f of cycleFiles) if (f.rel.startsWith('docs/specs/') && f.rel.split('/').length === 4) folders.set(f.rel, folderCycle(abs, f.rel.split('/')[2]));
   const modules = [...rootModules, ...[...folders.values()].flatMap(c => c.modules)];
+  for (const [rel, c] of folders) if (c.shadowed) notes.push(`${c.shadowed} is not read: ${rel} is the cycle record; move its open tasks to tasks.md`);
   // Per-cycle layout: a folder cycle takes its plan and task list from its folder, with no fallback to the global
   // pair; a flat spec, and the "no active cycle" case, keep tasks/plan.md and tasks/todo.md.
   const GLOBAL = { plan: 'tasks/plan.md', todo: 'tasks/todo.md' };
   const pairOf = rel => folders.has(rel) ? { plan: folders.get(rel).plan, todo: folders.get(rel).todo } : GLOBAL;
   const planPaths = [...new Set([GLOBAL.plan, ...cycleFiles.map(f => pairOf(f.rel).plan)])].filter(p => fs.existsSync(path.join(abs, p)));
   // Every file of a folder cycle counts toward its last activity; a flat spec counts alone (ADR 0006).
-  const filesOf = rel => { const c = folders.get(rel); return c ? [rel, c.map, ...c.modules, c.plan, c.todo].filter(p => p && fs.existsSync(path.join(abs, p))) : [rel]; };
+  const filesOf = rel => { const c = folders.get(rel); return c ? [...new Set([rel, c.map, ...c.modules, c.plan, c.todo])].filter(p => p && fs.existsSync(path.join(abs, p))) : [rel]; };
   const orphanPaths = findOrphanSpecs(abs);
   const orphanBatch = orphanPaths.map(p => ({ p, m: mtimeSec(path.join(abs, p)) || 0 })).sort((a, b) => b.m - a.m).slice(0, 200).map(o => o.p);
   const batchRels = [...new Set([...cycleFiles.flatMap(f => filesOf(f.rel)), ...planPaths, ...orphanBatch])];
@@ -264,12 +270,13 @@ function collectSignals(repoRoot, opts) {
   };
   const todoInfo = rel => {
     const text = readText(path.join(abs, rel));
-    return text === null ? { exists: false, path: rel, open: 0, done: 0, total: 0 } : { exists: true, path: rel, ...countTasks(text) };
+    return text === null ? { exists: false, path: rel, open: 0, done: 0, total: 0 }
+      : { exists: true, path: rel, ...countTasks(text), next: firstOpen(text), withoutEvidence: withoutEvidence(text).length };
   };
   const lastActivityOf = rels => { const ds = rels.map(r => effectiveDate(dates(r))).filter(d => d != null); return ds.length ? Math.max(...ds) : null; };
   const specs = cycleFiles.map(f => {
     const pair = pairOf(f.rel);
-    return { path: f.rel, layout: folders.has(f.rel) ? 'folder' : 'flat', header: parseHeader(f.text), plan: planInfo(pair.plan), todo: todoInfo(pair.todo), ...dates(f.rel),
+    return { path: f.rel, layout: folders.has(f.rel) ? 'folder' : 'flat', kind: folders.has(f.rel) ? folders.get(f.rel).kind : 'spec', header: parseHeader(f.text), plan: planInfo(pair.plan), todo: todoInfo(pair.todo), ...dates(f.rel),
       lastActivity: lastActivityOf(filesOf(f.rel)) };
   });
   const active = pickActive(specs);
@@ -296,4 +303,4 @@ function collectSignals(repoRoot, opts) {
     testRunner, tests, inProduction, notes,
   };
 }
-module.exports = { collectSignals, findSpecs, findDoc, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
+module.exports = { collectSignals, findSpecs, folderCycle, findDoc, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
