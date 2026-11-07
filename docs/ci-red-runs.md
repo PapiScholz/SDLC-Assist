@@ -1694,3 +1694,14 @@ $ bash scripts/gates.sh   (trimmed to the non-ok lines)
   check-adr: docs/adr, 6 ADRs
 all gates ok
 ```
+
+### Close (2026-11-07)
+
+`sdlc close` on `docs/specs/2026-11-06-cycle-confidence/spec.md`: confirmed phase deployment (PR #22 merged 2026-11-06, v0.13.0 tagged). Before the close the router doubted the cycle; after it, no active cycle is left.
+
+```
+$ where.js --message-file <tmp> --brief   (before)
+sdlc: cycle 2026-11-06-cycle-confidence (today) · not sure this is the current work: release v0.13.0 came out after this cycle started: if it shipped, run sdlc close · run /sdlc for the detail
+$ where.js --message-file <tmp> --brief   (after)
+sdlc: step 2/4 spec · next: write the spec for this request
+```
