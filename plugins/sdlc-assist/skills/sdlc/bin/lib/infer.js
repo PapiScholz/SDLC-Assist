@@ -33,7 +33,7 @@ function strip(c) { const { _raw, ...rest } = c; return rest; }
 // Shared with signals.js, which resolves the active cycle's plan/todo pair with the same ranking.
 function rankCycles(specs) {
   return specs
-    .map(s => ({ path: s.path, phase: s.header.phase, status: s.header.status, date: s.lastActivity != null ? s.lastActivity : effectiveDate(s), tracked: s.tracked, dirty: s.dirty, _raw: s }))
+    .map(s => ({ path: s.path, kind: s.kind || 'spec', phase: s.header.phase, status: s.header.status, date: s.lastActivity != null ? s.lastActivity : effectiveDate(s), tracked: s.tracked, dirty: s.dirty, _raw: s }))
     .sort((a, b) => b.date - a.date || (a.path < b.path ? 1 : a.path > b.path ? -1 : 0));
 }
 function pickActive(specs) { const c = rankCycles(specs).find(c => c.status !== 'closed'); return c ? c._raw : null; }
@@ -76,7 +76,14 @@ function infer(signals, request) {
   if (st && st.warning) warnings.push(st.warning);
   if (!candidates.length) evidence.push(EVIDENCE.NO_RULE);
   if (approved && planCurrent && todo.total === 0) evidence.push(EVIDENCE.NO_TASKS);
-  const headerPhase = active && active.phase;
+  // The phase the header is read as. A feature cycle folds its plan into feature.md's tasks: a `planning` header
+  // with tasks already written is read from the artifacts (development or testing); with no task yet it stays
+  // planning (add the tasks). The header itself is never rewritten: `active`, `cycles` and the evidence keep it.
+  let headerPhase = active && active.phase;
+  if (active && active.kind === 'feature' && headerPhase === 'planning' && ['development', 'testing'].includes(fallback)) {
+    headerPhase = fallback;
+    warnings.push('feature cycles have no planning step: read as development');
+  }
   const deployTie = headerPhase === 'deployment' && fallback === 'testing';   // deployment is header-only: testing is its expected fallback
   if (deployTie || (fallback === 'testing' && !headerPhase)) evidence.push(EVIDENCE.DEPLOY_HEADER_ONLY);
   evidence.push(`fallback: ${fallback} (candidates: ${candidates.join(', ') || 'none'})`);
@@ -85,9 +92,9 @@ function infer(signals, request) {
   const stageWins = stagedHeader && !!st.phase;
   let inferred = fallback, released = null;
   if (active && active.phase) {
-    inferred = stageWins ? fallback : active.phase;
+    inferred = stageWins ? fallback : headerPhase;
     evidence.unshift(`header Phase: ${active.phase}, Status: ${active.status} (${active.path})`);
-    if (active.phase !== fallback && !deployTie && !stagedHeader) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
+    if (headerPhase !== fallback && !deployTie && !stagedHeader) { warnings.push(`header says ${active.phase} but artifacts say ${fallback}`); alternatives.push({ phase: fallback, kind: 'fallback', reason: 'header disagrees with fallback' }); }
     if (['development', 'testing', 'deployment'].includes(active.phase) && !approved) warnings.push(`header ${active.phase} without an approved spec`);
     if (active.phase === 'deployment' && signals.git.tagOnHead) evidence.push(EVIDENCE.CLOSE_CYCLE);
     // A release cut after the cycle opened: the cycle may have shipped without a close. First, so --brief shows it.
@@ -106,7 +113,7 @@ function infer(signals, request) {
   if (signals.tests.status === 'unknown') evidence.push(EVIDENCE.TESTS_NOT_RUN);
   if (signals.inProduction) evidence.push(`in production: tag ${signals.git.lastSemverTag.name}`);
   return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, confidence, active: active && strip(active), cycles: cycles.map(strip),
-    step: stepOf(inferred),
+    step: stepOf(inferred), nextTask: (planCurrent && todo.next) || null,
     stage: st && st.current ? { number: st.current.number, name: st.current.name, closed: st.closed, total: st.total } : null,
   };
 }

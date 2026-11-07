@@ -14,5 +14,7 @@ for c in check-manifest check-sheets check-frontmatter check-skill-sections chec
 node "$B/check-acceptance.js" --root . | sed 's/^/  /'; echo "ok check-acceptance (advisory)"
 # Advisory: ADR numbering and Status values. Prints warnings, exits 0 (--strict fails).
 node "$B/check-adr.js" --root . | sed 's/^/  /'; echo "ok check-adr (advisory)"
+# Advisory: done tasks without `evidence:` in open cycles. Prints warnings, exits 0 (--strict fails).
+node "$B/check-evidence.js" --root . | sed 's/^/  /'; echo "ok check-evidence (advisory)"
 gate settings.json node -e 'const s=JSON.parse(require("fs").readFileSync(".claude/settings.json","utf8"));for(const ev of Object.values(s.hooks))for(const g of ev)for(const h of g.hooks)for(const a of h.args)if(!require("fs").existsSync(a.replace("${CLAUDE_PROJECT_DIR}","."))) throw new Error("hook missing: "+a)'
 echo "all gates ok"

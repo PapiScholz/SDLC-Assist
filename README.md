@@ -99,7 +99,7 @@ Overwrite and duplicate notes:
 
 A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slug>/spec.md` with `plan.md` and `tasks.md` beside it, or a legacy flat spec (`docs/specs/*.md`, root `spec.md` or `SPEC-*.md`) paired with `tasks/plan.md` and `tasks/todo.md`. The router reads that header, the cycle's plan and task list, the project constitution when there is one, and read-only git queries, and never blocks a transition. Diagrams of the cycle, the entry points and the per-request protocol: [`docs/sdlc-flow.md`](docs/sdlc-flow.md).
 
-The developer's workflow has four steps: (1) state the situation, (2) the agent writes the spec and the developer approves it, (3) the agent writes the plan and the developer approves it, (4) implement, test and ship. A large plan splits into stages; each stage repeats steps 3 and 4. The six internal phases map onto those steps (`initial` 1, `analysis` 2, `planning` 3, `development`/`testing`/`deployment` 4). The skill informs the agent; the agent tells the developer in one plain sentence, in their language, and proceeds.
+The developer's workflow has four steps: (1) state the situation, (2) the agent writes the spec and the developer approves it, (3) the agent writes the plan and the developer approves it, (4) implement, test and ship. The paperwork is proportional to the work: small work (resumable from the request plus `git diff`) goes straight to step 4; medium work writes one `docs/specs/<date>-<slug>/feature.md` with specs and tasks together and one approval; large or ambiguous work runs all four steps. A large plan splits into stages; each stage repeats steps 3 and 4. The six internal phases map onto those steps (`initial` 1, `analysis` 2, `planning` 3, `development`/`testing`/`deployment` 4). The skill informs the agent; the agent tells the developer in one plain sentence, in their language, and proceeds. A question, a review or a proposal writes nothing.
 
 **Runs on its own in Claude Code.** Installing the plugin from the marketplace enables a `UserPromptSubmit` hook that adds one line (stage, step, next action) to the agent's context on every prompt inside a repository with an active cycle, and prints nothing anywhere else. Installing the skills with `npx skills add` does not install the hook; then the skill is invoked by name.
 
@@ -120,7 +120,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
    | Confirmed phase | Writes |
    |---|---|
    | initial | nothing |
-   | analysis | `Status: approved`, `Phase: planning` |
+   | analysis | `Status: approved`, `Phase: planning` (a `feature.md`: `Phase: development`) |
    | planning | `Phase: development` |
    | development | `Phase: testing` |
    | testing | `Phase: deployment` |
@@ -128,7 +128,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
 
    In a staged plan, closing a stage that is not the last one writes `[x]` and the date on that stage's line in `plan.md` and leaves the header alone. It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
 4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
-5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. A hotfix under the threshold (typo or doc fix, or at most 20 lines in 2 files with no new dependency) enters at `development` with no spec and leaves no trace.
+5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. Small work (unambiguous, contained risk, no new dependency or contract change, resumable from the request plus `git diff`) enters at `development` with no spec and leaves no trace; line counts never decide (ADR 0007).
 
 Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
 

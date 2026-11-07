@@ -271,5 +271,42 @@ check('released stays one warning and becomes a reason after the orphan', () => 
   assert.match(r.warnings[0], /spec-n/); assert.match(r.warnings[1], /v0\.12\.0/);
   assert.strictEqual(r.warnings.filter(w => /v0\.12\.0/.test(w)).length, 1);
 });
+console.log('feature cycles');
+const feat = 'docs/specs/f/feature.md';
+const fSig = (phase, open, done, next = null) => sig({ sourceFiles: src,
+  specs: [spec(feat, phase, 'approved', { layout: 'folder', kind: 'feature' })],
+  plan: plan({ path: feat }), todo: { ...todo(open, done, feat), next } });
+check('feature header planning with open tasks => development, plain warning, kind on active', () => {
+  const r = infer(fSig('planning', 2, 1, 'T2 b'), req('unknown'));
+  assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.step.number, 4);
+  assert.ok(r.warnings.includes('feature cycles have no planning step: read as development'));
+  assert.ok(!r.warnings.some(w => /header says planning/.test(w)));
+  assert.strictEqual(r.active.kind, 'feature');
+});
+check('feature header planning with no tasks yet => planning, no feature warning (review #1)', () => {
+  const r = infer(fSig('planning', 0, 0), req('unknown'));
+  assert.strictEqual(r.inferred, 'planning'); assert.strictEqual(r.step.number, 3);
+  assert.ok(!r.warnings.some(w => /feature cycles/.test(w)), r.warnings.join(' | '));
+});
+check('the reading never rewrites the header: active, cycles and evidence keep Phase: planning (review #2)', () => {
+  const r = infer(fSig('planning', 2, 1, 'T2 b'), req('unknown'));
+  assert.strictEqual(r.active.phase, 'planning'); assert.strictEqual(r.cycles[0].phase, 'planning');
+  assert.ok(r.evidence.some(e => /^header Phase: planning,/.test(e)), r.evidence.join(' | '));
+  assert.ok(!r.warnings.some(w => /header says development/.test(w)));
+});
+check('feature header planning with every task done => testing (artifact fallback wins)', () => {
+  assert.strictEqual(infer(fSig('planning', 0, 3), req('unknown')).inferred, 'testing');
+});
+check('nextTask: first open task of the current plan; null without one or for a stale plan', () => {
+  assert.strictEqual(infer(fSig('development', 1, 0, 'T2 b'), req('unknown')).nextTask, 'T2 b');
+  assert.strictEqual(infer(fSig('development', 0, 1), req('unknown')).nextTask, null);
+  const stale = sig({ sourceFiles: src, specs: [spec('a.md', 'development', 'approved', { firstCommit: 300 })], plan: plan({ lastCommit: 200 }), todo: { ...todo(1, 0), next: 'old' } });
+  assert.strictEqual(infer(stale, req('unknown')).nextTask, null);
+});
+check('a spec cycle header planning keeps its v0.13.0 reading (no feature warning)', () => {
+  const r = infer(sig({ sourceFiles: src, specs: [spec('a.md', 'planning', 'approved')], plan: plan(), todo: todo(2, 0) }), req('unknown'));
+  assert.strictEqual(r.inferred, 'planning');
+  assert.ok(!r.warnings.some(w => /feature cycles/.test(w)));
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

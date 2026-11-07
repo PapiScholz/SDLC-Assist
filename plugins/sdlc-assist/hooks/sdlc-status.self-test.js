@@ -99,5 +99,14 @@ check('macritex fixture without the orphan: low line with the stale reason', () 
   const r = run(JSON.stringify({ cwd: root, prompt: 'x' }));
   assert.match(r.stdout, /not sure this is the current work: 2026-10-05-x untouched for 12 days and 12 commits · run \/sdlc/);
 });
+check('feature cycle in development: the line names the first open task', () => {
+  const root = tmpDir(); const d = 'docs/specs/2026-11-07-export';
+  write(root, d + '/feature.md', '# Feature\n\nPhase: development\nStatus: approved\n\n## Tasks\n\n- [x] T1 parse — evidence: node t.js\n- [ ] T2 write the CSV\n');
+  write(root, 'src/a.js', 'x\n');
+  git(root, ['init', '-q']); git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '-A']);
+  git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'init']);
+  const r = run(JSON.stringify({ cwd: root, prompt: 'seguimos' }));
+  assert.match(r.stdout, /^sdlc: cycle 2026-11-07-export \(today\) · step 4\/4 implement \(build\) · next: T2 write the CSV \(applies/);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

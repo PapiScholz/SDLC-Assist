@@ -6,13 +6,15 @@
 | New idea on existing code | `analysis` | New cycle. | `intent.md` |
 | Complaint, bug or feature | `analysis` | Complaints (someone else reporting a problem) go through the request card (`request-card.md`) whether or not the project is in production. `inProduction` only adds the note "keep the running version safe". | `request card` |
 | Production signal (alert, finding, ticket) | `analysis` as a new cycle | Through `maintain.md`: writes an `intent.md` first. | `intent.md` |
-| Hotfix | `development` | No spec and no cycle. | `none` |
+| Small work (hotfix, typo, contained change) | `development` | No spec and no cycle. | `none` |
+| Medium work | `analysis` | One `feature.md`, one approval, then `development`. | `feature.md` |
+| Question, investigation, review, proposal | none | Read-only: answers, writes nothing. | `none` |
 
-## Hotfix threshold
+## Size
 
-Judged by the agent from the request as described (a heuristic accepted by the owner): the requirement is unambiguous and self-contained, and it is a typo or documentation fix or a change the user describes as at most 20 lines in at most 2 files with no new dependency. Otherwise `analysis`.
+The three sizes and their conditions live in `SKILL.md` (Size): small when it could be resumed from the request plus `git diff`, medium when it needs a written record but no open architectural decision, large or ambiguous otherwise. File and line counts never decide. State the size and which condition set it; the developer may override it.
 
-State which phase was skipped and which condition allowed it. Close mode in the same context after a hotfix updates nothing and recommends the QA step; in a later context a hotfix leaves no trace by design.
+Close mode in the same context after small work updates nothing and recommends the QA step; in a later context small work leaves no trace by design.
 
 ## Transitions
 

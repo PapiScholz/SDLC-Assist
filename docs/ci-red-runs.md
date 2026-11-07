@@ -1705,3 +1705,112 @@ sdlc: cycle 2026-11-06-cycle-confidence (today) · not sure this is the current 
 $ where.js --message-file <tmp> --brief   (after)
 sdlc: step 2/4 spec · next: write the spec for this request
 ```
+
+## 2026-11-07 — proportional cycles (ADR 0007), working tree on `main`, not yet recorded in git
+
+Spec: `docs/specs/2026-11-07-proportional-cycles/spec.md`. The owner asked to implement first and give the git verb later; the branch `proportional-cycles` is created then.
+
+Red seen before each implementation (trimmed to the FAIL lines and totals):
+
+```
+$ node lib/todo.self-test.js
+  FAIL 1-based line numbers of done tasks lacking evidence:, case-insensitive, fences skipped
+       withoutEvidence is not a function
+6 passed, 4 failed
+$ node lib/signals.self-test.js
+  FAIL feature-only folder: feature.md is the record, plan and todo, kind feature
+  FAIL spec.md and feature.md together: spec.md is the record with its own pair, kind spec
+  FAIL flat spec is kind spec
+57 passed, 3 failed
+$ node lib/infer.self-test.js
+47 passed, 3 failed
+$ node lib/brief.self-test.js
+10 passed, 3 failed
+$ node check-acceptance.self-test.js
+13 passed, 3 failed
+$ node check-evidence.self-test.js
+0 passed, 4 failed
+```
+
+Two more reds came from the change itself: three existing `deepStrictEqual` assertions on the todo object (it gained `next` and `withoutEvidence`; updated as additive) and the key-order assertion in `where.self-test.js` (`nextTask` added after `stage`). One red was a wrong line number in a new check-evidence case (expected 10, the fixture puts the task on line 12; the script was right). The hook case passed on its first run because `brief.js` was already done; its red is shown below by v0.13.0 on the same fixture.
+
+Feature fixture, v0.13.0 (from `git archive v0.13.0`) against the working tree:
+
+```
+old brief: sdlc: step 2/4 spec · next: write the spec for this request
+new brief: sdlc: cycle 2026-11-07-export (today) · step 4/4 implement (build) · next: T2 write the CSV
+$ check-evidence.js --root <fx-feature>
+warn docs/specs/2026-11-07-export/feature.md:8 done without evidence
+check-evidence: 1 task lists, 1 done tasks, 1 without evidence
+```
+
+Regression on 13 local repositories with `docs/specs`: `inferred`, `step`, `stage`, `warnings` and `active.path` from v0.13.0 and from the working tree, compared by a script that printed `DIFF` on the feature fixture above (so it can fail):
+
+```
+Almacen                  same
+almacen-landing          same
+almacen-license-worker   same
+dopamina                 same
+Lievito-Website          same
+LOL-run                  same
+macritex                 same
+Memphis-molinete         same
+mockup-to-framework      same
+NANDI                    same
+proxmox-backup-stack     same
+SGG                      same
+Sr-Lievito               same
+```
+
+The new next-task text on this repository, through `where.js` and through the hook:
+
+```
+$ where.js --message-file <tmp> --brief
+sdlc: cycle 2026-11-07-proportional-cycles (today) · step 4/4 implement (build) · next: 7a Gates, scratch-repo smoke, regression against v0.13.0, hook line, record in `docs/ci-red-runs.md`
+$ echo '{"cwd":"<repo>","prompt":"seguimos"}' | node plugins/sdlc-assist/hooks/sdlc-status.js
+sdlc: cycle 2026-11-07-proportional-cycles (today) · step 4/4 implement (build) · next: 7a Gates, scratch-repo smoke, regression against v0.13.0, hook line, record in `docs/ci-red-runs.md` (applies only when the request is about this repository's work)
+$ bash scripts/gates.sh   (trimmed to the non-ok lines)
+  check-acceptance: 1 specs, 9 bullets, 0 not EARS
+  check-adr: docs/adr, 7 ADRs
+  check-evidence: 1 task lists, 6 done tasks, 0 without evidence
+all gates ok
+```
+
+The new install-smoke step ("Installed copy reads a feature cycle and names its next task") was run locally against the checkout with an untracked fixture (the session's git guard blocks creating fixture history); both of its `grep -q` lines matched. It runs in CI on the PR.
+
+### Code review fixes (2026-11-07)
+
+`/code-review` (medium) on the working tree returned 10 findings; all 10 fixed. Red seen first for findings 1-7 (trimmed to the FAIL lines and totals):
+
+```
+== lib/infer
+  FAIL feature header planning with no tasks yet => planning, no feature warning (review #1)
+  FAIL the reading never rewrites the header: active, cycles and evidence keep Phase: planning (review #2)
+50 passed, 2 failed
+== lib/todo
+  FAIL evidence needs the separator and a proof after it (review #5)
+  FAIL a blank open checkbox does not hide the next real task (review #7)
+10 passed, 2 failed
+== lib/signals
+  FAIL spec.md and feature.md together: spec.md is the record with its own pair, kind spec
+59 passed, 1 failed
+== check-acceptance
+  FAIL ## Specs with text but no S# entry warns instead of passing clean (review #3)
+  FAIL bold and inline fields count; the entry line itself is searched (review #4)
+16 passed, 2 failed
+```
+
+Findings 8-10 change no behavior and have no new test: #8 (`check-evidence.js` finds task lists through `findSpecs` and `folderCycle` instead of `collectSignals`), #9 (`lib/unfenced.js` gains `unfencedEntries` with line numbers, used by `todo.js` and `check-acceptance.js`; `OPEN` carries the task-text group), #10 (feature detection evaluated once). For #8, the old and the new script printed the same output with `--all` on six repositories, and the time on Almacen went down:
+
+```
+before: 984 ms, 735 ms, 695 ms   check-evidence: 2 task lists, 46 done tasks, 46 without evidence
+after:  130 ms, 153 ms, 117 ms   check-evidence: 2 task lists, 46 done tasks, 46 without evidence
+Almacen same
+NANDI same
+macritex same
+Sr-Lievito same
+SGG same
+SDLC-Assist same
+```
+
+After the fixes: `bash scripts/gates.sh` printed `all gates ok`, and the 13-repository regression against v0.13.0 printed `same` for all 13 again.

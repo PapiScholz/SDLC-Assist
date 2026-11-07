@@ -48,7 +48,7 @@ check('exit 2 with stderr message when --root is not a directory', () => {
 });
 check('output has the documented top-level keys, in order; JSON valid with Windows paths', () => {
   const r = runWhere(tmpDir(), 'hi');
-  assert.deepStrictEqual(Object.keys(r), ['signals', 'cycles', 'active', 'inferred', 'step', 'stage', 'evidence', 'alternatives', 'warnings', 'confidence', 'request']);
+  assert.deepStrictEqual(Object.keys(r), ['signals', 'cycles', 'active', 'inferred', 'step', 'stage', 'nextTask', 'evidence', 'alternatives', 'warnings', 'confidence', 'request']);
   assert.deepStrictEqual(r.request, { message: 'hi', type: 'unknown' });
   assert(!r.signals.root.includes('\\'));
 });

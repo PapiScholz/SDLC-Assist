@@ -150,7 +150,7 @@ check('plan and todo counts', () => {
   write(root, 'tasks/plan.md', '# Plan\n'); write(root, 'tasks/todo.md', '- [ ] a\n- [x] b\n- [X] c\n');
   const s = collectSignals(root, { runTests: false });
   assert.strictEqual(s.plan.exists, true); assert.strictEqual(s.plan.tracked, false);
-  assert.deepStrictEqual(s.todo, { exists: true, path: 'tasks/todo.md', open: 1, done: 2, total: 3 });
+  assert.deepStrictEqual(s.todo, { exists: true, path: 'tasks/todo.md', open: 1, done: 2, total: 3, next: 'a', withoutEvidence: 2 });
 });
 check('sourceFiles: code extensions counted, config and excluded dirs skipped', () => {
   const root = tmpDir();
@@ -298,7 +298,7 @@ check('folder cycle: plan.md and tasks.md beside spec.md; 2 open tasks => develo
   const s = collectSignals(root, { runTests: false });
   assert.strictEqual(s.specs[0].layout, 'folder');
   assert.deepStrictEqual([s.specs[0].plan.exists, s.specs[0].plan.path], [true, dir + '/plan.md']);
-  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: dir + '/tasks.md', open: 2, done: 1, total: 3 });
+  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: dir + '/tasks.md', open: 2, done: 1, total: 3, next: 'a', withoutEvidence: 1 });
   assert.strictEqual(s.plan.path, dir + '/plan.md'); assert.strictEqual(s.todo.path, dir + '/tasks.md');
   assert.strictEqual(infer(s, { message: '', type: 'unknown' }).inferred, 'development');
 });
@@ -368,7 +368,7 @@ check('MAPA.md + SPEC-*.md: one cycle whose path is the map; the SPEC files are 
   assert.deepStrictEqual([s.specs[0].layout, s.specs[0].header.phase, s.specs[0].header.status], ['folder', 'development', 'approved']);
   assert.deepStrictEqual(s.modules, [d + '/SPEC-a.md', d + '/SPEC-b.md']);
   assert.deepStrictEqual([s.specs[0].plan.exists, s.specs[0].plan.path], [true, d + '/PLAN.md']);
-  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: d + '/TASKS.md', open: 1, done: 1, total: 2 });
+  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: d + '/TASKS.md', open: 1, done: 1, total: 2, next: 'a', withoutEvidence: 1 });
 });
 check('module-only folder: the alphabetically first SPEC-*.md is the cycle, the rest are modules', () => {
   const root = tmpDir(), d = 'docs/specs/02-cobro';
@@ -450,6 +450,30 @@ check('no active cycle, or one touched recently: activity is null', () => {
   assert.strictEqual(collectSignals(tmpDir(), { runTests: false }).activity, null);
   const root = initRepo(); write(root, 'docs/specs/s/spec.md', '# S\n'); commit(root, 'one', new Date().toISOString());
   assert.strictEqual(collectSignals(root, { runTests: false }).activity, null);
+});
+console.log('feature cycles (proportional cycles)');
+check('feature-only folder: feature.md is the record, plan and todo, kind feature', () => {
+  const root = tmpDir(), d = 'docs/specs/2026-11-07-f';
+  write(root, d + '/feature.md', '# F\nPhase: development\nStatus: approved\n\n## Tasks\n\n- [x] T1 a — evidence: x\n- [ ] T2 do b\n- [x] T3 c\n');
+  write(root, 'tasks/plan.md', '# global\n'); write(root, 'tasks/todo.md', '- [ ] global\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => [x.path, x.kind]), [[d + '/feature.md', 'feature']]);
+  assert.strictEqual(s.plan.path, d + '/feature.md'); assert.strictEqual(s.plan.exists, true);
+  assert.strictEqual(s.todo.path, d + '/feature.md');
+  assert.deepStrictEqual([s.todo.open, s.todo.done, s.todo.next, s.todo.withoutEvidence], [1, 2, 'T2 do b', 1]);
+});
+check('spec.md and feature.md together: spec.md is the record with its own pair, kind spec', () => {
+  const root = tmpDir(), d = 'docs/specs/2026-11-07-both';
+  write(root, d + '/spec.md', '# S\nPhase: planning\nStatus: approved\n'); write(root, d + '/feature.md', '# F\n');
+  write(root, d + '/tasks.md', '- [ ] a\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs.map(x => [x.path, x.kind]), [[d + '/spec.md', 'spec']]);
+  assert.strictEqual(s.todo.path, d + '/tasks.md'); assert.strictEqual(s.plan.path, d + '/plan.md');
+  assert.ok(s.notes.includes(d + '/feature.md is not read: ' + d + '/spec.md is the cycle record; move its open tasks to tasks.md'), s.notes.join(' | '));   // review #6
+});
+check('flat spec is kind spec', () => {
+  const root = tmpDir(); write(root, 'docs/specs/a.md', '# A\nPhase: analysis\nStatus: draft\n');
+  assert.strictEqual(collectSignals(root, { runTests: false }).specs[0].kind, 'spec');
 });
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
