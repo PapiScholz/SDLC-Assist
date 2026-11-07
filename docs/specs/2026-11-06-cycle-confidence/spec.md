@@ -1,7 +1,7 @@
 # Spec: the router knows how sure it is of the active cycle
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-11-06
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.12.4)

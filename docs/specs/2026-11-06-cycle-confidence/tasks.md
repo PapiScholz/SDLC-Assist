@@ -9,4 +9,4 @@ Spec: `spec.md`. Plan: `plan.md`. Branch `cycle-confidence`, one PR, `[minor]`. 
 - [x] 5 `briefLine` prefix `cycle <short> (<age>)`, low line without step/next; hook and `where.js` pass `now`; #21 and macritex fixtures in the hook self-test
 - [x] 6 Docs: `SKILL.md` (reading `confidence`), `spec-header.md`, `README.md`, `ARCHITECTURE.md`, `ROADMAP.md` (tie-break out, #20 proposals 5 and 6 in), ADR 0006; `docs/plans/plan-layout.md` left as the historical v1.5 plan it is
 - [x] 7a Gates, `where.js --brief` on scratch repos (not macritex, at the owner's request), timing against v0.12.4, record in `docs/ci-red-runs.md`
-- [ ] 7b Commit (`[minor]`), push and PR with the owner's verb
+- [x] 7b Commit (`[minor]`), push and PR with the owner's verb
