@@ -9,4 +9,4 @@ Spec: `spec.md`. Plan: `plan.md`. Branch `proportional-cycles`, one PR, `[minor]
 - [x] 5 `SKILL.md` and references (feature template, phase sheets, spec template, header, entry points) — evidence: `gates.sh --quick` (check-sheets, check-skill-sections, check-frontmatter ok); `references/feature-template.md` new
 - [x] 6 Constitution amendment, ADR 0007, ROADMAP, README, `docs/sdlc-flow.md` — evidence: `docs/adr/0007-proportional-cycles.md`; check-adr 7 ADRs
 - [x] 7a Gates, scratch-repo smoke, regression against v0.13.0, hook line, record in `docs/ci-red-runs.md` — evidence: `docs/ci-red-runs.md` section "2026-11-07 — proportional cycles"; gates all ok; 13 repos same as v0.13.0
-- [ ] 7b Commit (`[minor]`), push and PR with the owner's verb
+- [x] 7b Commit (`[minor]`), push and PR with the owner's verb — evidence: PR #24 merged (30271b0), v0.14.0 released 2026-11-07
