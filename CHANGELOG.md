@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0] - 2026-11-07
+
+- Merge pull request #24 from PapiScholz/proportional-cycles
+- feat(sdlc): cycles proportional to the work, feature.md for medium work [minor]
+- Merge pull request #23 from PapiScholz/close-cycle-confidence [skip release]
+- docs: close the cycle-confidence cycle (v0.13.0)
+
 ## [0.13.0] - 2026-11-06
 
 - Merge pull request #22 from PapiScholz/cycle-confidence
