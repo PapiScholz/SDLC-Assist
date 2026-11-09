@@ -1,6 +1,7 @@
 const { PHASES } = require('./header');
 const { stepOf } = require('./steps');
 const { assessConfidence, shortName } = require('./confidence');
+const { normalise } = require('./keywords');
 // What the agent should do about each reason that lowers the confidence; `released` keeps its own warning.
 const REASON_HINT = {
   orphan: d => `${d}: if that is the current work, move it to docs/specs/<date>-<slug>/spec.md with a header`,
@@ -52,16 +53,45 @@ function stagedView(stages, eligible, todo) {
   return { ...view, current: own || firstOpen, phase: 'testing',
     warning: own ? null : `tasks.md names no stage: its finished tasks are counted toward stage ${firstOpen.number}` };
 }
+// The module of a map cycle the work is about (issue #26): the one the request names (longest slug wins, so
+// `usabilidad-pasos` beats `usabilidad`), else the one holding the cycle's last activity. Null: route by the map.
+function moduleSlug(p) { return normalise(String(p).split('/').pop().replace(/\.md$/i, '').replace(/^spec-/i, '')); }
+function pickModule(mods, active, message) {
+  if (!active || !mods || !mods.length) return null;
+  const text = normalise(message);
+  const named = mods.map(m => ({ m, slug: moduleSlug(m.path) }))
+    .filter(({ slug }) => slug && new RegExp('(^|[^a-z0-9])' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z0-9])').test(text))
+    .sort((a, b) => b.slug.length - a.slug.length)[0];
+  if (named) return { module: named.m, reason: 'named in the request' };
+  // Touched last: strictly newer than the map itself and than every other module (files committed together tie: none).
+  const own = effectiveDate(active._raw);
+  const dated = mods.filter(m => m.lastActivity != null && own != null && m.lastActivity > own).sort((a, b) => b.lastActivity - a.lastActivity);
+  return dated.length && (dated.length === 1 || dated[0].lastActivity > dated[1].lastActivity) ? { module: dated[0], reason: 'touched last' } : null;
+}
 function infer(signals, request) {
   const evidence = [], warnings = [], alternatives = [];
   const cycles = rankCycles(signals.specs);
-  const active = cycles.find(c => c.status !== 'closed') || null;
+  let active = cycles.find(c => c.status !== 'closed') || null;
   cycles.forEach(c => { c.active = c === active; });
+  // A module with its own header speaks for the work; a headerless one inherits the map's.
+  const picked = pickModule(signals.activeModules, active, request && request.message);
+  if (picked) {
+    const m = picked.module;
+    if (m.hasHeader) active = { ...active, phase: m.header.phase, status: m.header.status };
+    evidence.push(`module ${m.path} (${picked.reason}), Status: ${active.status}`);
+  }
   const approved = !!active && active.status === 'approved';
   const planCurrent = planIsCurrent(signals.plan, active && active._raw);
   if (signals.plan.exists && !planCurrent && active) evidence.push(`${EVIDENCE.PLAN_STALE}: ${signals.plan.path} last commit ${planDate(signals.plan)} < ${active.path} first commit ${specStart(active._raw)}`);
   if (signals.plan.exists && !active) evidence.push(EVIDENCE.NO_PLAN_CYCLE);
-  const todo = planCurrent ? signals.todo : { ...signals.todo, open: 0, done: 0, total: 0 };   // a stale plan drags its todo along
+  let todo = planCurrent ? signals.todo : { ...signals.todo, open: 0, done: 0, total: 0 };   // a stale plan drags its todo along
+  // A picked module counts only the plan sections that name it; none means the module has no plan yet. Only when
+  // the tasks live in the plan: a separate tasks.md is the cycle's one list and is read whole.
+  if (picked && planCurrent && signals.todo.path === signals.plan.path) {
+    const own = picked.module.todo;
+    todo = own ? { ...signals.todo, ...own } : { ...signals.todo, open: 0, done: 0, total: 0, next: null };
+    if (!own) evidence.push(`no section of ${signals.plan.path} names ${picked.module.path.split('/').pop()}`);
+  }
   if (planCurrent && !signals.todo.exists) evidence.push(`${EVIDENCE.NO_TODO} (${signals.todo.path})`);
   const candidates = [];
   if (signals.sourceFiles.count === 0 && cycles.length === 0) candidates.push('initial');
@@ -83,6 +113,10 @@ function infer(signals, request) {
   if (active && active.kind === 'feature' && headerPhase === 'planning' && ['development', 'testing'].includes(fallback)) {
     headerPhase = fallback;
     warnings.push('feature cycles have no planning step: read as development');
+  } else if (active && headerPhase === 'planning' && approved && fallback === 'testing' && todo.total > 0 && todo.open === 0) {
+    // Every task of the plan is done: the plan exists and was carried out, so the header only missed its closes.
+    headerPhase = fallback;
+    warnings.push('header says planning but every task is done: read as testing; sdlc close updates it');
   }
   const deployTie = headerPhase === 'deployment' && fallback === 'testing';   // deployment is header-only: testing is its expected fallback
   if (deployTie || (fallback === 'testing' && !headerPhase)) evidence.push(EVIDENCE.DEPLOY_HEADER_ONLY);
@@ -108,12 +142,15 @@ function infer(signals, request) {
   // Confidence in the pick; its reasons go first in `warnings`, in order, ahead of the release one already there.
   const confidence = assessConfidence({ active, cycles, orphanSpecs: signals.orphanSpecs, activity: signals.activity, now: signals.now, released });
   for (const r of confidence.reasons.slice().reverse()) if (REASON_HINT[r.kind]) warnings.unshift(`cycle ${shortName(active.path)}: ${REASON_HINT[r.kind](r.detail)}`);
-  if (active && NEW_CYCLE_TYPES.includes(request.type)) alternatives.push({ phase: 'analysis', kind: 'new-cycle', reason: `request type ${request.type} while a cycle is active` });
+  // A request that names a module of the active cycle is about that cycle, not a new topic.
+  const namedModule = !!(picked && picked.reason === 'named in the request');
+  if (active && NEW_CYCLE_TYPES.includes(request.type) && !namedModule) alternatives.push({ phase: 'analysis', kind: 'new-cycle', reason: `request type ${request.type} while a cycle is active` });
   for (const c of candidates) if (c !== inferred && !alternatives.some(a => a.phase === c)) alternatives.push({ phase: c, kind: 'candidate', reason: 'fallback row also holds' });
   if (signals.tests.status === 'unknown') evidence.push(EVIDENCE.TESTS_NOT_RUN);
   if (signals.inProduction) evidence.push(`in production: tag ${signals.git.lastSemverTag.name}`);
   return { inferred, fallback, candidates, evidence, alternatives: alternatives.slice(0, 3), warnings, confidence, active: active && strip(active), cycles: cycles.map(strip),
     step: stepOf(inferred), nextTask: (planCurrent && todo.next) || null,
+    module: picked ? { path: picked.module.path, reason: picked.reason } : null,
     stage: st && st.current ? { number: st.current.number, name: st.current.name, closed: st.closed, total: st.total } : null,
   };
 }

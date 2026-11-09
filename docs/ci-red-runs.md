@@ -1832,3 +1832,148 @@ sdlc: cycle 2026-11-07-proportional-cycles (today) · not sure this is the curre
 $ where.js --message-file <tmp> --brief   (after)
 sdlc: step 2/4 spec · next: write the spec for this request
 ```
+
+## 2026-11-09 — real headers, module routing and the plan brake (#26, ADR 0008, ADR 0009), working tree on `main`, not yet recorded in git
+
+Repro in dopamina, before (v0.14.0 HEAD) and after, same message file:
+
+```
+$ where.js --message-file <tmp: "implementemos las propuestas de SPEC-usabilidad-pasos"> --brief   (before)
+sdlc: cycle 04-fase2-vender (today) · step 2/4 spec · next: finish docs/specs/04-fase2-vender/MAPA.md and get it approved
+$ where.js --message-file <tmp: same> --brief   (after)
+sdlc: cycle 04-fase2-vender (today) · module SPEC-usabilidad-pasos.md · step 3/4 plan · next: plan SPEC-usabilidad-pasos.md: no section of the plan names it yet · this request asks to implement and the work has no approved plan: the developer decides whether to plan first
+```
+
+Regression over every local repo with specs, message "seguimos", before vs after:
+
+```
+Almacen same
+almacen-landing CHANGED
+  before: sdlc: cycle docs/specs/landing.md (6 days ago) · step 2/4 spec · next: finish docs/specs/landing.md and get it approved
+  after:  sdlc: cycle docs/specs/landing.md (6 days ago) · step 4/4 implement (build) · next: Sin WebGL: el póster SVG existe pero no se forzó el fallback en navegador
+almacen-license-worker same
+dopamina CHANGED
+  before: sdlc: cycle 04-fase2-vender (today) · step 2/4 spec · next: finish docs/specs/04-fase2-vender/MAPA.md and get it approved
+  after:  sdlc: cycle 04-fase2-vender (today) · module SPEC-usabilidad-pasos.md · step 3/4 plan · next: plan SPEC-usabilidad-pasos.md: no section of the plan names it yet
+Lievito-Website same
+LOL-run same
+macritex same
+Memphis-molinete CHANGED
+  before: sdlc: cycle 2026-11-01-borradores-personal-y-molinete (7 days ago) · step 4/4 implement (test) · next: test the change
+  after:  sdlc: cycle 2026-11-01-borradores-personal-y-molinete (7 days ago) · step 3/4 plan · next: write the plan · note: header says planning but artifacts say testing
+mockup-to-framework same
+NANDI same
+proxmox-backup-stack same
+SDLC-Assist same
+SGG same
+Sr-Lievito same
+```
+
+Tests first, run against the HEAD copy of each module, then the new one (FAIL lines only):
+
+```
+$ node lib/header.self-test.js   (HEAD code)
+  FAIL Spanish labels and values seen in real repos (ADR 0008)
+  FAIL phase synonyms; done/shipped close the cycle
+  FAIL hasHeaderLine sees Estado/Fase too
+14 passed, 3 failed
+$ node lib/header.self-test.js   (new code)
+17 passed, 0 failed
+$ node lib/keywords.self-test.js   (HEAD code)
+  FAIL "implementemos las propuestas de SPEC-usabilidad-pasos" -> feature
+  FAIL "implementá el módulo de balanzas" -> feature
+  FAIL "implementa esto" -> feature
+  FAIL "implementalo" -> feature
+  FAIL "implementen el plan" -> feature
+  FAIL "arrancá la implementación del panel" -> feature
+  FAIL "implementarlo hoy" -> feature
+30 passed, 7 failed
+$ node lib/keywords.self-test.js   (new code)
+37 passed, 0 failed
+$ node lib/todo.self-test.js   (HEAD code)
+  FAIL sectionTasks: only the sections that name the module file (issue #26)
+12 passed, 1 failed
+$ node lib/todo.self-test.js   (new code)
+13 passed, 0 failed
+$ node lib/signals.self-test.js   (HEAD code)
+  FAIL no tasks.md: the tasks come from PLAN.md; activeModules carry header and their plan sections (issue #26)
+60 passed, 1 failed
+$ node lib/signals.self-test.js   (new code)
+61 passed, 0 failed
+$ node lib/infer.self-test.js   (HEAD code)
+  FAIL the module named in the request wins (longest slug); no plan section => planning
+  FAIL without a name, the module holding the cycle's last activity; its section gives the next task
+  FAIL a draft module is not implemented: analysis, whatever the map says
+  FAIL a headerless module inherits the map status
+  FAIL no module touched last and none named: the map routes as before
+  FAIL modules tied on last activity (committed together): none is picked
+  FAIL a separate tasks.md is read whole even with a module picked
+52 passed, 7 failed
+$ node lib/infer.self-test.js   (new code)
+59 passed, 0 failed
+$ node lib/brief.self-test.js   (HEAD code)
+  FAIL a picked module is named; planning tells which module has no plan section
+  FAIL an implement request on step 2 or 3 adds the unplanned fact; on step 4 it does not
+13 passed, 2 failed
+$ node lib/brief.self-test.js   (new code)
+15 passed, 0 failed
+$ node hooks/sdlc-status.self-test.js   (HEAD code)
+  FAIL issue #26: an implement request on unplanned work repeats the line every time, as a fact with no opt-out suffix
+  FAIL feature cycle in development: the line names the first open task
+10 passed, 2 failed
+$ node hooks/sdlc-status.self-test.js   (new code)
+12 passed, 0 failed
+```
+
+$ bash scripts/gates.sh
+  check-adr: docs/adr, 9 ADRs
+ok check-adr (advisory)
+  check-evidence: 1 task lists, 0 done tasks, 0 without evidence
+ok check-evidence (advisory)
+ok settings.json
+all gates ok
+Memphis-molinete changed because its `Phase: plan` header now parses: the header stays the phase of record and the warning names the disagreement (ADR 0008, Consequences).
+
+### Second round: the router reads the repos as they are (2026-11-09)
+
+New self-tests first, against the first-round code (FAIL lines only):
+
+```
+header: 1 FAIL ("aprobada ... e implementada" closes ...)
+todo: 1 FAIL (a heading that carries the module title also counts)
+signals: 1 FAIL (module title section) + 1 FAIL (flat spec names its plan)
+infer: 1 FAIL (planning header with every task done reads as testing)
+```
+
+After: every self-test passes; `bash scripts/gates.sh` printed `all gates ok`. Regression over every local repo with specs, v0.14.0 HEAD vs now, message "seguimos":
+
+```
+Almacen CHANGED
+  before: sdlc: cycle docs/specs/remoto-oficina-completa.md (5 days ago) · not sure this is the current work: 2026-11-03-pago-desde-app is also open and was touched within a day of docs/specs/remoto-oficina-completa.md · run /sdlc for the detail
+  after:  sdlc: cycle 2026-11-03-pago-desde-app (5 days ago) · not sure this is the current work: 2026-11-02-actualizacion-obligatoria is also open and was touched within a day of 2026-11-03-pago-desde-app · run /sdlc for the detail
+almacen-landing CHANGED
+  before: sdlc: cycle docs/specs/landing.md (6 days ago) · step 2/4 spec · next: finish docs/specs/landing.md and get it approved
+  after:  sdlc: cycle docs/specs/landing.md (6 days ago) · step 4/4 implement (build) · next: Sin WebGL: el póster SVG existe pero no se forzó el fallback en navegador
+almacen-license-worker same
+dopamina CHANGED
+  before: sdlc: cycle 04-fase2-vender (today) · step 2/4 spec · next: finish docs/specs/04-fase2-vender/MAPA.md and get it approved
+  after:  sdlc: cycle 04-fase2-vender (today) · module SPEC-usabilidad-pasos.md · step 4/4 implement (test) · next: test the change
+Lievito-Website same
+LOL-run same
+macritex same
+Memphis-molinete CHANGED
+  before: sdlc: cycle 2026-11-01-borradores-personal-y-molinete (7 days ago) · step 4/4 implement (test) · next: test the change
+  after:  sdlc: cycle 2026-11-01-borradores-personal-y-molinete (7 days ago) · step 4/4 implement (test) · next: test the change · note: header says planning but every task is done: read as testing; sdlc close updates it
+mockup-to-framework same
+NANDI same
+proxmox-backup-stack same
+SDLC-Assist same
+SGG CHANGED
+  before: sdlc: cycle docs/specs/usuarios-acciones-bloqueadas.md (21 days ago) · not sure this is the current work: docs/specs/permisos-por-rol.md is also open and was touched within a day of docs/specs/usuarios-acciones-bloqueadas.md · run /sdlc for the detail
+  after:  sdlc: cycle docs/specs/permisos-por-rol.md (21 days ago) · step 4/4 implement (build) · next: Escribir el test primero, con los casos (a)–(e) del spec §8 más: `normalizePermissions` es idempotente; `missingReads(["mar:create"])` devuelve `["mar:read"]...
+Sr-Lievito same
+$ dopamina, "implementemos las propuestas de SPEC-usabilidad-pasos" (after)
+sdlc: cycle 04-fase2-vender (today) · module SPEC-usabilidad-pasos.md · step 4/4 implement (test) · next: test the change
+```
+
+Almacen still asks which cycle is current: `2026-11-03-pago-desde-app` and `2026-11-02-actualizacion-obligatoria` are both approved with open tasks and touched within a day. Sr-Lievito the same with its two avance cycles. Both are real ambiguity, not misreads.

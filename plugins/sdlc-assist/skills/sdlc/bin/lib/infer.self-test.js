@@ -308,5 +308,52 @@ check('a spec cycle header planning keeps its v0.13.0 reading (no feature warnin
   assert.strictEqual(r.inferred, 'planning');
   assert.ok(!r.warnings.some(w => /feature cycles/.test(w)));
 });
+check('a spec cycle header planning with every task done reads as testing (Memphis, issue #26)', () => {
+  const r = infer(sig({ sourceFiles: src, specs: [spec('a.md', 'planning', 'approved')], plan: plan(), todo: todo(0, 31) }), req('unknown'));
+  assert.strictEqual(r.inferred, 'testing'); assert.strictEqual(r.step.number, 4);
+  assert.ok(r.warnings.some(w => /header says planning but every task is done: read as testing/.test(w)), r.warnings.join(' | '));
+  assert.ok(!r.warnings.some(w => /artifacts say/.test(w)));
+  assert.strictEqual(r.active.phase, 'planning');
+});
+console.log('module of a map cycle (issue #26)');
+{
+  const d = 'docs/specs/04';
+  const mapSpec = spec(d + '/MAPA.md', null, 'approved', { layout: 'folder', lastActivity: 300 });
+  const mod = (name, status, lastActivity, t, hasHeader = true) => ({ path: `${d}/SPEC-${name}.md`, header: { phase: null, status }, hasHeader, lastActivity, todo: t });
+  const base = o => sig({ sourceFiles: src, specs: [mapSpec], plan: plan({ path: d + '/PLAN.md' }), todo: { ...todo(3, 1, d + '/PLAN.md'), next: 'x1' }, ...o });
+  const mods = [mod('usabilidad', 'approved', 200, { open: 0, done: 4, total: 4, next: null }),
+    mod('usabilidad-pasos', 'approved', 250, null), mod('whatsapp', 'approved', 300, { open: 2, done: 1, total: 3, next: 'w1' })];
+  check('the module named in the request wins (longest slug); no plan section => planning', () => {
+    const r = infer(base({ activeModules: mods }), { message: 'implementemos las propuestas de SPEC-usabilidad-pasos', type: 'feature' });
+    assert.strictEqual(r.module.path, d + '/SPEC-usabilidad-pasos.md'); assert.strictEqual(r.module.reason, 'named in the request');
+    assert.strictEqual(r.inferred, 'planning'); assert.strictEqual(r.nextTask, null);
+    assert.ok(r.evidence.some(e => /no section of .*PLAN\.md names SPEC-usabilidad-pasos\.md/.test(e)));
+    assert.ok(!hasAlt(r, 'analysis', 'new-cycle'), 'naming a module of the cycle is not a new topic');
+  });
+  check('without a name, the module holding the cycle\'s last activity; its section gives the next task', () => {
+    const r = infer(base({ activeModules: mods }), { message: 'seguimos', type: 'unknown' });
+    assert.strictEqual(r.module.path, d + '/SPEC-whatsapp.md'); assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.nextTask, 'w1');
+  });
+  check('a draft module is not implemented: analysis, whatever the map says', () => {
+    const r = infer(base({ activeModules: [mod('nuevo', 'draft', 300, null)] }), { message: 'implementá SPEC-nuevo', type: 'feature' });
+    assert.strictEqual(r.inferred, 'analysis'); assert.strictEqual(r.module.path, d + '/SPEC-nuevo.md');
+  });
+  check('a headerless module inherits the map status', () => {
+    const r = infer(base({ activeModules: [mod('b', 'draft', 300, { open: 1, done: 0, total: 1, next: 'b1' }, false)] }), req('unknown'));
+    assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.nextTask, 'b1');
+  });
+  check('no module touched last and none named: the map routes as before', () => {
+    const r = infer(base({ activeModules: [mod('old', 'approved', 100, null)] }), req('unknown'));
+    assert.strictEqual(r.module, null); assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.nextTask, 'x1');
+  });
+  check('modules tied on last activity (committed together): none is picked', () => {
+    const r = infer(base({ activeModules: [mod('a', 'approved', 300, null), mod('b', 'approved', 300, null)] }), req('unknown'));
+    assert.strictEqual(r.module, null);
+  });
+  check('a separate tasks.md is read whole even with a module picked', () => {
+    const r = infer(base({ activeModules: mods, todo: { ...todo(1, 0, d + '/tasks.md'), next: 't1' } }), { message: 'SPEC-usabilidad-pasos', type: 'unknown' });
+    assert.strictEqual(r.module.path, d + '/SPEC-usabilidad-pasos.md'); assert.strictEqual(r.inferred, 'development'); assert.strictEqual(r.nextTask, 't1');
+  });
+}
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -11,21 +11,25 @@ function toplevel(cwd) {
 }
 function status(cwd, prompt) {
   const root = toplevel(cwd);
-  if (!root) return '';
+  if (!root) return null;
   const { collectSignals } = require(path.join(LIB, 'signals'));
   const { infer } = require(path.join(LIB, 'infer'));
-  const { briefLine } = require(path.join(LIB, 'brief'));
+  const { briefLine, unplanned } = require(path.join(LIB, 'brief'));
   const { classifyRequest } = require(path.join(LIB, 'keywords'));
   const s = collectSignals(root, { runTests: false });
-  const r = infer(s, { message: prompt || '', type: classifyRequest(prompt || '') });
-  if (!r.active) return '';
-  return briefLine({ ...r, now: s.now, warnings: [...r.warnings, ...s.notes] }) + " (applies only when the request is about this repository's work)";
+  const request = { message: prompt || '', type: classifyRequest(prompt || '') };
+  const r = infer(s, request);
+  if (!r.active) return null;
+  const view = { ...r, request, now: s.now, warnings: [...r.warnings, ...s.notes] };
+  // Stated as a fact, with no opt-out suffix: the old "(applies only when ...)" let the agent skip it (issue #26).
+  return { line: briefLine(view), always: unplanned(view) };
 }
 // Only when the line changes within a session: repeating the same status on every prompt cost context
 // for nothing (96 of 96 prompts in one session carried the identical line). State: one file per
 // session_id in the OS temp dir holding the last line printed. Without a session_id, print as before.
-function changed(sessionId, line) {
-  if (typeof sessionId !== 'string' || !/^[\w-]{1,128}$/.test(sessionId)) return true;
+// An implement request on unplanned work prints every time: that is when the agent needs it (issue #26).
+function changed(sessionId, line, always) {
+  if (always || typeof sessionId !== 'string' || !/^[\w-]{1,128}$/.test(sessionId)) return true;
   const file = path.join(require('os').tmpdir(), 'sdlc-assist-status', sessionId + '.txt');
   try { if (fs.readFileSync(file, 'utf8') === line) return false; } catch { /* first prompt of the session */ }
   try { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, line); } catch { /* still print */ }
@@ -33,7 +37,7 @@ function changed(sessionId, line) {
 }
 try {
   const j = input();
-  const line = j && status(typeof j.cwd === 'string' ? j.cwd : process.cwd(), typeof j.prompt === 'string' ? j.prompt : '');
-  if (line && changed(j.session_id, line)) process.stdout.write(line + '\n');
+  const st = j && status(typeof j.cwd === 'string' ? j.cwd : process.cwd(), typeof j.prompt === 'string' ? j.prompt : '');
+  if (st && st.line && changed(j.session_id, st.line, st.always)) process.stdout.write(st.line + '\n');
 } catch { /* never surface an error into the prompt */ }
 process.exitCode = 0;

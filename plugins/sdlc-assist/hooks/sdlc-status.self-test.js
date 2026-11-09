@@ -61,6 +61,16 @@ check('same session, same status: printed once, then silent until it changes', (
   assert.match(c.stdout, /new topic/); assert.match(d.stdout, /^sdlc: cycle 2026-10-08-lms \(today\) · stage 4 /);
   assert.deepStrictEqual([a.status, b.status, c.status, d.status], [0, 0, 0, 0]);
 });
+check('issue #26: an implement request on unplanned work repeats the line every time, as a fact with no opt-out suffix', () => {
+  const root = tmpDir(); write(root, 'docs/specs/2026-11-09-x/spec.md', '# S\n\nEstado: **borrador**\n'); write(root, 'src/a.js', 'x\n');
+  git(root, ['init', '-q']); git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '-A']); git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'init']);
+  const sid = 'selftest26-' + process.pid + '-' + Date.now();
+  const a = run(JSON.stringify({ cwd: root, prompt: 'implementemos esto', session_id: sid }));
+  const b = run(JSON.stringify({ cwd: root, prompt: 'implementemos esto', session_id: sid }));
+  const c = run(JSON.stringify({ cwd: root, prompt: 'seguimos', session_id: sid }));
+  for (const r of [a, b]) { assert.match(r.stdout, /no approved plan: the developer decides whether to plan first/); assert.doesNotMatch(r.stdout, /applies only/); }
+  assert.match(c.stdout, /^sdlc: /);   // the line changed (no implement note), so it prints once more
+});
 const GIT_ID = [...NO_HOOKS, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false'];
 function commitAt(root, msg, when) {
   const iso = new Date(when * 1000).toISOString();
@@ -106,7 +116,7 @@ check('feature cycle in development: the line names the first open task', () => 
   git(root, ['init', '-q']); git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '-A']);
   git(root, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'init']);
   const r = run(JSON.stringify({ cwd: root, prompt: 'seguimos' }));
-  assert.match(r.stdout, /^sdlc: cycle 2026-11-07-export \(today\) · step 4\/4 implement \(build\) · next: T2 write the CSV \(applies/);
+  assert.match(r.stdout, /^sdlc: cycle 2026-11-07-export \(today\) · step 4\/4 implement \(build\) · next: T2 write the CSV$/m);
 });
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

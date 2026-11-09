@@ -1,4 +1,14 @@
 {
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": false,
+    "chrome-devtools-mcp@claude-plugins-official": false,
+    "search-visibility-kit@papischolz": false,
+    "mercadopago@claude-plugins-official": false,
+    "usability-walkthrough@usability-walkthrough": false,
+    "pyright-lsp@claude-plugins-official": false,
+    "ralph-loop@claude-plugins-official": false
+  },
+  "disableClaudeAiConnectors": true,
   "hooks": {
     "PreToolUse": [
       { "matcher": "Bash|PowerShell", "hooks": [ { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/git-authorization.js"], "timeout": 10 } ] }

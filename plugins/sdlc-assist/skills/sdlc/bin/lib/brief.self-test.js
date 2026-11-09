@@ -22,6 +22,17 @@ check('analysis names the spec to finish; the first warning is appended', () => 
 check('a new-cycle alternative adds the new-topic note', () => {
   assert.ok(/new topic/.test(briefLine({ ...base, alternatives: [{ phase: 'analysis', kind: 'new-cycle', reason: 'r' }] })));
 });
+console.log('briefLine: module and unplanned implement requests (issue #26)');
+check('a picked module is named; planning tells which module has no plan section', () => {
+  assert.strictEqual(briefLine({ ...base, stage: null, module: { path: 'docs/specs/x/SPEC-pasos.md', reason: 'named in the request' } }),
+    'sdlc: cycle x · module SPEC-pasos.md · step 3/4 plan · next: plan SPEC-pasos.md: no section of the plan names it yet');
+});
+check('an implement request on step 2 or 3 adds the unplanned fact; on step 4 it does not', () => {
+  const feat = { request: { type: 'feature' } };
+  assert.match(briefLine({ ...base, ...feat, stage: null }), /no approved plan: the developer decides whether to plan first/);
+  assert.doesNotMatch(briefLine({ ...base, ...feat, stage: null, inferred: 'development', step: { number: 4, name: 'implement', detail: 'build' } }), /no approved plan/);
+  assert.doesNotMatch(briefLine({ ...base, request: { type: 'bug' }, stage: null }), /no approved plan/);
+});
 console.log('briefLine: next task and feature cycles');
 const dev = { ...base, stage: null, inferred: 'development', step: { number: 4, name: 'implement', detail: 'build' } };
 check('development with a next task names it; without one keeps the generic action', () => {

@@ -12,7 +12,7 @@ const KEYWORDS = {
     hotfix:    ['hotfix', 'typo', 'tipeo', 'errata', 'arreglo rapido', 'fix rapido'],
     complaint: ['queja', 'quejas', 'se queja', 'se quejan', 'reclamo', 'reclama', 'reclaman', 'cliente dice', 'cliente reporta', 'usuario reporta', 'usuarios reportan'],
     bug:       ['bug', 'se rompe', 'se rompio', 'rompe', 'roto', 'rota', 'falla', 'fallo', 'error', 'errores', 'crashea', 'excepcion', 'no funciona', 'no anda', 'regresion', 'arreglar', 'arregla', 'problema', 'no me deja', 'se cayo', 'devuelve 500', 'da 500', 'caida', 'caido'],
-    feature:   ['funcionalidad', 'agregar', 'agrega', 'anadir', 'implementar', 'soporte', 'nueva opcion', 'permitir'],
+    feature:   ['funcionalidad', 'agregar', 'agrega', 'anadir', 'implementar', 'implementarlo', 'implementemos', 'implementa', 'implementalo', 'implementen', 'implementacion', 'soporte', 'nueva opcion', 'permitir'],
     idea:      ['idea', 'propongo', 'propuesta', 'me gustaria', 'que tal si', 'y si'],
   },
 };

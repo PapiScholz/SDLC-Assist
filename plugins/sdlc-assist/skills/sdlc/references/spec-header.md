@@ -17,6 +17,7 @@ Intent: docs/intents/<file>   (only when the cycle opens from an intent.md)
 - First token after the colon, case-insensitive; the rest of the line is ignored.
 - Slugs: `initial`, `analysis`, `planning`, `development`, `testing`, `deployment`.
 - A spec without `Status:` counts as `draft`.
+- Reading is wider than writing (ADR 0008): `Estado:`/`Fase:` count as `Status:`/`Phase:`, also inside a `>` quote, after a `·` separator or after a sentence; values are matched on their first word with accents removed (`aprobada`/`accepted` approved, `implementado`/`implemented`/`done` closed, `borrador`/`sin empezar` draft; `Phase: plan`, `specification`, `done`). An unrecognised value is skipped. An approved status whose own text says it was done (`aprobada (...) e implementada`) reads as closed; `sin implementar` and `no implementado` do not. A flat spec may name its plan (`Plan: docs/plans/x.md`); that file is then its plan and task list. Write only the English form above.
 - Specs always start with `Phase: analysis` / `Status: draft`, including the first spec of a project. `initial` is a phase without a header: it ends the moment the first spec exists.
 
 ## Close-mode transitions

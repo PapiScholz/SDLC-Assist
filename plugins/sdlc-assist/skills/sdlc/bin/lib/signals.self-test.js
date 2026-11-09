@@ -370,6 +370,37 @@ check('MAPA.md + SPEC-*.md: one cycle whose path is the map; the SPEC files are 
   assert.deepStrictEqual([s.specs[0].plan.exists, s.specs[0].plan.path], [true, d + '/PLAN.md']);
   assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: d + '/TASKS.md', open: 1, done: 1, total: 2, next: 'a', withoutEvidence: 1 });
 });
+check('no tasks.md: the tasks come from PLAN.md; activeModules carry header and their plan sections (issue #26)', () => {
+  const root = tmpDir(), d = 'docs/specs/04-fase2';
+  write(root, d + '/MAPA.md', '# Mapa\n\nEstado: **aprobado** (2026-11-07).\n');
+  write(root, d + '/SPEC-a.md', '# A\n\nIntro. Estado: **aprobada** (2026-11-09).\n'); write(root, d + '/SPEC-b.md', '# B\n');
+  write(root, d + '/PLAN.md', '# Plan\n## A ([spec](SPEC-a.md))\n- [x] a1\n- [ ] a2\n## Other\n- [ ] o1\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.specs[0].header, { phase: null, status: 'approved' });
+  assert.deepStrictEqual(s.specs[0].todo, { exists: true, path: d + '/PLAN.md', open: 2, done: 1, total: 3, next: 'a2', withoutEvidence: 1 });
+  assert.deepStrictEqual(s.activeModules.map(m => [m.path, m.header.status, m.hasHeader, m.todo]), [
+    [d + '/SPEC-a.md', 'approved', true, { open: 1, done: 1, total: 2, next: 'a2' }],
+    [d + '/SPEC-b.md', 'draft', false, null]]);
+  assert.strictEqual(typeof s.activeModules[0].lastActivity, 'number');
+});
+check('a flat spec that names its plan in the header uses it as plan and task list (SGG)', () => {
+  const root = tmpDir();
+  write(root, 'docs/specs/permisos.md', '# Spec\n\n> **Estado:** aprobado por el owner (2026-10-18), sin implementar. Plan:\n> [`docs/plans/permisos.md`](../plans/permisos.md).\n');
+  write(root, 'docs/plans/permisos.md', '# Plan\n- [ ] p1\n- [ ] p2\n');
+  write(root, 'docs/specs/other.md', '# O\nStatus: approved\nPlan: docs/missing.md\n');
+  const s = collectSignals(root, { runTests: false });
+  const p = s.specs.find(x => x.path === 'docs/specs/permisos.md'), o = s.specs.find(x => x.path === 'docs/specs/other.md');
+  assert.deepStrictEqual([p.plan.exists, p.plan.path, p.todo.path, p.todo.open, p.todo.next], [true, 'docs/plans/permisos.md', 'docs/plans/permisos.md', 2, 'p1']);
+  assert.strictEqual(o.plan.path, 'tasks/plan.md', 'a named plan that does not exist keeps the default pair');
+});
+check('a module whose plan section carries its H1 title gets that section', () => {
+  const root = tmpDir(), d = 'docs/specs/04-fase2';
+  write(root, d + '/MAPA.md', '# Mapa\n\nEstado: **aprobado**\n');
+  write(root, d + '/SPEC-pasos.md', '# Spec: usabilidad, segunda vuelta (pasos por tarea)\n\nEstado: **aprobada**\n'); write(root, d + '/SPEC-z.md', '# Z\n');
+  write(root, d + '/PLAN.md', '# Plan\n## H. Usabilidad, segunda vuelta (2.9)\n- [x] t6\n- [ ] t7\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.activeModules[0].todo, { open: 1, done: 1, total: 2, next: 't7' });
+});
 check('module-only folder: the alphabetically first SPEC-*.md is the cycle, the rest are modules', () => {
   const root = tmpDir(), d = 'docs/specs/02-cobro';
   write(root, d + '/SPEC-correos.md', '# C\n'); write(root, d + '/SPEC-archivar.md', '# A\nStatus: approved\n');

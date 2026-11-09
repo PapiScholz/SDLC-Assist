@@ -1,5 +1,5 @@
 const fs = require('fs'); const path = require('path');
-const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks, firstOpen, withoutEvidence } = require('./todo'); const { pickActive, effectiveDate } = require('./infer'); const { unfencedLines } = require('./unfenced');
+const { parseHeader, hasHeaderLine } = require('./header'); const { countTasks, firstOpen, withoutEvidence, sectionTasks } = require('./todo'); const { pickActive, effectiveDate } = require('./infer'); const { unfencedLines } = require('./unfenced');
 const { parseStages, stageOfTasks } = require('./stages');
 const SOURCE_EXTENSIONS = ['js','mjs','cjs','jsx','ts','tsx','py','rb','go','rs','java','kt','kts','swift','c','cc','cpp','h','hpp','cs','php','scala','sh','ps1','vue','svelte','dart','ex','exs','erl','clj','lua','r','sql'];
 const EXCLUDED_DIRS = ['.git','node_modules','dist','build','out','target','vendor','.next','.nuxt','coverage','__pycache__','.venv','venv','.cache','tmp','.idea','.vscode','.pytest_cache','.tox','.turbo'];
@@ -28,7 +28,21 @@ function folderCycle(root, dir) {
   if (record === feature) return { record: base + record, kind: 'feature', map: null, modules: [], plan: base + record, todo: base + record };
   // A feature cycle that grew into a full one keeps its old feature.md beside spec.md: say it is no longer read.
   return { record: base + record, kind: 'spec', shadowed: spec && feature ? base + feature : null, map: map ? base + map : null, modules: mods.filter(n => n !== record).map(n => base + n),
-    plan: base + (names.find(n => PLAN_FILE.test(n)) || 'plan.md'), todo: base + (names.find(n => TASKS_FILE.test(n)) || 'tasks.md') };
+    // Without tasks.md the checkboxes kept in plan.md are the task list (issue #26).
+    plan: base + (names.find(n => PLAN_FILE.test(n)) || 'plan.md'), todo: base + (names.find(n => TASKS_FILE.test(n)) || names.find(n => PLAN_FILE.test(n)) || 'tasks.md') };
+}
+// A flat spec that names its own plan in the header (`Plan: docs/plans/x.md`, a link, or the path on the next
+// line): the first `.md` named after `Plan:` that exists, relative to the spec or to the repo root. Null otherwise.
+function namedPlan(root, rel, text) {
+  const zone = String(text || '').split(/\r?\n/).slice(0, 20).join(' ');
+  const m = /(?:^|[^a-z])plan\s*\**\s*:([\s\S]{0,240})/i.exec(zone);
+  if (!m) return null;
+  for (const p of m[1].match(/[\w./-]+\.md\b/g) || []) {
+    for (const c of [path.posix.normalize(path.posix.join(path.posix.dirname(rel), p)), path.posix.normalize(p)]) {
+      if (!c.startsWith('..') && c !== rel && isFile(path.join(root, c))) return c;
+    }
+  }
+  return null;
 }
 function findSpecs(root) {
   const out = [];
@@ -254,7 +268,10 @@ function collectSignals(repoRoot, opts) {
   // Per-cycle layout: a folder cycle takes its plan and task list from its folder, with no fallback to the global
   // pair; a flat spec, and the "no active cycle" case, keep tasks/plan.md and tasks/todo.md.
   const GLOBAL = { plan: 'tasks/plan.md', todo: 'tasks/todo.md' };
-  const pairOf = rel => folders.has(rel) ? { plan: folders.get(rel).plan, todo: folders.get(rel).todo } : GLOBAL;
+  // A flat spec that names its plan file in the header takes that file as plan and task list (issue #26).
+  const named = new Map(cycleFiles.filter(f => !folders.has(f.rel)).map(f => [f.rel, namedPlan(abs, f.rel, f.text)]).filter(([, p]) => p));
+  const pairOf = rel => folders.has(rel) ? { plan: folders.get(rel).plan, todo: folders.get(rel).todo }
+    : named.has(rel) ? { plan: named.get(rel), todo: named.get(rel) } : GLOBAL;
   const planPaths = [...new Set([GLOBAL.plan, ...cycleFiles.map(f => pairOf(f.rel).plan)])].filter(p => fs.existsSync(path.join(abs, p)));
   // Every file of a folder cycle counts toward its last activity; a flat spec counts alone (ADR 0006).
   const filesOf = rel => { const c = folders.get(rel); return c ? [...new Set([rel, c.map, ...c.modules, c.plan, c.todo])].filter(p => p && fs.existsSync(path.join(abs, p))) : [rel]; };
@@ -290,6 +307,14 @@ function collectSignals(repoRoot, opts) {
   const planText = plan.exists ? readText(path.join(abs, plan.path)) : null;
   const todoText = todo.exists ? readText(path.join(abs, todo.path)) : null;
   const stages = { list: parseStages(planText), tasksStage: stageOfTasks(todoText) };
+  // Modules of the active map cycle: their own header, last activity and the tasks of the plan sections that name
+  // them (null: no section does). lib/infer.js picks the one the work is about (issue #26).
+  const activeCycle = active && folders.get(active.path);
+  const activeModules = (activeCycle ? activeCycle.modules : []).map(rel => {
+    const text = readText(path.join(abs, rel));
+    return { path: rel, header: parseHeader(text), hasHeader: hasHeaderLine(text), lastActivity: lastActivityOf([rel]),
+      todo: planText === null ? null : sectionTasks(planText, rel.split('/').pop(), (String(text || '').split(/\r?\n/).find(l => /^#\s/.test(l)) || '')) };
+  });
   const clText = readText(path.join(abs, 'CHANGELOG.md'));
   const changelog = { exists: clText !== null, path: 'CHANGELOG.md', hasPublishedVersion: clText !== null && PUBLISHED.test(clText) };
   const testRunner = detectTestRunner(abs);
@@ -298,7 +323,7 @@ function collectSignals(repoRoot, opts) {
   const inProduction = !!(gitInfo.lastSemverTag && (changelog.hasPublishedVersion || rw.exists));
   const architecture = findArchitecture(abs);
   return {
-    root, now, specs, modules, orphanSpecs, activity, plan, todo, stages, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
+    root, now, specs, modules, activeModules, orphanSpecs, activity, plan, todo, stages, constitution: findConstitution(abs), architecture, hygiene: findHygiene(abs, architecture), adr: findAdrs(abs), git: gitInfo, changelog,
     releaseWorkflow: rw, sourceFiles: countSourceFiles(abs),
     testRunner, tests, inProduction, notes,
   };

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const assert = require('assert');
-const { countTasks, firstOpen, withoutEvidence } = require('./todo');
+const { countTasks, firstOpen, withoutEvidence, sectionTasks } = require('./todo');
 let passed = 0, failed = 0;
 function check(label, fn) { try { fn(); console.log('  ok   ' + label); passed++; } catch (e) { console.log('  FAIL ' + label + '\n       ' + e.message); failed++; } }
 console.log('countTasks');
@@ -42,5 +42,17 @@ check('a blank open checkbox does not hide the next real task (review #7)', () =
   assert.strictEqual(firstOpen('- [ ]\n'), null);
 });
 check('empty and non-string => []', () => { assert.deepStrictEqual(withoutEvidence(''), []); assert.deepStrictEqual(withoutEvidence(null), []); });
+check('sectionTasks: only the sections that name the module file (issue #26)', () => {
+  const plan = '# Plan\n- [ ] top\n## C. CI ([spec](SPEC-ci.md))\n- [x] c1\n### T2 sub\n- [ ] c2\n## D. Panel\n- [ ] d1\n## G. More for `spec-ci.md`\n- [ ] g1\n';
+  assert.deepStrictEqual(sectionTasks(plan, 'SPEC-ci.md'), { open: 2, done: 1, total: 3, next: 'c2' });
+  assert.strictEqual(sectionTasks(plan, 'SPEC-panel.md'), null);
+  assert.strictEqual(sectionTasks('', 'SPEC-ci.md'), null);
+});
+check('sectionTasks: a heading that carries the module title also counts (dopamina H section)', () => {
+  const plan = '# Plan\n## H. Usabilidad, segunda vuelta (2.9, [informe](x.md))\n- [x] t6\n- [x] t7\n## I. Usabilidad, tercera tanda\n- [ ] t3\n';
+  assert.deepStrictEqual(sectionTasks(plan, 'SPEC-usabilidad-pasos.md', 'Spec: usabilidad, segunda vuelta (pasos por tarea)'), { open: 0, done: 2, total: 2, next: null });
+  assert.strictEqual(sectionTasks(plan, 'SPEC-u.md', '# Spec: Usabilidad'), null, 'a one-word title never matches');
+  assert.strictEqual(sectionTasks('## Notes\nusabilidad, segunda vuelta in the body\n- [ ] x\n', 'SPEC-u.md', 'Usabilidad, segunda vuelta'), null, 'only headings match the title');
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
