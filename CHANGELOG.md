@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.0] - 2026-11-09
+
+- feat(sdlc): read real-world headers, route the module at work, brake unplanned implementation [minor]
+- Merge pull request #25 from PapiScholz/close-proportional-cycles [skip release]
+- docs: close the proportional-cycles cycle (v0.14.0)
+
 ## [0.14.0] - 2026-11-07
 
 - Merge pull request #24 from PapiScholz/proportional-cycles
