@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.16.0] - 2026-11-11
+
+- Merge pull request #28 from PapiScholz/router-entry
+- feat(sdlc): route new topics without asking, repeat the route at the skill door [minor]
+
 ## [0.15.0] - 2026-11-09
 
 - feat(sdlc): read real-world headers, route the module at work, brake unplanned implementation [minor]
