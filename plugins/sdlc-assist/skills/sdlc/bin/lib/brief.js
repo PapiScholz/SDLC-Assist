@@ -23,10 +23,15 @@ function age(now, date) {
   const days = Math.floor(Math.max(0, now - date) / 86400);
   return days === 0 ? ' (today)' : days === 1 ? ' (1 day ago)' : ` (${days} days ago)`;
 }
+// A new topic while a cycle is active: the line carries the route, not a question, and asks for the size to be said
+// before the first edit, since on a side request the agent sees only this line (issue #27, ADR 0010).
+const NEW_TOPIC = 'new topic: say its size before the first edit, then proceed (small: do it apart; medium: new feature.md; large: new spec.md; same subject: fold in)';
 // A request to build something while the routed work has no approved spec or plan (step 2 or 3): the line states
-// it as a fact, and SKILL.md has the agent ask whether to plan first (issue #26, ADR 0009).
+// it as a fact; SKILL.md step 4 has the agent ask whether to plan first, or plan and wait on Sonnet or Haiku
+// (issue #26, ADR 0009, ADR 0010).
 const UNPLANNED = 'this request asks to implement and the work has no approved plan: the developer decides whether to plan first';
 function unplanned(r) { return !!(r.request && r.request.type === 'feature' && ['analysis', 'planning'].includes(r.inferred)); }
+function hasNewCycle(r) { return (r.alternatives || []).some(a => a.kind === 'new-cycle'); }
 // The line names the cycle it talks about. With low confidence it gives no step and no next action: only why the
 // pick is in doubt and where to look (SKILL.md, Protocol).
 function briefLine(r) {
@@ -36,13 +41,14 @@ function briefLine(r) {
   const conf = r.confidence;
   if (conf && conf.level === 'low' && conf.reasons.length) {
     parts.push('not sure this is the current work: ' + safe(conf.reasons[0].detail, 160), 'run /sdlc for the detail');
+    if (hasNewCycle(r)) parts.push(NEW_TOPIC);
     return 'sdlc: ' + parts.join(' · ');
   }
   if (r.stage) parts.push(`stage ${r.stage.number} "${safe(String(r.stage.name).replace(/"/g, "'"), 60)}" (${r.stage.closed}/${r.stage.total} closed)`);
   parts.push(`step ${r.step.number}/4 ${r.step.name}${r.step.detail ? ' (' + r.step.detail + ')' : ''}`);
   parts.push('next: ' + safe(nextAction(r), 160));
   if (unplanned(r)) parts.push(UNPLANNED);
-  if ((r.alternatives || []).some(a => a.kind === 'new-cycle')) parts.push('this request may be a new topic: ask whether to keep it apart');
+  if (hasNewCycle(r)) parts.push(NEW_TOPIC);
   if ((r.warnings || []).length) parts.push('note: ' + safe(r.warnings[0], 120));
   return 'sdlc: ' + parts.join(' · ');
 }

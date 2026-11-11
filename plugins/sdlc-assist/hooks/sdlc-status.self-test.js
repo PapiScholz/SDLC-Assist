@@ -118,5 +118,35 @@ check('feature cycle in development: the line names the first open task', () => 
   const r = run(JSON.stringify({ cwd: root, prompt: 'seguimos' }));
   assert.match(r.stdout, /^sdlc: cycle 2026-11-07-export \(today\) · step 4\/4 implement \(build\) · next: T2 write the CSV$/m);
 });
+// Issue #27: PreToolUse on the Skill tool re-states the status when a family skill loads, once per session.
+const skillStates = [];
+function skillSid() { const s = 'selftest27-' + process.pid + '-' + Date.now() + '-' + skillStates.length; skillStates.push(path.join(os.tmpdir(), 'sdlc-assist-status', s + '.skill')); return s; }
+process.on('exit', () => { for (const f of skillStates) try { fs.rmSync(f, { force: true }); } catch {} });
+function pre(root, skill, sid) { return run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill }, cwd: root, session_id: sid })); }
+check('issue #27: family skill in a cycle prints one PreToolUse JSON line starting with sdlc:, once per session', () => {
+  const root = stagedRepo(); const sid = skillSid();
+  const a = pre(root, 'planning-and-task-breakdown', sid); const b = pre(root, 'planning-and-task-breakdown', sid);
+  assert.strictEqual(a.status, 0); assert.strictEqual(a.stdout.trim().split('\n').length, 1);
+  const o = JSON.parse(a.stdout);
+  assert.strictEqual(o.hookSpecificOutput.hookEventName, 'PreToolUse'); assert.match(o.hookSpecificOutput.additionalContext, /^sdlc: /);
+  assert.deepStrictEqual([b.stdout, b.status], ['', 0]);
+  assert.ok(!/permissionDecision/.test(a.stdout));
+});
+check('issue #27: the sdlc-assist: prefix is stripped', () => {
+  const r = pre(stagedRepo(), 'sdlc-assist:spec-driven-development', skillSid());
+  assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /^sdlc: /);
+});
+check('issue #27: sdlc and non-family skills print nothing', () => {
+  const root = stagedRepo();
+  for (const s of ['sdlc', 'sdlc-assist:sdlc', 'brainstorming', 'superpowers:test-driven-development']) { const r = pre(root, s, skillSid()); assert.deepStrictEqual([r.stdout, r.status], ['', 0]); }
+});
+check('issue #27: PreToolUse with malformed stdin, no skill, or no repo prints nothing, exit 0', () => {
+  const a = run('not json'); const b = run(JSON.stringify({ hook_event_name: 'PreToolUse', cwd: stagedRepo() })); const c = pre(tmpDir(), 'sdlc-release', skillSid());
+  assert.deepStrictEqual([a.stdout, b.stdout, c.stdout, a.status, b.status, c.status], ['', '', '', 0, 0, 0]);
+});
+check('issue #27: without a session_id the line prints every time', () => {
+  const root = stagedRepo();
+  assert.match(pre(root, 'sdlc-qa-gate', undefined).stdout, /^\{/); assert.match(pre(root, 'sdlc-qa-gate', undefined).stdout, /^\{/);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

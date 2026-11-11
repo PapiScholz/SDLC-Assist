@@ -67,7 +67,7 @@ flowchart LR
 flowchart TD
     S([Work request]) --> W["Run where.js<br/>read-only: spec headers, plan and tasks,<br/>constitution, ADRs, architecture, hygiene, git"]
     W --> I["Inferred phase<br/>+ evidence + warnings"]
-    I --> Q["Say where the work is in one sentence<br/>stage and step; ask only for a new topic"]
+    I --> Q["Say where the work is in one sentence<br/>stage and step; a new topic is sized<br/>and announced, never asked"]
     Q --> K["Run which.js<br/>is the phase skill installed?"]
     K -->|no| M["One line:<br/>which skill would help<br/>and how to get it"]
     K -->|yes| N
@@ -77,6 +77,7 @@ flowchart TD
 
 Rules that hold throughout:
 
+- The agent routes by itself (ADR 0010): a new topic is sized and announced; it asks only when the repository or the size cannot be inferred. Entering a family skill re-states the route once per session.
 - Warnings never block. Development without an approved spec, or deployment without testing, are said in the same sentence, in plain words.
 - Tests run only when the user asks in the current turn; otherwise the evidence says `tests not run`.
 - The skill writes only spec files created through the SDD flow, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`. It never runs a state-changing git command and never releases on its own.

@@ -1977,3 +1977,194 @@ sdlc: cycle 04-fase2-vender (today) · module SPEC-usabilidad-pasos.md · step 4
 ```
 
 Almacen still asks which cycle is current: `2026-11-03-pago-desde-app` and `2026-11-02-actualizacion-obligatoria` are both approved with open tasks and touched within a day. Sr-Lievito the same with its two avance cycles. Both are real ambiguity, not misreads.
+
+### Close of read-real-headers-and-plan-brake (2026-11-11)
+
+v0.15.0 published by the release workflow (2026-11-09T22:00:50Z). `sdlc close` on `docs/specs/2026-11-09-read-real-headers-and-plan-brake/feature.md`: confirmed phase deployment (header said development; the skipped closes write the confirmed row).
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-evidence.js --root .
+check-evidence: 1 task lists, 11 done tasks, 0 without evidence
+exit=0
+```
+
+## 2026-11-11 — router entry and autonomous topics (issue #27)
+
+### Task 1: probe of a `PreToolUse` `Skill` hook
+
+Scratch repository in the session scratchpad (`git init`), a project skill `probe-skill`, and `.claude/settings.json` with a `PreToolUse` hook, matcher `Skill`, whose script appends stdin to `payload.jsonl` and prints `{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"PROBE-CTX-7319"}}` with no `permissionDecision`.
+
+```
+$ claude -p "Invoke the probe-skill skill using the Skill tool. Then answer: list verbatim every string beginning with PROBE- that appeared anywhere in your context, including hook or system messages, and say where each appeared." --allowedTools Skill
+[trimmed: four warnings about the user's own permission rules]
+PROBE-SKILL-LOADED.
+
+Encontré dos strings que empiezan con `PROBE-`:
+
+1. **`PROBE-SKILL-LOADED`**: está en el contenido de la skill `probe-skill`, que se cargó cuando la invoqué. La skill pedía decir ese texto.
+2. **`PROBE-CTX-7319`**: lo inyectó el hook `PreToolUse:Skill` como contexto adicional (`hook additional context`), junto con el resultado de la llamada a Skill.
+[trimmed: one closing line]
+$ cat payload.jsonl   (paths shortened to <scratch> and <transcripts>; fields between cwd and hook_event_name trimmed except permission_mode)
+{"session_id":"eb7e3b29-99a2-45d1-99c8-4b867fb45153","transcript_path":"<transcripts>/eb7e3b29-99a2-45d1-99c8-4b867fb45153.jsonl","cwd":"<scratch>/probe-skill-hook",[trimmed],"permission_mode":"auto",[trimmed],"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":"probe-skill"},"tool_use_id":"toolu_016hNNLXbzLP5mMutmdz7U3v"}
+```
+
+Result: the skill name is `tool_input.skill`; `session_id` and `cwd` are present; `additionalContext` without any `permissionDecision` reaches the agent. Deliverable 3 stands.
+
+### Tasks 2, 3 and 5a: route in the line, hook at the skill door, decide and announce
+
+Red runs reported by the task agents before the code changed (trimmed):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js
+  FAIL the new-topic part sizes and proceeds: never asks
+  FAIL low confidence with a new-cycle alternative keeps the new-topic part
+16 passed, 2 failed
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js
+[trimmed: three FAIL lines]
+  FAIL issue #27: PreToolUse with malformed stdin, no skill, or no repo prints nothing, exit 0
+  FAIL issue #27: without a session_id the line prints every time
+12 passed, 5 failed
+```
+
+Green, run after all three tasks landed (trimmed to the new cases):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js
+  ok   low confidence with a new-cycle alternative keeps the new-topic part
+  ok   low confidence without a new-cycle alternative is unchanged
+18 passed, 0 failed
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js
+  ok   issue #27: family skill in a cycle prints one PreToolUse JSON line starting with sdlc:, once per session
+  ok   issue #27: the sdlc-assist: prefix is stripped
+  ok   issue #27: sdlc and non-family skills print nothing
+  ok   issue #27: PreToolUse with malformed stdin, no skill, or no repo prints nothing, exit 0
+  ok   issue #27: without a session_id the line prints every time
+17 passed, 0 failed
+$ node plugins/sdlc-assist/hooks/sdlc-status.js < p.json   (PreToolUse, tool_input.skill "sdlc-assist:spec-driven-development", cwd this checkout, fresh session_id)
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"sdlc: cycle 2026-11-11-router-entry-and-autonomous-topics (today) · step 4/4 implement (build) · next: 2 `brief.js`: new-topic text carries the route, low confidence keeps the marker; self-tests first"}}
+exit=0
+$ node plugins/sdlc-assist/hooks/sdlc-status.js < p.json   (same session)
+exit=0
+$ bash scripts/gates.sh
+[trimmed: 30 ok lines]
+all gates ok
+```
+
+`SKILL.md` after step 5 was rewritten: 109 lines, 2568 words (2569 at v0.15.0).
+
+### Task 4: Size rule eval (spec Decision 8)
+
+24 real requests were collected from the owner's transcripts (Almacén and this repository); 12 were dropped as not sizeable (continuations of an approved plan, investigate-only, config outside the repo). The owner labeled the other 12 in batches of 4 without a suggested answer. Two fresh agents (Opus, one per repository), given only `sdlc/SKILL.md` and read access to the repository at each request's commit through `git ls-tree`/`git grep`/`git show`, sized them blind. Below the plan's floor of 15 requests; recorded as is.
+
+| id | request (first 70 chars) | owner | agent | | agent reason (trimmed to 150) |
+|---|---|---|---|---|---|
+| A1 | Hacé el botón de Admin «Esta PC reemplaza a la anterior» que reclama l | medium | large | larger | Large (needs clarifying + public contract): nothing at 8473e50f models a node owning locales or reassigning them (only cloud link with `cloud_local_ta |
+| A2 | Para Calsa, Centeno y los otros sin plazo, poneles 30 días en la nómin | medium | large | larger | Large (requirement needs clarifying): neither 'Calsa'/'Centeno' nor any 'nómina' with payment terms exists at e0a00f8f (Supplier has no plazo field, g |
+| A4 | leé docs/auditorias/fudo_modulos_almacen.md y arranquemos Mesas genera | large | large | same | Large (developer asks for the spec of a new module, open architectural decisions): Mesas is only a `comingSoon: true` entry in src/lib/module-definiti |
+| A6 | A ver, papi, me está molestando mucho el desorden que está generando.  | small | small | same | Small (unambiguous, self-contained, no dependency or contract, resumable from git diff): docs/arquitectura/decisiones does not exist in the 92407647 t |
+| A10 | Quiero cambios en el mockup de la etiqueta es demasiado grande, una nu | small | small | same | Small (unambiguous visual change confined to a mockup, no dependency or contract, resumable from git diff): the only committed mockup at 50160cb7 is d |
+| A11 | Usá un subdominio para mandar (sin tocar el _dmarc de nandi.com.ar). D | medium | medium | same | Medium (decided and understood but several steps beyond the diff): the approved spec docs/specs/2026-10-24-mail-invitacion-franquicias/spec.md fixes ` |
+| A12 | Sí: que ARCA lea el CUIT de Organización, sacá el aviso y que el PUT f | large | medium | SMALLER | Medium (decision given with 'Sí', several steps, changes a contract so not small): PUT /api/fiscal/config destructures cuit/razonSocial/domicilioFisca |
+| A13 | Corregí en docs/arca-cliente-propio.md lo de las dependencias de fast- | small | small | same | Small (unambiguous, doc-only, no dependency or contract, resumable from git diff): docs/arca-cliente-propio.md line 63 says '`fast-xml-parser` 5.x, si |
+| A14 | Las laptops de Lievito desde la casa sólo miran, no cobran. | large | large | same | Large (requirement needs clarifying): at 917b9e66 the remote device already refuses charging (`remoteNoOperations` in src/lib/api-error-message.ts, en |
+| S2 | hagamos lo de que la gente encuentre el skill | medium | large | larger | Requirement needs clarifying: "lo de que la gente encuentre el skill" points at an unstated earlier topic, and at 401e2d2 docs/distribution.md already |
+| S3 | ok, ahora genera un diagrama mermaid que explique el flujo del skill y | medium | small | SMALLER | Unambiguous and self-contained with contained risk: at c8fd164 the flow it must depict is fully described in skills/sdlc/SKILL.md and the README Usage |
+| S4 | agregá la sección Security y Contributing (siguiendo los estandares de | medium | medium | same | Authorized and understood (at 70fdce3 README has no Security or Contributing section and no SECURITY.md/CONTRIBUTING.md exist) with no architectural d |
+
+same 7/12, larger 3, smaller 2
+
+Result: FAIL. Two requests sized smaller than the owner's label (A12 large to medium, S3 medium to small); the eval required zero. Per Decision 8 the plan brake keeps asking on Opus and Fable. Decision 9 (Sonnet and Haiku always plan and wait for approval) does not depend on this eval.
+
+### Task 5b and 7a: plan brake by model, Almacén replay
+
+Task 5b: the eval failed, so on Opus and Fable step 4 still asks; spec Decision 9 went into step 4 (Sonnet, Haiku or smaller: plan every change, small included, and wait for approval). `SKILL.md` 109 lines, 2567 words (2569 at v0.15.0).
+
+Replay, three runs, each in fresh scratch repositories: `almacen/` holds an open cycle `docs/specs/2026-11-10-clientes-al-debito/spec.md` (analysis, draft) and `src/billing.js`; `worker/worker.js` holds `export const PLANS = ["monthly", "annual"];`. Nothing committed (the owner's git guard blocks commits in scratch repos; the router reads untracked specs). The plugin loads from this checkout and the installed one does not:
+
+```
+$ P="--plugin-dir <checkout>/plugins/sdlc-assist --setting-sources project,local --allowedTools Skill,Read,Glob,Grep,Write,Edit --add-dir <scratch>/worker"
+$ claude -p "Usá la skill spec-driven-development para sumar exportación CSV de clientes." $P
+$ claude -p -c "agregá en el Worker que no se ofrezca el plan anual (está en <scratch>/worker/worker.js)" $P
+```
+
+Run 1, first prompt (final text, trimmed):
+
+```
+Escribí el borrador del spec para la exportación CSV de clientes en `docs/specs/2026-11-11-exportacion-csv-clientes/spec.md`. [trimmed]
+**Ojo: ya hay otro ciclo abierto.** El spec `2026-11-10-clientes-al-debito` sigue en borrador y está en el mismo paso de spec. Lo dejé intacto y armé el de la exportación como un ciclo aparte, porque son features independientes. [trimmed]
+```
+
+The transcript holds the Skill-door hook firing (attachment, trimmed):
+
+```
+{"type": "hook_success", "hookName": "PreToolUse:Skill", "hookEvent": "PreToolUse", "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"sdlc: cycle 2026-11-10-clientes-al-debito (today) [trimmed]
+```
+
+and, on the side request, the low-confidence line keeping the new-topic part:
+
+```
+sdlc: cycle 2026-11-11-exportacion-csv-clientes (today) · not sure this is the current work: 2026-11-10-clientes-al-debito is also open and was touched within a day of 2026-11-11-exportacion-csv-clientes · run /sdlc for the detail · new topic: size it and proceed, announcing the size (small: do it apart; medium: new feature.md; large: new spec.md; same subject: fold in)
+```
+
+Order of the agent's events after the side request (parsed from the transcript JSONL):
+
+```
+run 1: TOOL Read, TOOL Bash, TOOL Edit, TEXT "El Worker ya no ofrece el plan anual [trimmed] Lo hice directo, sin spec, porque es un cambio de una línea en otro repo."
+run 2 (step 5 says "before the first edit"): TOOL Read, TOOL Grep, TOOL Edit, TOOL Bash, TEXT "[trimmed] Es un cambio chico, así que lo hice sin spec y sin abrir ciclo nuevo"
+run 3 (the hook line says it): TOOL Read, TEXT "Es un cambio chico en otro repo (el Worker), así que lo hago aparte: no toca los ciclos abiertos de `almacen`. Antes de editar, busco si algo más usa `annual`.", TOOL Grep, TOOL Edit, TOOL Bash, TEXT [trimmed]
+```
+
+Runs 1 and 2 decided right but announced after the edit: on a side request the agent never opens `SKILL.md`, so only the hook line reaches it. The new-topic text became `new topic: say its size before the first edit, then proceed (small: do it apart; medium: new feature.md; large: new spec.md; same subject: fold in)` (147 characters), test first:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js   (test changed, code not yet)
+16 passed, 2 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/brief.self-test.js   (code changed)
+18 passed, 0 failed
+```
+
+Run 3 announced the size and the route before the first edit, asked nothing, and the session was never stopped.
+
+Found on the way, out of scope: the request classifier gives no `new-cycle` for "quitá el plan anual del Worker", "eliminá el plan anual del Worker" or "el Worker ofrece el plan anual y no debería, arreglalo"; only "agregá en el Worker que no se ofrezca el plan anual" triggered it (ROADMAP classifier item).
+
+### Task 7c: classifier gap from the replay (Decision 11)
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/keywords.self-test.js   (cases added, lists not yet)
+  FAIL "quitá el plan anual del Worker" -> feature
+  FAIL "eliminá el plan anual del Worker" -> feature
+  FAIL "sacá el aviso de CUIT" -> feature
+  FAIL "cambiá el remitente en el Worker" -> feature
+  FAIL "el Worker ofrece el plan anual y no debería, arreglalo" -> bug
+  FAIL "corregí el total del ticket" -> bug
+38 passed, 6 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/keywords.self-test.js   (lists extended)
+44 passed, 0 failed
+$ echo '{"hook_event_name":"UserPromptSubmit","prompt":"<m>","cwd":"<scratch>/replay3/almacen"}' | node plugins/sdlc-assist/hooks/sdlc-status.js | grep -o "new topic: say its size"
+quitá el plan anual del Worker => new topic: say its size
+el Worker ofrece el plan anual y no debería, arreglalo => new topic: say its size
+```
+
+"¿qué cambia con esto?" stays `unknown` (the `cambia` entries need an article after them).
+
+### Pre-publish review (code-review-and-quality)
+
+Required, fixed: README described only the `UserPromptSubmit` hook; the Spanish feature list had imperatives without their infinitives (`quitar`, `sacar`, `eliminar`, `borrar`, `cambiar`, `reemplazar`), unlike `agregar`/`arreglar`; in `brief.js` the comment about the plan brake sat above `NEW_TOPIC`. Nit, fixed: ADR 0010 quoted the earlier new-topic wording. FYI, not changed: the per-session state files in the OS temp dir are never pruned (same as the existing `.txt` ones).
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/keywords.self-test.js   (infinitive cases added, lists not yet)
+  FAIL "hay que quitar el plan anual" -> feature
+  FAIL "hay que sacar el aviso" -> feature
+  FAIL "hay que eliminar la columna" -> feature
+  FAIL "hay que borrar el banner" -> feature
+  FAIL "hay que cambiar el remitente" -> feature
+  FAIL "hay que reemplazar el logo" -> feature
+45 passed, 6 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/keywords.self-test.js
+51 passed, 0 failed
+$ bash scripts/gates.sh
+[trimmed: ok lines]
+all gates ok
+```
+
+"el borrador del spec" stays `unknown` (`borra` needs a word boundary after it).

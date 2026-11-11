@@ -18,7 +18,14 @@ const cases = [
   ['la API devuelve 500 desde ayer en producción', 'bug'], ['soporte para 500 usuarios', 'feature'],
   ['implementemos las propuestas de SPEC-usabilidad-pasos', 'feature'], ['implementá el módulo de balanzas', 'feature'],
   ['implementa esto', 'feature'], ['implementalo', 'feature'], ['implementen el plan', 'feature'],
-  ['arrancá la implementación del panel', 'feature'], ['implementarlo hoy', 'feature'],
+  ['arrancá la implementación del panel', 'feature'], ['implementarlo hoy', 'feature'],  // issue #27 replay: voseo imperatives for removals and fixes gave no type, so no new-topic hint
+  ['quitá el plan anual del Worker', 'feature'], ['eliminá el plan anual del Worker', 'feature'],
+  ['sacá el aviso de CUIT', 'feature'], ['cambiá el remitente en el Worker', 'feature'],
+  ['el Worker ofrece el plan anual y no debería, arreglalo', 'bug'], ['corregí el total del ticket', 'bug'],
+  ['¿qué cambia con esto?', 'unknown'],
+  ['hay que quitar el plan anual', 'feature'], ['hay que sacar el aviso', 'feature'], ['hay que eliminar la columna', 'feature'],
+  ['hay que borrar el banner', 'feature'], ['hay que cambiar el remitente', 'feature'], ['hay que reemplazar el logo', 'feature'],
+  ['el borrador del spec', 'unknown'],
 ];
 for (const [msg, want] of cases) check(JSON.stringify(msg) + ' -> ' + want, () => assert.strictEqual(classifyRequest(msg), want));
 check('precedence order is fixed (complaint first)', () => assert.deepStrictEqual(PRECEDENCE, ['complaint', 'hotfix', 'bug', 'feature', 'idea']));
