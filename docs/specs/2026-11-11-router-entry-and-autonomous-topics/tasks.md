@@ -11,4 +11,4 @@ Spec: `spec.md`. Plan: `plan.md`. Branch `router-entry`, one PR, `[minor]`. A ta
 - [x] 6 ADR 0010, `docs/sdlc-flow.md`, README, `SKILL.md` size before and after — evidence: `docs/adr/0010-route-without-asking.md`; `docs/sdlc-flow.md`, README; SKILL.md 2563 words (2569 at v0.15.0)
 - [x] 7a Gates, Almacén replay in a scratch repo, records in `docs/ci-red-runs.md` — evidence: `docs/ci-red-runs.md` "Task 5b and 7a": run 3 announced before the first edit; `gates.sh` all ok
 - [x] 7c Classifier: voseo imperatives for removals and fixes (Decision 11); self-tests first — evidence: `node lib/keywords.self-test.js` 44 passed (6 new seen red)
-- [ ] 7b Commit (`[minor]`), push and PR with the owner's verb
+- [x] 7b Commit (`[minor]`), push and PR with the owner's verb — evidence: PR #28 merged (767e065), v0.16.0 released 2026-11-11, plugin 0.16.0 installed

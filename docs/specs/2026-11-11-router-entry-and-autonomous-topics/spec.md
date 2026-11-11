@@ -1,7 +1,7 @@
 # Spec: router as the only entry, autonomous routing of new topics (issue #27)
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-11-11
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.15.0)

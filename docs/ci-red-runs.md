@@ -2168,3 +2168,23 @@ all gates ok
 ```
 
 "el borrador del spec" stays `unknown` (`borra` needs a word boundary after it).
+
+### Delivery and close (2026-11-11)
+
+PR #28 merged (`767e065`) after CI passed on all four jobs; the release workflow published v0.16.0 (`baced56`). Installed copy compared with the repository:
+
+```
+$ claude plugin update sdlc-assist@papischolz
+✔ Plugin "sdlc-assist" updated from 0.15.0 to 0.16.0 for scope user. Restart to apply changes.
+$ grep -c '"PreToolUse"' <cache>/0.16.0/hooks/hooks.json
+1
+$ diff -rq <cache>/0.16.0/skills plugins/sdlc-assist/skills
+(no output)
+```
+
+`sdlc close` on `docs/specs/2026-11-11-router-entry-and-autonomous-topics/spec.md`: confirmed phase deployment (header said development; the skipped closes write the confirmed row).
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-evidence.js --root .
+check-evidence: 1 task lists, 9 done tasks, 0 without evidence
+```
