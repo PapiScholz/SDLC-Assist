@@ -8,6 +8,8 @@ description: Localises the cause of a bug or complaint before the short spec is 
 
 ## Overview
 
+Route first: when the sdlc router has not run in this context (the `sdlc` skill or its `where.js`), run it and follow its route before anything below. The `sdlc:` status line alone does not count.
+
 A bug enters Requirements analysis with a symptom. This skill turns the symptom into a cause with evidence, then hands the cause to the short spec. It writes no product code: the fix belongs to Development. Reply in the user's language.
 
 Inputs: the request card (`Who asks`, `What happens`, `Expected`, `Where`, `Urgency`) and the `where.js` output of the `sdlc` skill. When you need stack facts (test command, recent commits), run `where.js` as the `sdlc` skill describes (locate `bin/` the same way) instead of detecting them yourself:

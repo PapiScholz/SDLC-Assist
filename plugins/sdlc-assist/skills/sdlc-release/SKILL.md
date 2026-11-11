@@ -8,6 +8,8 @@ description: Decides the next version from the commits since the last tag, updat
 
 ## Overview
 
+Route first: when the sdlc router has not run in this context (the `sdlc` skill or its `where.js`), run it and follow its route before anything below. The `sdlc:` status line alone does not count.
+
 Deployment produces a version decision, updated version files and changelog, a tag and a published release, in that order, stopping at the first failure. Reply in the user's language. Stack facts come from the `sdlc` skill's `where.js` (locate `bin/` as that skill describes):
 
 ```

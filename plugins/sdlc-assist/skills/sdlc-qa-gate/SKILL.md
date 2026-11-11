@@ -8,6 +8,8 @@ description: Runs every applicable verification layer (static, unit, build, runt
 
 ## Overview
 
+Route first: when the sdlc router has not run in this context (the `sdlc` skill or its `where.js`), run it and follow its route before anything below. The `sdlc:` status line alone does not count.
+
 The Testing phase ends with a table, not a verdict. This skill maps the diff, runs every layer that applies, lists every layer that did not run with its reason, and ends with the next step. Reply in the user's language.
 
 Stack facts come from the `sdlc` skill's `where.js` (locate `bin/` as that skill describes; never re-implement detection):

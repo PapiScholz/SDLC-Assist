@@ -34,7 +34,7 @@ How it sits next to the tools you may already have:
 
 The router does not replace any of these. It reads the repo, says where the work is, and hands off to whichever of them you have installed.
 
-In the usual taxonomy of spec-driven development (spec-first: the spec is written before the code and may rot afterwards; spec-anchored: the spec is kept and updated to steer the code; spec-as-source: only the spec is edited and the code is generated from it), this router is **spec-anchored**: the spec stays the record of decisions, its `Phase:`/`Status:` header advances through close mode, and every behavior change starts in it, while the code is still written by people and agents. What it adds over a spec-first toolkit is that it infers which step you are on from what the repository already contains, and asks, instead of assuming you know.
+In the usual taxonomy of spec-driven development (spec-first: the spec is written before the code and may rot afterwards; spec-anchored: the spec is kept and updated to steer the code; spec-as-source: only the spec is edited and the code is generated from it), this router is **spec-anchored**: the spec stays the record of decisions, its `Phase:`/`Status:` header advances through close mode, and every behavior change starts in it, while the code is still written by people and agents. What it adds over a spec-first toolkit is that it infers which step you are on from what the repository already contains and says where it goes next, instead of assuming you know.
 
 | Slug | Phase | Recommended skill |
 |---|---|---|
@@ -101,7 +101,7 @@ A cycle is one spec file whose header carries the phase: `docs/specs/<date>-<slu
 
 The developer's workflow has four steps: (1) state the situation, (2) the agent writes the spec and the developer approves it, (3) the agent writes the plan and the developer approves it, (4) implement, test and ship. The paperwork is proportional to the work: small work (resumable from the request plus `git diff`) goes straight to step 4; medium work writes one `docs/specs/<date>-<slug>/feature.md` with specs and tasks together and one approval; large or ambiguous work runs all four steps. A large plan splits into stages; each stage repeats steps 3 and 4. The six internal phases map onto those steps (`initial` 1, `analysis` 2, `planning` 3, `development`/`testing`/`deployment` 4). The skill informs the agent; the agent tells the developer in one plain sentence, in their language, and proceeds. A question, a review or a proposal writes nothing.
 
-**Runs on its own in Claude Code.** Installing the plugin from the marketplace enables a `UserPromptSubmit` hook that adds one line (stage, step, next action) to the agent's context on every prompt inside a repository with an active cycle, and prints nothing anywhere else. Installing the skills with `npx skills add` does not install the hook; then the skill is invoked by name.
+**Runs on its own in Claude Code.** Installing the plugin from the marketplace enables a `UserPromptSubmit` hook that adds one line (stage, step, next action) to the agent's context on every prompt inside a repository with an active cycle, and repeats it once per session when the agent loads a skill of the family directly (`PreToolUse` on the `Skill` tool); it prints nothing anywhere else and never blocks a tool call. Installing the skills with `npx skills add` does not install the hook; then the skill is invoked by name.
 
 **Not for research or non-code tasks.** It acts only on work about a code repository with specs.
 

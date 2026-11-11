@@ -1,8 +1,11 @@
 {
-  "description": "sdlc-assist: adds a one-line work status (stage, step, next action) to the agent's context inside a repository with an active cycle; silent everywhere else.",
+  "description": "sdlc-assist: adds a one-line work status (stage, step, next action) to the agent's context inside a repository with an active cycle, on each prompt and once when an sdlc-assist skill loads; silent everywhere else.",
   "hooks": {
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/sdlc-status.js\"", "timeout": 5 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Skill", "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/sdlc-status.js\"", "timeout": 5 } ] }
     ]
   }
 }

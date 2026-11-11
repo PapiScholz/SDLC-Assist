@@ -22,6 +22,21 @@ check('analysis names the spec to finish; the first warning is appended', () => 
 check('a new-cycle alternative adds the new-topic note', () => {
   assert.ok(/new topic/.test(briefLine({ ...base, alternatives: [{ phase: 'analysis', kind: 'new-cycle', reason: 'r' }] })));
 });
+check('the new-topic part sizes and proceeds: never asks', () => {
+  const l = briefLine({ ...base, alternatives: [{ phase: 'analysis', kind: 'new-cycle', reason: 'r' }] });
+  assert.ok(/new topic: say its size before the first edit, then proceed \(small: do it apart; medium: new feature\.md; large: new spec\.md; same subject: fold in\)/.test(l));
+  assert.ok(!/\bask\b/.test(l));
+});
+const lowConf = { level: 'low', reasons: [{ kind: 'orphan', detail: 'newer spec outside docs/specs/: docs/spec-new.md' }] };
+check('low confidence with a new-cycle alternative keeps the new-topic part', () => {
+  const l = briefLine({ ...base, confidence: lowConf, alternatives: [{ phase: 'analysis', kind: 'new-cycle', reason: 'r' }] });
+  assert.ok(/not sure this is the current work/.test(l) && /new topic: say its size before the first edit/.test(l));
+  assert.ok(!/\bask\b/.test(l));
+});
+check('low confidence without a new-cycle alternative is unchanged', () => {
+  assert.strictEqual(briefLine({ ...base, confidence: lowConf, alternatives: [{ phase: 'x', kind: 'other', reason: 'r' }] }),
+    'sdlc: cycle x · not sure this is the current work: newer spec outside docs/specs/: docs/spec-new.md · run /sdlc for the detail');
+});
 console.log('briefLine: module and unplanned implement requests (issue #26)');
 check('a picked module is named; planning tells which module has no plan section', () => {
   assert.strictEqual(briefLine({ ...base, stage: null, module: { path: 'docs/specs/x/SPEC-pasos.md', reason: 'named in the request' } }),
