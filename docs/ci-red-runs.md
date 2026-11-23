@@ -2289,3 +2289,16 @@ git spawns: 2, 199 ms
 git spawns: 2, 146 ms
 git spawns: 2, 146 ms
 ```
+
+### Delivery and close (2026-11-23)
+
+PR #32 merged (`ddb8b45`) after CI passed on all four jobs (`test` on ubuntu-latest and windows-latest, `install-smoke`, `plugin-validate`). The release workflow published v0.16.1 (`4c6eb23`).
+
+```
+$ git describe --tags --abbrev=0 origin/main
+v0.16.1
+$ gh release list --limit 1
+v0.16.1	Latest	v0.16.1	2026-11-23T21:41:26Z
+```
+
+The installed plugin was not updated in this session: the copy in the cache is still 0.16.0. `sdlc close` on `docs/specs/2026-11-23-status-hook-latency/feature.md` used the confirmed phase, deployment; the header said development, so the skipped closes write the confirmed row.
