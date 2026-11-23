@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1] - 2026-11-23
+
+- Merge pull request #32 from PapiScholz/fix/status-hook-latency
+- fix(sdlc): bound and cache the status hook's git queries (#31)
+- Merge pull request #29 from PapiScholz/close-router-entry [skip release]
+- docs: close the router-entry cycle (v0.16.0)
+
 ## [0.16.0] - 2026-11-11
 
 - Merge pull request #28 from PapiScholz/router-entry
