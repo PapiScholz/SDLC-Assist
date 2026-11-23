@@ -506,5 +506,93 @@ check('flat spec is kind spec', () => {
   const root = tmpDir(); write(root, 'docs/specs/a.md', '# A\nPhase: analysis\nStatus: draft\n');
   assert.strictEqual(collectSignals(root, { runTests: false }).specs[0].kind, 'spec');
 });
+// Issue #31: the hook passes a deadline and a git cache; where.js passes neither.
+console.log('hook budget: deadline and git cache (issue #31)');
+const { gitSpawns } = require('./signals');
+function cachedRepo() {
+  const root = initRepo(); const d = 'docs/specs/2020-01-x';
+  write(root, d + '/spec.md', '# X\nPhase: development\nStatus: approved\n'); write(root, d + '/tasks.md', '- [ ] a\n');
+  commit(root, 'cycle', new Date().toISOString());
+  return root;
+}
+const cacheOpts = root => ({ runTests: false, deadlineMs: 10000, gitCache: { gitDir: path.join(root, '.git'), commonDir: path.join(root, '.git') } });
+check('S1: an already spent deadline launches no git and reports gitTimedOut', () => {
+  const root = cachedRepo(); const before = gitSpawns();
+  const s = collectSignals(root, { runTests: false, deadlineMs: 0 });
+  assert.strictEqual(gitSpawns() - before, 0); assert.strictEqual(s.gitTimedOut, true);
+});
+check('S1: without a deadline (where.js) gitTimedOut is false', () => {
+  assert.strictEqual(collectSignals(cachedRepo(), { runTests: false }).gitTimedOut, false);
+});
+check('S2: second run on an unchanged repo with gitCache launches at most 1 git (status)', () => {
+  const root = cachedRepo();
+  const a = collectSignals(root, cacheOpts(root)); const before = gitSpawns();
+  const b = collectSignals(root, cacheOpts(root));
+  assert.ok(gitSpawns() - before <= 1, 'spawns: ' + (gitSpawns() - before));
+  assert.deepStrictEqual(b.git, a.git); assert.deepStrictEqual(b.specs, a.specs);
+});
+check('S2: a new tag or a new commit invalidates the cache', () => {
+  const root = cachedRepo();
+  assert.strictEqual(collectSignals(root, cacheOpts(root)).git.lastSemverTag, null);
+  run(['tag', 'v1.2.3'], root);
+  assert.strictEqual(collectSignals(root, cacheOpts(root)).git.lastSemverTag.name, 'v1.2.3');
+  write(root, 'src/a.js', 'a'); commit(root, 'more', new Date().toISOString());
+  const s = collectSignals(root, cacheOpts(root));
+  assert.strictEqual(s.git.commits[0].subject, 'more'); assert.strictEqual(s.git.commitsAfterTag, 1);
+});
+check('S2: a dirty spec is seen with a warm cache (status is never cached)', () => {
+  const root = cachedRepo(); collectSignals(root, cacheOpts(root));
+  write(root, 'docs/specs/2020-01-x/spec.md', '# X\nPhase: development\nStatus: approved\nedit\n');
+  assert.strictEqual(collectSignals(root, cacheOpts(root)).specs[0].dirty, true);
+});
+// Review of #31: the key, the state dir, a real mid-call timeout and the size cap.
+const { stateDir } = require('./signals');
+check('review 2: with the reflog off, a branch move (reset --soft) invalidates the cache', () => {
+  const root = cachedRepo(); run(['config', 'core.logAllRefUpdates', 'false'], root);
+  fs.rmSync(path.join(root, '.git', 'logs'), { recursive: true, force: true });
+  write(root, 'src/a.js', 'a'); commit(root, 'second', new Date().toISOString());
+  assert.strictEqual(collectSignals(root, cacheOpts(root)).git.commits[0].subject, 'second');
+  run(['reset', '--soft', 'HEAD~1'], root);
+  assert.strictEqual(collectSignals(root, cacheOpts(root)).git.commits[0].subject, 'cycle');
+});
+check('review 3: a gitDir that is not a git dir (old git echoes --absolute-git-dir) disables the cache', () => {
+  const root = cachedRepo(); const o = { runTests: false, gitCache: { gitDir: '--absolute-git-dir', commonDir: path.join(root, '--git-common-dir') } };
+  collectSignals(root, o); const before = gitSpawns(); collectSignals(root, o);
+  assert.ok(gitSpawns() - before > 1, 'cached with a bogus gitDir: ' + (gitSpawns() - before) + ' spawns');
+});
+// A stand-in for git (test seam `gitCommand`): answers the two rev-parse probes, then sleeps or prints a large output.
+function fakeGit(mode) {
+  const d = tmpDir();
+  write(d, 'git.js', [
+    'const a = process.argv.slice(2);',
+    "if (a.includes('--is-inside-work-tree')) { process.stdout.write('true\\n'); process.exit(0); }",
+    "if (a.includes('--show-toplevel')) { process.stdout.write(process.cwd() + '\\n'); process.exit(0); }",
+    `if (${JSON.stringify(mode)} === 'slow') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 8000);`,
+    `if (${JSON.stringify(mode)} === 'big' && a.includes('tag')) process.stdout.write('x\\n'.repeat(200000));`,
+  ].join('\n'));
+  return [process.execPath, path.join(d, 'git.js')];
+}
+check('review 4: a git query that hangs mid-call is cut at the deadline and reports gitTimedOut', () => {
+  const root = cachedRepo(); const t0 = Date.now();
+  const s = collectSignals(root, { runTests: false, deadlineMs: 800, gitCommand: fakeGit('slow') });
+  assert.strictEqual(s.gitTimedOut, true); assert.ok(Date.now() - t0 < 4000, 'took ' + (Date.now() - t0) + ' ms');
+});
+check('review 5: an output over the size cap is not cached', () => {
+  const root = cachedRepo(); const o = { ...cacheOpts(root), gitCommand: fakeGit('big') };
+  collectSignals(root, o); const before = gitSpawns(); collectSignals(root, o);
+  assert.ok(gitSpawns() - before >= 2, 'the 400 KB tag list came from the cache');
+});
+check('review 1: the state dir is per user, and on POSIX one open to others is refused', () => {
+  const user = typeof process.getuid === 'function' ? String(process.getuid()) : require('os').userInfo().username.replace(/[^\w.-]/g, '_');
+  assert.strictEqual(path.basename(stateDir()), 'sdlc-assist-status-' + user);
+  if (process.platform === 'win32') return;   // TEMP is per user on Windows and there is no uid
+  const saved = process.env.TMPDIR; process.env.TMPDIR = tmpDir();
+  try {
+    fs.mkdirSync(path.join(process.env.TMPDIR, 'sdlc-assist-status-' + user), { mode: 0o777 }); fs.chmodSync(path.join(process.env.TMPDIR, 'sdlc-assist-status-' + user), 0o777);
+    assert.throws(() => stateDir(), /not private/);
+    const root = cachedRepo(); collectSignals(root, cacheOpts(root)); const before = gitSpawns(); collectSignals(root, cacheOpts(root));
+    assert.ok(gitSpawns() - before > 1, 'cache used from a dir open to others');
+  } finally { if (saved === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = saved; }
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
