@@ -1,7 +1,7 @@
 # Feature: status hook latency and repetition (issue #31)
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-11-23
 Owner: Ezequiel Scholz
 
