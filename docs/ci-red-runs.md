@@ -2188,3 +2188,104 @@ $ diff -rq <cache>/0.16.0/skills plugins/sdlc-assist/skills
 $ node plugins/sdlc-assist/skills/sdlc/bin/check-evidence.js --root .
 check-evidence: 1 task lists, 9 done tasks, 0 without evidence
 ```
+
+## 2026-11-23 — status hook latency (issue #31), branch `fix/status-hook-latency`
+
+Measured with a preload that counts `git` child processes and prints wall time (`node -r count-spawns.js`). The input JSON comes from a file (`{"cwd":"C:\\Users\\ezesc\\Github\\SDLC-Assist","prompt":"seguimos"}`, escaped backslashes), and `TEMP`/`TMP` point to a scratch dir so the installed 0.16.0 hook's state dir is not touched. "HEAD" is the hook and lib from `git archive HEAD`.
+
+```
+== HEAD (0.16.0 code), at rest
+git spawns: 14, 609 ms
+git spawns: 14, 611 ms
+git spawns: 14, 606 ms
+== under load (16 node processes at 100%), HEAD
+git spawns: 14, 3317 ms
+git spawns: 14, 3024 ms
+== under load, branch: cold cache, then warm
+git spawns: 14, 3501 ms
+git spawns: 2, 670 ms
+git spawns: 2, 547 ms
+== branch at rest: cold, then warm
+git spawns: 14, 645 ms
+git spawns: 2, 134 ms
+git spawns: 2, 141 ms
+git spawns: 2, 144 ms
+```
+
+`where.js --message seguimos` from HEAD and from the branch, compared as JSON without `now` and `gitTimedOut`:
+
+```
+where.js: identical (sin now/gitTimedOut)
+```
+
+Tests seen red before the change (`TEMP` sandboxed):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/signals.self-test.js
+[trimmed]
+       gitSpawns is not a function
+  FAIL S1: without a deadline (where.js) gitTimedOut is false
+  FAIL S2: second run on an unchanged repo with gitCache launches at most 1 git (status)
+65 passed, 3 failed
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js
+  FAIL issue #31 S3: only the stale counters change => not repeated; a real change prints again
+       only 12 -> 13 commits changed: sdlc: cycle 2026-10-05-x (12 days ago) · not sure this is the current work: 2026-10-05-x untouched for 12 days and 13 commits · run /sdlc for the detail
+17 passed, 1 failed
+```
+
+The two invalidation tests pass without a cache, so each was seen red with an injected fault: a cache key without HEAD, index, packed-refs and refs/tags, then `status` memoized:
+
+```
+  FAIL S2: a new tag or a new commit invalidates the cache
+67 passed, 1 failed
+  FAIL S2: a dirty spec is seen with a warm cache (status is never cached)
+67 passed, 1 failed
+```
+
+After the change: `signals.self-test.js` 68 passed, 0 failed; `sdlc-status.self-test.js` 18 passed, 0 failed.
+
+Not covered by a test: the hook's `if (s.gitTimedOut) return null` branch. The lib test covers the flag (spent deadline gives `gitTimedOut: true` and 0 spawns). Covering the hook branch needs a deadline override, which the hook does not expose; add one if that branch changes.
+
+### Review fixes (2026-11-23)
+
+The `code-review-excellence` pass found five issues. Each one got a test, seen red before its fix (`TEMP` sandboxed, Windows):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/lib/signals.self-test.js
+[trimmed]
+  FAIL review 2: with the reflog off, a branch move (reset --soft) invalidates the cache
+  FAIL review 3: a gitDir that is not a git dir (old git echoes --absolute-git-dir) disables the cache
+       cached with a bogus gitDir: 1 spawns
+  FAIL review 4: a git query that hangs mid-call is cut at the deadline and reports gitTimedOut
+  FAIL review 5: an output over the size cap is not cached
+       the 400 KB tag list came from the cache
+  FAIL review 1: the state dir is per user, and on POSIX one open to others is refused
+       stateDir is not a function
+68 passed, 5 failed
+```
+
+After the fixes: 73 passed, 0 failed on Windows. In Linux (`docker run -u node node:22-bookworm`, git 2.39.5, repo mounted read-only):
+
+```
+  ok   review 1: the state dir is per user, and on POSIX one open to others is refused
+73 passed, 0 failed
+18 passed, 0 failed
+drwx------ 2 node node 4096 Nov 23 21:24 /tmp/sdlc-assist-status-1000
+```
+
+The POSIX branch of review 1 was seen red in the container, on a copy with the mode check removed:
+
+```
+  FAIL review 1: the state dir is per user, and on POSIX one open to others is refused
+       Missing expected exception.
+72 passed, 1 failed
+```
+
+Hook re-measured at rest, cold then warm:
+
+```
+git spawns: 14, 840 ms
+git spawns: 2, 199 ms
+git spawns: 2, 146 ms
+git spawns: 2, 146 ms
+```

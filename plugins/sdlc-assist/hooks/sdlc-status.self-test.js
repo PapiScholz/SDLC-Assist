@@ -109,6 +109,21 @@ check('macritex fixture without the orphan: low line with the stale reason', () 
   const r = run(JSON.stringify({ cwd: root, prompt: 'x' }));
   assert.match(r.stdout, /not sure this is the current work: 2026-10-05-x untouched for 12 days and 12 commits · run \/sdlc/);
 });
+check('issue #31 S3: only the stale counters change => not repeated; a real change prints again', () => {
+  const root = tmpDir(); git(root, ['init', '-q']); const d = 'docs/specs/2026-10-05-x';
+  write(root, d + '/spec.md', '# S\nPhase: testing\nStatus: approved\n'); write(root, d + '/tasks.md', '- [x] a\n- [ ] b\n');
+  commitAt(root, 'cycle', NOW - 12 * DAY);
+  for (let i = 0; i < 12; i++) { write(root, `src/f${i}.js`, String(i)); commitAt(root, 'src ' + i, NOW - 10 * DAY + i * 3600); }
+  const sid = 'selftest31-' + process.pid + '-' + Date.now();
+  const a = run(JSON.stringify({ cwd: root, prompt: 'x', session_id: sid }));
+  assert.match(a.stdout, /untouched for 12 days and 12 commits/);
+  write(root, 'src/late.js', 'l'); commitAt(root, 'late', NOW - 3600);
+  const b = run(JSON.stringify({ cwd: root, prompt: 'x', session_id: sid }));
+  assert.strictEqual(b.stdout, '', 'only 12 -> 13 commits changed: ' + b.stdout);
+  write(root, d + '/tasks.md', '- [x] a\n- [x] b\n'); commitAt(root, 'close b', NOW - 60);
+  const c = run(JSON.stringify({ cwd: root, prompt: 'x', session_id: sid }));
+  assert.match(c.stdout, /^sdlc: cycle 2026-10-05-x \(today\)/);
+});
 check('feature cycle in development: the line names the first open task', () => {
   const root = tmpDir(); const d = 'docs/specs/2026-11-07-export';
   write(root, d + '/feature.md', '# Feature\n\nPhase: development\nStatus: approved\n\n## Tasks\n\n- [x] T1 parse — evidence: node t.js\n- [ ] T2 write the CSV\n');
@@ -120,7 +135,7 @@ check('feature cycle in development: the line names the first open task', () => 
 });
 // Issue #27: PreToolUse on the Skill tool re-states the status when a family skill loads, once per session.
 const skillStates = [];
-function skillSid() { const s = 'selftest27-' + process.pid + '-' + Date.now() + '-' + skillStates.length; skillStates.push(path.join(os.tmpdir(), 'sdlc-assist-status', s + '.skill')); return s; }
+function skillSid() { const s = 'selftest27-' + process.pid + '-' + Date.now() + '-' + skillStates.length; skillStates.push(path.join(require('../skills/sdlc/bin/lib/signals').stateDir(), s + '.skill')); return s; }
 process.on('exit', () => { for (const f of skillStates) try { fs.rmSync(f, { force: true }); } catch {} });
 function pre(root, skill, sid) { return run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill }, cwd: root, session_id: sid })); }
 check('issue #27: family skill in a cycle prints one PreToolUse JSON line starting with sdlc:, once per session', () => {

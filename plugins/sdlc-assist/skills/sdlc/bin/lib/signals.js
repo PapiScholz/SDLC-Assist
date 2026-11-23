@@ -147,16 +147,85 @@ const { execFileSync, spawnSync } = require('child_process');
 // git inherits the process environment untouched (this code never reads it). What used to travel as
 // environment goes as flags: no pager, no optional locks. Every query is run with cwd = root.
 const GIT_OPTS = ['--no-optional-locks', '-c', 'core.pager=cat', '-c', 'core.quotepath=off', '-c', 'core.fsmonitor=false', '--literal-pathspecs'];
+// Issue #31: the hook runs under Claude Code's 5 s timeout. With `deadlineMs` each query gets a timeout bounded by the
+// remaining budget and none starts once it is spent; with `gitCache` stdout is memoized per repo between prompts,
+// keyed by the stat of the files a commit, checkout, staging or tag rewrites. `status` always runs: the working tree
+// does not move the key. Neither option is set by where.js. State lives for one collectSignals call.
+// An output over MAX_CACHED_BYTES (a long log on a monorepo) is not stored: re-reading it every prompt would cost more
+// than the spawn it saves. `gitCommand` replaces the git binary for the self-tests only (a stand-in that hangs or floods).
+const PER_CALL_MS = 1500, CACHE_TTL_MS = 10 * 60 * 1000, MAX_CACHED_BYTES = 256 * 1024;
+const run = { deadline: null, timedOut: false, cache: null, changed: false, command: ['git'] };
+let spawns = 0;
+const gitSpawns = () => spawns;
+function timeoutFor() {
+  if (run.deadline === null) return undefined;
+  const left = run.deadline - Date.now();
+  if (left <= 0) { run.timedOut = true; return 0; }
+  return Math.min(left, PER_CALL_MS);
+}
+const memoizable = args => !!run.cache && args[0] !== 'status';
+function remember(args, out) { if (memoizable(args) && out.length <= MAX_CACHED_BYTES) { run.cache.out[args.join('\0')] = out; run.changed = true; } return out; }
+function recalled(args) { return memoizable(args) && Object.prototype.hasOwnProperty.call(run.cache.out, args.join('\0')) ? run.cache.out[args.join('\0')] : undefined; }
 function git(root, args) {
-  try { return execFileSync('git', [...GIT_OPTS, ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true, maxBuffer: 64 * 1024 * 1024 }); }
-  catch { return null; }
+  const hit = recalled(args); if (hit !== undefined) return hit;
+  const timeout = timeoutFor(); if (timeout === 0) return null;
+  spawns++;
+  try { return remember(args, execFileSync(run.command[0], [...run.command.slice(1), ...GIT_OPTS, ...args], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true, maxBuffer: 64 * 1024 * 1024, timeout })); }
+  catch (e) { if (e && e.code === 'ETIMEDOUT') run.timedOut = true; return null; }   // null is never cached
+}
+// Hook state (git cache, per-session dedup) lives in a per-user dir. On POSIX os.tmpdir() is shared by every local
+// user: a dir another user created, or one open to group or others, could feed forged git output into the agent's
+// context, so it is refused (throws) and callers run without state. Windows TEMP is already per user.
+function stateDir() {
+  const os = require('os'); const posix = typeof process.getuid === 'function';
+  const user = posix ? String(process.getuid()) : os.userInfo().username.replace(/[^\w.-]/g, '_');
+  const dir = path.join(os.tmpdir(), 'sdlc-assist-status-' + user);
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const s = fs.lstatSync(dir);
+  if (!s.isDirectory() || (posix && (s.uid !== process.getuid() || (s.mode & 0o077)))) throw new Error('state dir not private: ' + dir);
+  return dir;
+}
+function cacheFile(root) { return path.join(stateDir(), 'git-' + require('crypto').createHash('sha1').update(root).digest('hex') + '.json'); }
+// The branch HEAD points to is in the key on its own: with the reflog off (no logs/HEAD) a reset --soft, an update-ref
+// or a commit that leaves the index alone moves only that ref file.
+function cacheKey(gc) {
+  const st = p => { try { const s = fs.statSync(p); return s.mtimeMs + ':' + s.size; } catch { return '-'; } };
+  let head = ''; try { head = fs.readFileSync(path.join(gc.gitDir, 'HEAD'), 'utf8').trim(); } catch { /* keyed as empty */ }
+  const ref = /^ref: (refs\/[^\s]+)$/.exec(head);
+  return [st(__filename), head, ref ? st(path.join(gc.commonDir, ref[1])) : '-', st(path.join(gc.gitDir, 'index')), st(path.join(gc.gitDir, 'logs', 'HEAD')),
+    st(path.join(gc.commonDir, 'packed-refs')), st(path.join(gc.commonDir, 'refs', 'tags'))].join('|');
+}
+// A gitDir without HEAD is not a git dir: git older than 2.13 echoes --absolute-git-dir back, and a key built from
+// missing files would never change.
+const usableCache = gc => !!gc && typeof gc.gitDir === 'string' && typeof gc.commonDir === 'string'
+  && path.isAbsolute(gc.gitDir) && fs.existsSync(path.join(gc.gitDir, 'HEAD')) && fs.existsSync(gc.commonDir);
+function loadCache(root, gc) {
+  const key = cacheKey(gc);
+  try {
+    const c = JSON.parse(fs.readFileSync(cacheFile(root), 'utf8'));
+    if (c && c.key === key && Date.now() - c.at < CACHE_TTL_MS && c.out && typeof c.out === 'object') return { key, at: c.at, out: c.out };
+  } catch { /* missing or unreadable: run without it */ }
+  return { key, at: Date.now(), out: {} };
+}
+function saveCache(root) {
+  if (!run.cache || !run.changed) return;
+  try { fs.writeFileSync(cacheFile(root), JSON.stringify(run.cache), { mode: 0o600 }); } catch { /* next prompt runs uncached */ }
 }
 const lines = out => (out || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 const toInt = s => (s && /^\d+$/.test(s) ? parseInt(s, 10) : null);
 const toSlash = p => p.split(path.sep).join('/');
 // Only rev-parse captures stderr: it is where git reports a repo it refuses to read.
 function repoInfo(root, notes) {
-  const r = spawnSync('git', [...GIT_OPTS, 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  const INSIDE = ['rev-parse', '--is-inside-work-tree'];
+  let r = recalled(INSIDE) !== undefined ? { status: 0, stdout: recalled(INSIDE) } : null;
+  if (!r) {
+    const timeout = timeoutFor();
+    if (timeout === 0) return { isRepo: false, toplevel: null };
+    spawns++;
+    r = spawnSync(run.command[0], [...run.command.slice(1), ...GIT_OPTS, ...INSIDE], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, timeout });
+    if (r.error && r.error.code === 'ETIMEDOUT') run.timedOut = true;
+    else if (!r.error && r.status === 0) remember(INSIDE, r.stdout);   // a refusal (dubious ownership) is never cached
+  }
   if (r.error || r.status !== 0 || (r.stdout || '').trim() !== 'true') {
     if (/dubious ownership/i.test(r.stderr || '')) notes.push('git refused this repo (dubious ownership): git signals skipped; the user can run git config --global --add safe.directory <repo>');
     return { isRepo: false, toplevel: null };
@@ -251,6 +320,14 @@ function runTests(root, runner) {
 function collectSignals(repoRoot, opts) {
   const options = opts || {};
   const abs = fs.realpathSync.native(repoRoot);
+  run.deadline = typeof options.deadlineMs === 'number' ? Date.now() + options.deadlineMs : null;
+  run.timedOut = false; run.changed = false;
+  run.command = Array.isArray(options.gitCommand) && options.gitCommand.length ? options.gitCommand : ['git'];
+  try { run.cache = usableCache(options.gitCache) ? loadCache(abs, options.gitCache) : null; } catch { run.cache = null; }   // stateDir refused
+  try { return { ...collect(abs, options), gitTimedOut: run.timedOut }; }
+  finally { saveCache(abs); run.deadline = null; run.cache = null; run.command = ['git']; }
+}
+function collect(abs, options) {
   const root = toSlash(abs);
   const notes = [];
   const gitInfo = collectGit(abs, notes);
@@ -328,4 +405,4 @@ function collectSignals(repoRoot, opts) {
     testRunner, tests, inProduction, notes,
   };
 }
-module.exports = { collectSignals, findSpecs, folderCycle, findDoc, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
+module.exports = { collectSignals, gitSpawns, stateDir, findSpecs, folderCycle, findDoc, SOURCE_EXTENSIONS, EXCLUDED_DIRS };
