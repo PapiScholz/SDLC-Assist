@@ -20,9 +20,9 @@ Spec: `spec.md`. Plan: `plan.md`. One branch and PR per stage, `[minor]` each. A
 
 ## Stage 3: cold review, offered
 
-- [ ] 11 Probe plugin agents with read-only tools and `omitClaudeMd`; record it — partial: docs read, scratch plugin validated, `check-agents.js` checks it statically (`docs/ci-red-runs.md` "Stage 3 ... task 11"); the run failed on an expired CLI session, open until `claude auth login`
+- [x] 11 Probe plugin agents with read-only tools and `omitClaudeMd`; record it — evidence: `docs/ci-red-runs.md` "Task 11, run" (2.1.332: tools only `Read, Grep, Glob`, write refused; in this repo the control got user and project `CLAUDE.md`, the `omitClaudeMd` agent neither, 4816 vs 16834 tokens)
 - [x] 12 Seeded fixture, reviewed with no reviewer, recorded red — evidence: `docs/ci-red-runs.md` "Task 12" (`check-acceptance` 0 not EARS, `Ledger` and `src/pricing.js` unreported)
 - [x] 13 Reviewer agents: comprehension, code-check, design, readiness — evidence: `docs/ci-red-runs.md` "Task 13" (`claude plugin validate` passed; `check-agents` self-test 1/7 then 8/0; "4 agents OK")
 - [x] 14 Offer and loop in `sdlc-spec` and `sdlc-plan`; not-run rule; no subagents means no review — evidence: `skills/sdlc/references/cold-review.md`; `docs/ci-red-runs.md` "Task 14" (replay offered in one line before approval, 7 tool uses, no `Agent` call, nothing about the review on disk)
 - [x] 15 ADR 0012, README, `docs/sdlc-flow.md` — evidence: `docs/adr/0012-cold-review-offered.md`, README "Cold review, on request", plugin README, `docs/sdlc-flow.md`
-- [ ] 16 Fixture review finds every seeded gap; tokens of one medium review measured; gates; `SKILL.md` words — partial: a general-purpose subagent with the `comprehension` profile found G1, G2, G3 at 88,780 tokens (`docs/ci-red-runs.md` "Task 16"); the run as `sdlc-assist:comprehension` waits on task 11
+- [x] 16 Fixture review finds every seeded gap; tokens of one medium review measured; gates; `SKILL.md` words — evidence: `docs/ci-red-runs.md` "Task 16, run" (`sdlc-assist:comprehension`, two runs: G1, G2, G3 at Major or above in both; 11,091 and 11,483 tokens; one finding outside the key in run 2); offer figure changed to about 12,000; all gates ok; `SKILL.md` 2548 words

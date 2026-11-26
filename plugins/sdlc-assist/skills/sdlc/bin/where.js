@@ -25,6 +25,7 @@ function parseArgs(argv) {
     if (a === '--brief') { args.brief = true; continue; }
     if (a === '--status') { args.status = true; continue; }
     if (a === '--deadline-ms') { args.deadlineMs = Number(argv[++i]); continue; }
+    if (a.startsWith('--deadline-ms=')) { args.deadlineMs = Number(a.slice(14)); continue; }
     if (a === '--root') { args.root = argv[++i]; continue; }
     if (a.startsWith('--root=')) { args.root = a.slice(7); continue; }
     throw new Error('unknown argument: ' + a);

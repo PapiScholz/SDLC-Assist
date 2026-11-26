@@ -61,5 +61,20 @@ check('no agents directory exits 1', () => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-'));
   assert.strictEqual(run(d).status, 1);
 });
+check('an agents directory with no .md file exits 1 (nothing for the review to launch)', () => {
+  const r = run(tree({ 'comprehension.txt': GOOD }));
+  assert.strictEqual(r.status, 1, out(r));
+  assert.ok(out(r).includes('no agent'), out(r));
+});
+check('the plugin itself: the four reviewers cold-review.md names are all present', () => {
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'check-agents.js')], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, out(r));
+  assert.ok(r.stdout.includes('4 agents OK'), out(r));
+});
+check('a missing reviewer named by cold-review.md exits 1 naming it (--require)', () => {
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'check-agents.js'), '--root', tree({ 'comprehension.md': GOOD }), '--require', 'comprehension,readiness'], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 1, out(r));
+  assert.ok(out(r).includes('readiness'), out(r));
+});
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

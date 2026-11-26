@@ -4,7 +4,7 @@ Before asking the developer to approve a cycle document, reviewers that were not
 
 ## The offer
 
-Offer it in one line, in the developer's language, right before asking for approval, every time a document is ready for approval: "Before you approve: do you want a cold review? N reviewers read it without our conversation, about 90,000 tokens each." Small work has no document and no offer. The figure is one measured reviewer on a one-page `feature.md` (`docs/ci-red-runs.md`, 2026-11-26); a longer document or more files to check cost more.
+Offer it in one line, in the developer's language, right before asking for approval, every time a document is ready for approval: "Before you approve: do you want a cold review? N reviewers read it without our conversation, about 12,000 tokens each for a one-page document, more for a longer one." Small work has no document and no offer. The figure is the `comprehension` plugin agent measured twice on a one-page `feature.md` (11,091 and 11,483 tokens, `docs/ci-red-runs.md`, 2026-11-26); `design`, `code-check` and `readiness`, and any reviewer on a long `spec.md` or plan, have not been measured and cost more as the document and the files it cites grow. A general-purpose subagent on another host loads more context: about 90,000 tokens for the same review.
 
 Run nothing until the developer says yes. A no, or no answer, is a no: ask for approval as usual. Never run it on your own initiative, and never say a review ran when it did not.
 
@@ -18,7 +18,7 @@ Run nothing until the developer says yes. A no, or no answer, is a no: ask for a
 
 ## How to run them
 
-- **Claude Code:** the plugin agents `sdlc-assist:comprehension`, `sdlc-assist:code-check`, `sdlc-assist:design`, `sdlc-assist:readiness`. They read only (`Read`, `Grep`, `Glob`) and start without the user's or project's `CLAUDE.md`. Launch the round's reviewers in parallel.
+- **Claude Code:** the plugin agents `sdlc-assist:comprehension`, `sdlc-assist:code-check`, `sdlc-assist:design`, `sdlc-assist:readiness`. They read only (`Read`, `Grep`, `Glob`) and start without the user's or project's `CLAUDE.md`: `omitClaudeMd` needs Claude Code v2.1.271 or later, and an older version ignores it and loads `CLAUDE.md`. Check `claude --version` when you can; on an older version, or when you cannot tell, say the reviewers may have read `CLAUDE.md`. Launch the round's reviewers in parallel.
 - **Other hosts with subagents:** a fresh general-purpose subagent per reviewer, its prompt being the body of the plugin's `agents/<name>.md`; tell it not to write. An install through the skills CLI copies skills only, not `agents/`: when those files are not on disk, say the review is not available on this install.
 - **No subagents:** say the review did not run and ask for approval as usual. Never review in the same context: that is not a cold review.
 

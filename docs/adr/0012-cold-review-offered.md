@@ -7,7 +7,7 @@ Date: 2026-11-26
 
 Issue #30: the agent that writes `spec.md`, `feature.md` or `plan.md` is the one that checks it before asking for approval. It reads with the whole conversation in mind, so undefined terms, claims about code it only remembers and decisions left to the implementer look fine to it; the developer reads with the same context. A reader with no history sees them. The idea comes from `google/elephant-goldfish-model` (EGM, Apache-2.0, commit `72d06f5`); the profiles here are written in this repository's words.
 
-Constraints: nothing blocks (ADR 0009); paperwork is proportional to size (ADR 0007); the plugin writes nothing in the user's repository beyond three categories (`sdlc/SKILL.md`, Never). Cost: one reviewer measured at 88,780 tokens on a one-page `feature.md` (`docs/ci-red-runs.md`, 2026-11-26), against a subagent run of 153k tokens measured earlier the same day.
+Constraints: nothing blocks (ADR 0009); paperwork is proportional to size (ADR 0007); the plugin writes nothing in the user's repository beyond three categories (`sdlc/SKILL.md`, Never). Cost, measured on a one-page `feature.md` (`docs/ci-red-runs.md`, 2026-11-26): 88,780 tokens as a general-purpose subagent with the profile, 11,091 and 11,483 as the `comprehension` plugin agent, which loads no `CLAUDE.md` and has three tools.
 
 Options weighed (spec `docs/specs/2026-11-26-visible-cycle-single-door/spec.md`, Decisions 7 to 11):
 
@@ -28,4 +28,4 @@ Option 2, chosen by the owner after the cost estimate ("paid only when asked"). 
 
 ## Consequences
 
-About 90,000 tokens per reviewer, paid only on a yes; a large spec with three reviewers and three rounds can pass 800,000. A seeded fixture (`test-fixtures/review/`, answer key in `GAPS.md`) is how detection is checked; it is not in CI, because it needs a model. The isolation (`omitClaudeMd`, read-only tools) is documented by Claude Code and checked statically; whether a plugin agent sees `CLAUDE.md` at run time is recorded in `docs/ci-red-runs.md` when it could be run.
+About 12,000 tokens per reviewer on a one-page document in Claude Code (about 90,000 as a general-purpose subagent elsewhere), paid only on a yes; a large spec with three reviewers and three rounds is nine reviewer runs, each costing more as the document and the files it cites grow. A seeded fixture (`test-fixtures/review/`, answer key in `GAPS.md`) is how detection is checked; it is not in CI, because it needs a model. The isolation (`omitClaudeMd`, read-only tools) is documented by Claude Code, checked statically by `check-agents.js`, and was observed at run time on 2.1.332: the `omitClaudeMd` agent received neither the user's nor the project's `CLAUDE.md`, the control received both (`docs/ci-red-runs.md`, "Task 11, run").

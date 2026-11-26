@@ -8,7 +8,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
 
 It ships eight skills: the router `sdlc`, five own skills (`sdlc-spec`, `sdlc-plan`, `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and two vendored unmodified from `addyosmani/agent-skills` (`incremental-implementation`, `test-driven-development`). `sdlc-spec` and `sdlc-plan` are written for this plugin; `addyosmani/agent-skills` is their origin. With `superpowers` installed, development names its `test-driven-development` first; without it, the bundled copy.
 
-It also ships four reviewer agents (`comprehension`, `code-check`, `design`, `readiness`) for the cold review that `sdlc-spec` and `sdlc-plan` offer before each approval. They run only when you say yes (about 90,000 tokens each), read only, start without `CLAUDE.md`, and report in the chat; nothing is written to your repository. The idea comes from `google/elephant-goldfish-model` (Apache-2.0); the profiles are written for this plugin.
+It also ships four reviewer agents (`comprehension`, `code-check`, `design`, `readiness`) for the cold review that `sdlc-spec` and `sdlc-plan` offer before each approval. They run only when you say yes (about 12,000 tokens each on a one-page `feature.md`), read only, start without `CLAUDE.md` (Claude Code v2.1.271 or later), and report in the chat; nothing is written to your repository. The idea comes from `google/elephant-goldfish-model` (Apache-2.0); the profiles are written for this plugin.
 
 ## Install
 

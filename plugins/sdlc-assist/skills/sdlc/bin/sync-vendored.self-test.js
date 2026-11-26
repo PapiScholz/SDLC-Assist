@@ -41,6 +41,11 @@ fs.writeFileSync(path.join(local, 'old-vendored-skill', 'VENDORED.md'), 'old\n')
 let r = run(['--check']);
 assert.strictEqual(r.code, 1, 'leftover vendored folder must fail');
 assert.ok(r.out.includes('not in the vendored list: skills/old-vendored-skill'), r.out);
+// --fix does not delete it, but must not report success either
+r = run(['--fix']);
+assert.strictEqual(r.code, 1, '--fix with a leftover vendored folder must fail: ' + r.out);
+assert.ok(r.out.includes('not in the vendored list: skills/old-vendored-skill'), r.out);
+assert.ok(fs.existsSync(path.join(local, 'old-vendored-skill')), '--fix must not delete folders');
 fs.rmSync(path.join(local, 'old-vendored-skill'), { recursive: true });
 // An own skill (no VENDORED.md) beside the vendored ones is not a leftover
 fs.mkdirSync(path.join(local, 'sdlc-spec'), { recursive: true });
