@@ -20,9 +20,9 @@ Spec: `spec.md`. Plan: `plan.md`. One branch and PR per stage, `[minor]` each. A
 
 ## Stage 3: cold review, offered
 
-- [ ] 11 Probe plugin agents with read-only tools and `omitClaudeMd`; record it
-- [ ] 12 Seeded fixture, reviewed with no reviewer, recorded red
-- [ ] 13 Reviewer agents: comprehension, code-check, design, readiness
-- [ ] 14 Offer and loop in `sdlc-spec` and `sdlc-plan`; not-run rule; no subagents means no review
-- [ ] 15 ADR 0012, README, `docs/sdlc-flow.md`
-- [ ] 16 Fixture review finds every seeded gap; tokens of one medium review measured; gates; `SKILL.md` words
+- [ ] 11 Probe plugin agents with read-only tools and `omitClaudeMd`; record it — partial: docs read, scratch plugin validated, `check-agents.js` checks it statically (`docs/ci-red-runs.md` "Stage 3 ... task 11"); the run failed on an expired CLI session, open until `claude auth login`
+- [x] 12 Seeded fixture, reviewed with no reviewer, recorded red — evidence: `docs/ci-red-runs.md` "Task 12" (`check-acceptance` 0 not EARS, `Ledger` and `src/pricing.js` unreported)
+- [x] 13 Reviewer agents: comprehension, code-check, design, readiness — evidence: `docs/ci-red-runs.md` "Task 13" (`claude plugin validate` passed; `check-agents` self-test 1/7 then 8/0; "4 agents OK")
+- [x] 14 Offer and loop in `sdlc-spec` and `sdlc-plan`; not-run rule; no subagents means no review — evidence: `skills/sdlc/references/cold-review.md`; `docs/ci-red-runs.md` "Task 14" (replay offered in one line before approval, 7 tool uses, no `Agent` call, nothing about the review on disk)
+- [x] 15 ADR 0012, README, `docs/sdlc-flow.md` — evidence: `docs/adr/0012-cold-review-offered.md`, README "Cold review, on request", plugin README, `docs/sdlc-flow.md`
+- [ ] 16 Fixture review finds every seeded gap; tokens of one medium review measured; gates; `SKILL.md` words — partial: a general-purpose subagent with the `comprehension` profile found G1, G2, G3 at 88,780 tokens (`docs/ci-red-runs.md` "Task 16"); the run as `sdlc-assist:comprehension` waits on task 11

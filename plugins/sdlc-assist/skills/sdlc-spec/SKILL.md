@@ -58,10 +58,11 @@ A comma ends the trigger, state or condition, exactly as in the shapes above (`W
 
 ## Approval
 
-1. Show the developer the spec (path and a short summary of objective, decisions and acceptance) and ask for approval in one line.
-2. A go-ahead counts as approval only of a document the developer has already seen in an earlier message. A go-ahead given before the spec existed approves nothing written after it: show the spec and say it is not yet approved.
-3. On approval, close mode writes the header (`Status: approved`, then `Phase: planning`, or `Phase: development` for a `feature.md`). Then large work goes to `sdlc-plan`; medium work goes to implementation.
-4. When you go ahead without an approval (allowed by the router's plan rule on some models), say so in the same message; never present unapproved work as approved.
+1. Offer the cold review in one line and run it only on a yes (`../sdlc/references/cold-review.md`: reviewers, rounds, how to resolve findings).
+2. Show the developer the spec (path and a short summary of objective, decisions and acceptance) and ask for approval in one line.
+3. A go-ahead counts as approval only of a document the developer has already seen in an earlier message. A go-ahead given before the spec existed approves nothing written after it: show the spec and say it is not yet approved.
+4. On approval, close mode writes the header (`Status: approved`, then `Phase: planning`, or `Phase: development` for a `feature.md`). Then large work goes to `sdlc-plan`; medium work goes to implementation.
+5. When you go ahead without an approval (allowed by the router's plan rule on some models), say so in the same message; never present unapproved work as approved.
 
 ## Never
 
