@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.0] - 2026-11-26
+
+- Merge pull request #37 from PapiScholz/visible-cycle-stage2
+- Merge origin/main (v0.17.0) into visible-cycle-stage2
+- feat(sdlc): own sdlc-spec and sdlc-plan replace the vendored spec and plan skills [minor]
+
+## [0.17.0] - 2026-11-26
+
+- Merge pull request #36 from PapiScholz/visible-cycle-stage1
+- feat(sdlc): /sdlc-assist:status shows the active cycle from the files [minor]
+- Merge pull request #33 from PapiScholz/close-status-hook-latency [skip release]
+- docs: close the status-hook-latency cycle (v0.16.1)
+
 ## [0.16.1] - 2026-11-23
 
 - Merge pull request #32 from PapiScholz/fix/status-hook-latency
