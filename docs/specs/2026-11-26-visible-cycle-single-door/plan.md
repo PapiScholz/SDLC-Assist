@@ -19,7 +19,7 @@ approves each stage's tasks before they start (spec, Clarifications: one cycle, 
 
 ## Stages
 
-### Stage 1: status on demand (#35)
+### Stage 1: status on demand (#35) [x] 2026-11-26
 
 1. **Probe the command expansion (fail fast).** A scratch plugin command (scratchpad, loaded with `--plugin-dir`,
    never the owner's settings) whose body runs `node` through the command file's `!` shell expansion with
@@ -37,7 +37,7 @@ approves each stage's tasks before they start (spec, Clarifications: one cycle, 
 4. **Record and gates.** `/sdlc-assist:status` run in the owner's desktop app on this repository, pasted in
    `docs/ci-red-runs.md`; `gates.sh` green; `SKILL.md` word count.
 
-### Stage 2: own spec and plan skills (#34, the `Read` door of #35)
+### Stage 2: own spec and plan skills (#34, the `Read` door of #35) [x] 2026-11-26
 
 5. **`sdlc-spec`.** `plugins/sdlc-assist/skills/sdlc-spec/SKILL.md`, written fresh (Decision 4), `version:` line like
    the other own skills. First line: route through `sdlc` when it has not run in this context (same sentence as
@@ -65,7 +65,7 @@ approves each stage's tasks before they start (spec, Clarifications: one cycle, 
     write a spec; pasted excerpt shows it ran the router and wrote the header and the cycle path. `grep -rn` of the
     three removed names outside closed specs and `CHANGELOG.md` prints nothing. `gates.sh` green; `SKILL.md` words.
 
-### Stage 3: cold review, offered (#30)
+### Stage 3: cold review, offered (#30) [x] 2026-11-26
 
 11. **Probe plugin agents (fail fast).** A scratch plugin with `agents/probe.md` declaring `tools: Read, Grep, Glob`
     and `omitClaudeMd: true`: confirm in the official docs and by a run that it loads, cannot write, and does not see
