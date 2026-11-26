@@ -52,4 +52,4 @@ function briefLine(r) {
   if ((r.warnings || []).length) parts.push('note: ' + safe(r.warnings[0], 120));
   return 'sdlc: ' + parts.join(' · ');
 }
-module.exports = { briefLine, nextAction, unplanned };
+module.exports = { briefLine, nextAction, unplanned, safe };

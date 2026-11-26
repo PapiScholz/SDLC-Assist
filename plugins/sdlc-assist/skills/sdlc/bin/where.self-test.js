@@ -265,5 +265,67 @@ check('JSON keeps v0.11.1 fields and adds step and stage', () => {
   const j = runWhere(tmpDir(), 'x');
   for (const k of ['signals', 'cycles', 'active', 'inferred', 'evidence', 'alternatives', 'warnings', 'request', 'step', 'stage']) assert.ok(k in j, k);
 });
+console.log('--status (issue #35)');
+function runStatus(root, extra = []) {
+  const before = snapshot(root);
+  const r = spawnSync(process.execPath, [WHERE, '--root', root, '--status', ...extra], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, 'where.js exit ' + r.status + '\n' + r.stderr);
+  assert.strictEqual(snapshot(root), before, 'where.js modified the fixture');
+  return r.stdout;
+}
+function stagedCycle() {
+  const root = initRepo(tmpDir());
+  write(root, 'docs/specs/2026-01-01-alpha/spec.md', '# Spec: alpha\n\nPhase: development\nStatus: approved\n');
+  write(root, 'docs/specs/2026-01-01-alpha/plan.md', '# Plan\n\n## Stages\n\n### Stage 1: first part\n\n- a\n\n### Stage 2: second part\n\n- b\n');
+  write(root, 'docs/specs/2026-01-01-alpha/tasks.md', '# Tasks\n\n- [x] 1 do a — evidence: x\n- [ ] 2 do b\n- [ ] 3 do c\n');
+  commit(root, 'cycle', T1);
+  return root;
+}
+check('--status on an active cycle prints a fenced block: cycle, spec, plan, stage, next, tasks', () => {
+  const out = runStatus(stagedCycle());
+  const lines = out.trimEnd().split('\n');
+  assert.strictEqual(lines[0], '```'); assert.strictEqual(lines[lines.length - 1], '```');
+  assert.ok(lines.length - 2 <= 8, 'at most eight lines inside the fence:\n' + out);
+  assert.match(out, /cycle +docs\/specs\/2026-01-01-alpha\//);
+  assert.match(out, /spec +spec\.md · Phase: development · Status: approved/);
+  assert.match(out, /plan +plan\.md: yes · tasks\.md: yes, 1 of 3 done/);
+  assert.match(out, /stage +1 of 2, first part/);
+  assert.match(out, /next +2 do b/);
+  assert.doesNotMatch(out, /^\s*[{[]/m, 'no JSON');
+});
+check('--status without plan says plan.md: no and gives no stage line', () => {
+  const root = initRepo(tmpDir());
+  write(root, 'docs/specs/2026-01-01-beta/spec.md', '# Spec: beta\n\nPhase: analysis\nStatus: draft\n');
+  commit(root, 'spec', T1);
+  const out = runStatus(root);
+  assert.match(out, /spec +spec\.md · Phase: analysis · Status: draft/);
+  assert.match(out, /plan +plan\.md: no · tasks\.md: no/);
+  assert.doesNotMatch(out, /^stage /m);
+});
+check('--status on a feature cycle reads the tasks inside feature.md', () => {
+  const root = initRepo(tmpDir());
+  write(root, 'docs/specs/2026-01-01-gamma/feature.md', '# Feature: gamma\n\nPhase: development\nStatus: approved\n\n## Tasks\n\n- [ ] 1 write it\n');
+  commit(root, 'feature', T1);
+  const out = runStatus(root);
+  assert.match(out, /spec +feature\.md · Phase: development · Status: approved/);
+  assert.match(out, /plan +tasks in feature\.md, 0 of 1 done/);
+});
+check('--status with no active cycle prints one line', () => {
+  const root = initRepo(tmpDir()); write(root, 'a.txt', 'x\n'); commit(root, 'a', T1);
+  const out = runStatus(root);
+  assert.strictEqual(out.trim().split('\n').length, 1, out); assert.match(out, /^sdlc status: no active cycle/);
+});
+check('--status outside a git repository prints one line and exits 0', () => {
+  const out = runStatus(tmpDir());
+  assert.strictEqual(out.trim().split('\n').length, 1, out); assert.match(out, /^sdlc status: not a git repository/);
+});
+check('--status past the git deadline says incomplete instead of a partial block', () => {
+  const out = runStatus(stagedCycle(), ['--deadline-ms', '0']);
+  assert.strictEqual(out.trim().split('\n').length, 1, out); assert.match(out, /^sdlc status: incomplete/);
+});
+check('--status and --brief together are refused', () => {
+  const r = spawnSync(process.execPath, [WHERE, '--root', tmpDir(), '--status', '--brief'], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 2); assert.match(r.stderr, /--status/);
+});
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
