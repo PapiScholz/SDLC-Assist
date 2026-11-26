@@ -1,7 +1,7 @@
 ---
 slug: planning
 title: Planning
-recommends: [planning-and-task-breakdown]
+recommends: [sdlc-plan]
 alternatives: []
 design: in the plan, component boundaries and interfaces
 ---
@@ -10,7 +10,7 @@ design: in the plan, component boundaries and interfaces
 **Step:** 3 of 4, plan. In a staged plan: the plan of the next open stage.
 **Enters when:** the active spec is approved and there is no current plan, or the plan's todo has no tasks. A plan older than the spec's first commit belongs to a closed cycle and counts as absent. A feature cycle (`feature.md`) skips this phase: its tasks live in its own `## Tasks`, and an approved `feature.md` with no tasks only needs them added there.
 **Produces:** `plan.md` and `tasks.md` beside the spec (`docs/specs/<date>-<slug>/`). Legacy: a flat spec (`docs/specs/<name>.md`, root `spec.md`, `SPEC-*.md`) keeps `tasks/plan.md` and `tasks/todo.md`.
-**Do now:** run `planning-and-task-breakdown`; keep component boundaries and interfaces in the plan. Point it at the cycle's folder when the spec lives in one.
+**Do now:** run `sdlc-plan`; keep component boundaries and interfaces in the plan. It writes beside the spec when the spec lives in a cycle folder.
 **Next phase:** development (`sdlc close` writes `Phase: development`).
 **Warns when:** the active spec is flat and another flat cycle is still active, since `tasks/plan.md` and `tasks/todo.md` are shared: one planned flat cycle at a time. Folder cycles each own their pair and do not trigger this.
 **Governance:** design review happens before code exists; the plan file is committed and approved before implementation (plan mode holds edits until then). When `constitution.exists`, the plan is checked against its principles and lists the ones the qa-gate can verify (a gate, a test, a lint). When `adr.exists`, a task that implements a `proposed` ADR references it by number.

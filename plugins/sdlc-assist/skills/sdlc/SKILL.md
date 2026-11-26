@@ -1,7 +1,7 @@
 ---
 name: sdlc
 version: 0.17.0
-description: Tells the agent where work on a code repository stands, in four steps (situation, spec, plan, implement) sized to the work (small, medium with one feature.md, large) and per stage of a staged plan, and what comes next; routes to spec-driven-development and its family. Use when working on a repository that has specs under docs/specs, when asked "where are we", or "sdlc close". Not for research, browsing, or non-code tasks.
+description: Tells the agent where work on a code repository stands, in four steps (situation, spec, plan, implement) sized to the work (small, medium with one feature.md, large) and per stage of a staged plan, and what comes next; routes to sdlc-spec, sdlc-plan and the rest of its family. Use when working on a repository that has specs under docs/specs, when asked "where are we", or "sdlc close". Not for research, browsing, or non-code tasks.
 ---
 
 # sdlc: SDLC phase router
@@ -44,19 +44,11 @@ Pass the request through a file: write the user's text with your file tool to th
 
 ## Complaints and the request card
 
-A complaint (someone else reporting a problem) goes through `references/request-card.md` (five lines: who asks, what happens, expected, where, urgency), whether or not the project is in production. Ask for any line the user did not give; never invent it. The spec-driven-development flow turns the card into a short spec that carries the header. `inProduction` only adds the note "keep the running version safe".
+A complaint (someone else reporting a problem) goes through `references/request-card.md` (five lines: who asks, what happens, expected, where, urgency), whether or not the project is in production. Ask for any line the user did not give; never invent it. `sdlc-spec` turns the card into a short spec that carries the header. `inProduction` only adds the note "keep the running version safe".
 
 ## Header rule
 
-When writing any spec in this session (full, short or `feature.md`), prepend right after the H1:
-
-```
-Phase: analysis
-Status: draft
-Intent: docs/intents/<file>   (only when the cycle opens from an intent.md)
-```
-
-Specs always start in `analysis`, including the first spec of a project. `initial` has no header of its own and ends the moment the first spec exists. The vendored `spec-driven-development` is not modified; this rule lives here. Format and slugs: `references/spec-header.md`. Reading is wider than writing: the router also reads `Estado:`/`Fase:` and the synonyms existing repos use (`aprobada`, `implementado`, `borrador`, `Phase: done`, `Status: implemented`; ADR 0008), but the skill always writes the English header.
+Every spec written in this session (full, short or `feature.md`) carries `Phase: analysis` / `Status: draft` right after the H1, and lives in `docs/specs/<date>-<slug>/`; `sdlc-spec` writes both, and `sdlc-plan` puts `plan.md` and `tasks.md` beside it. `initial` has no header of its own and ends the moment the first spec exists. Format and slugs: `references/spec-header.md`. Reading is wider than writing: the router also reads `Estado:`/`Fase:` and the synonyms existing repos use (`aprobada`, `implementado`, `borrador`, `Phase: done`, `Status: implemented`; ADR 0008), but the skill always writes the English header.
 
 ## Close mode
 
@@ -94,7 +86,7 @@ The cycle holds the durable record: specs, decisions, tasks and the evidence on 
 ## Never
 
 - Pass `--run-tests` unless the user asked in the current turn.
-- Write into the user's repo beyond three categories: spec files (`spec.md` through the SDD flow, or `feature.md` for medium work) created with the header, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`.
+- Write into the user's repo beyond three categories: spec files (`spec.md` through `sdlc-spec`, or `feature.md` for medium work) created with the header, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`.
 - Write anything while the request only asks to explain, investigate, compare, review or propose.
 - Write an emoji anywhere.
 - Block a transition.

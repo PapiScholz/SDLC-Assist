@@ -24,7 +24,7 @@ Product rules every spec, plan and change in this repository obeys. Agent workin
 ## Release
 
 - Every push to `main` publishes a release (`.github/workflows/release.yml`); work in progress goes on a branch and a PR, which runs CI only.
-- Version sources rewritten by the release script: `plugins/sdlc-assist/.claude-plugin/plugin.json`, the `version:` line in `plugins/sdlc-assist/skills/sdlc/SKILL.md` and the `version:` line of the three own skills.
+- Version sources rewritten by the release script: `plugins/sdlc-assist/.claude-plugin/plugin.json`, the `version:` line in `plugins/sdlc-assist/skills/sdlc/SKILL.md` and the `version:` line of the five own skills (`sdlc-spec`, `sdlc-plan`, `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`).
 
 ## Amendments
 

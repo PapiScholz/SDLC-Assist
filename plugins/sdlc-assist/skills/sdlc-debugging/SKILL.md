@@ -59,7 +59,7 @@ Cause:         <the sentence from step 3>
 Evidence:      <reproduction command or "none"; location; disproof attempt>
 ```
 
-Then: state whether the diagnostic print or failing test stays (a failing test that pins the bug usually stays and becomes the first task of Development) or is removed, and remove it if so. Recommend `spec-driven-development` for the short spec with the header `Phase: analysis` / `Status: draft`, as the `sdlc` skill requires. The fix is Development's job; do not start it.
+Then: state whether the diagnostic print or failing test stays (a failing test that pins the bug usually stays and becomes the first task of Development) or is removed, and remove it if so. Recommend `sdlc-spec` for the short spec with the header `Phase: analysis` / `Status: draft`, as the `sdlc` skill requires. The fix is Development's job; do not start it.
 
 ## Never
 
@@ -77,5 +77,5 @@ Location:     <file:lines or not localisable — what is missing>
 Cause:        <sentence>
 Evidence:     <disproof attempt → observed>
 Diagnostic:   <kept as failing test <path> | removed>
-Next:         short spec via spec-driven-development (Phase: analysis / Status: draft)
+Next:         short spec via sdlc-spec (Phase: analysis / Status: draft)
 ```

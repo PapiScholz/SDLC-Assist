@@ -6,7 +6,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
 
 **Not for research or non-code tasks.** It acts only on work about a code repository with specs.
 
-It ships nine skills: the router `sdlc`, three own skills (`sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and five vendored unmodified from `addyosmani/agent-skills` (`spec-driven-development`, `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `context-engineering`).
+It ships eight skills: the router `sdlc`, five own skills (`sdlc-spec`, `sdlc-plan`, `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and two vendored unmodified from `addyosmani/agent-skills` (`incremental-implementation`, `test-driven-development`). `sdlc-spec` and `sdlc-plan` are written for this plugin; `addyosmani/agent-skills` is their origin. With `superpowers` installed, development names its `test-driven-development` first; without it, the bundled copy.
 
 ## Install
 

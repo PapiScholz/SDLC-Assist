@@ -87,7 +87,9 @@ function main() {
       const hits = byName.get(name);
       if (hits) {
         const pick = raw.includes(':') ? (hits.find(h => h.form === raw) || hits[0]) : hits[0];
-        installed.push({ name, path: pick.path, form: pick.form });
+        // `superpowers:x` falls back to a bundled `x` when superpowers is absent; the bare `x` later on the list
+        // then resolves to the same folder and is not listed twice.
+        if (!installed.some(i => i.path === pick.path)) installed.push({ name, path: pick.path, form: pick.form });
       } else missing.push(raw);
     }
     phases[slug] = { recommends, alternatives, installed, missing };

@@ -11,8 +11,8 @@ SDLC-Assist is a Claude Code plugin (`sdlc-assist`) whose core is one skill, `sd
 | `plugins/sdlc-assist/` | What ships: `.claude-plugin/` manifest, `commands/phase.md`, `skills/`, plugin README and LICENSE. The plugin directory scans only this folder (ADR 0001). |
 | `plugins/sdlc-assist/skills/sdlc/` | The router: `SKILL.md` (protocol), `bin/` (scripts and self-tests), `references/` (phase sheets, templates, entry rules). |
 | `plugins/sdlc-assist/skills/sdlc/bin/lib/` | Pure modules: `signals.js` (repo facts), `infer.js` (phase and active cycle), `header.js`, `keywords.js`, `todo.js`, `unfenced.js`, `skilldirs.js`. |
-| `plugins/sdlc-assist/skills/sdlc-*` | Own skills for the phases: `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`. |
-| `plugins/sdlc-assist/skills/<vendored>` | Vendored skills pinned by `bin/sync-vendored.js` (`spec-driven-development`, `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `context-engineering`). Never edited here. |
+| `plugins/sdlc-assist/skills/sdlc-*` | Own skills for the phases: `sdlc-spec`, `sdlc-plan`, `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`. Each opens by routing through `sdlc` (`check-skill-sections.js`). |
+| `plugins/sdlc-assist/skills/<vendored>` | Vendored skills pinned by `bin/sync-vendored.js` (`incremental-implementation`, `test-driven-development`). Never edited here; `--check` also reports a vendored folder left behind after its name leaves the list. |
 | `scripts/` | `gates.sh` (the single verification target CI runs) and `hooks/` (git hooks for this checkout: EOL guard, git authorization). |
 | `docs/specs/` | One cycle per spec; folder cycles carry `plan.md` and `tasks.md` beside `spec.md` or a capability map with module specs (ADR 0005). |
 | `docs/adr/` | Decisions that outlive a cycle, Nygard format, numbered, never deleted. |

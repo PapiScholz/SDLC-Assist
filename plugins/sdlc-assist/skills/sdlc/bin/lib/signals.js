@@ -108,7 +108,8 @@ function findOrphanSpecs(root) {
   (function walk(rel, depth) {
     for (const e of listDir(path.join(root, rel))) {
       const child = rel + '/' + e.name;
-      if (e.isDirectory()) { if (depth < 3 && !EXCLUDED_DIRS.includes(e.name) && child.toLowerCase() !== 'docs/specs') walk(child, depth + 1); }
+      // ADR folders are records, not specs: an ADR titled "...-spec-..." is not an orphan.
+      if (e.isDirectory()) { if (depth < 3 && !EXCLUDED_DIRS.includes(e.name) && child.toLowerCase() !== 'docs/specs' && !ADR_DIRS.includes(child.toLowerCase())) walk(child, depth + 1); }
       else if (e.isFile() && /\.md$/i.test(e.name) && ORPHAN_NAME.test(e.name.slice(0, -3))) out.push(child);
     }
   })('docs', 1);
