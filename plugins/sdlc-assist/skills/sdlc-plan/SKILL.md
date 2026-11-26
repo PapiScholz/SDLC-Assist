@@ -1,6 +1,6 @@
 ---
 name: sdlc-plan
-version: 0.16.1
+version: 0.17.0
 description: Writes the plan and task list of an approved spec on a code repository, beside the spec, split into stages when the work is long, with acceptance and a verification line per task. Use when the sdlc router reports step 3 (plan), when an approved spec has no plan or its stage has no tasks, when work feels too large to start, or when asked to break a spec into tasks or stages.
 ---
 
