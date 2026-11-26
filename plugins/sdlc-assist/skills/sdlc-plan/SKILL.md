@@ -46,10 +46,11 @@ One line per task in `tasks.md`, in build order, foundations first, each leaving
 
 ## Approval
 
-1. Show the developer the plan (path, stages, tasks of the first stage, risks) and ask for approval in one line.
-2. A go-ahead counts as approval only of a plan the developer has already seen in an earlier message. A go-ahead given before the plan existed approves nothing written after it: show the plan and say it is not yet approved.
-3. On approval, close mode writes `Phase: development`; implementation starts at the first open task.
-4. When you go ahead without an approval (allowed by the router's plan rule on some models), say so in the same message; never present an unapproved plan as approved.
+1. Offer the cold review in one line and run it only on a yes (`../sdlc/references/cold-review.md`: reviewers, rounds, how to resolve findings).
+2. Show the developer the plan (path, stages, tasks of the first stage, risks) and ask for approval in one line.
+3. A go-ahead counts as approval only of a plan the developer has already seen in an earlier message. A go-ahead given before the plan existed approves nothing written after it: show the plan and say it is not yet approved.
+4. On approval, close mode writes `Phase: development`; implementation starts at the first open task.
+5. When you go ahead without an approval (allowed by the router's plan rule on some models), say so in the same message; never present an unapproved plan as approved.
 
 ## Never
 

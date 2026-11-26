@@ -79,8 +79,9 @@ Rules that hold throughout:
 
 - The agent routes by itself (ADR 0010): a new topic is sized and announced; it asks only when the repository or the size cannot be inferred. Entering a family skill re-states the route once per session.
 - Warnings never block. Development without an approved spec, or deployment without testing, are said in the same sentence, in plain words.
+- Before each approval of a `feature.md`, `spec.md` or plan, the agent offers a cold review in one line and runs it only on a yes (ADR 0012, `skills/sdlc/references/cold-review.md`). Findings go to the chat; the approval is never blocked.
 - Tests run only when the user asks in the current turn; otherwise the evidence says `tests not run`.
-- The skill writes only spec files created through the SDD flow, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`. It never runs a state-changing git command and never releases on its own.
+- The skill writes only spec files created through `sdlc-spec`, header updates on a confirmed close, and the `[x]` and date that close a stage in `plan.md`. It never runs a state-changing git command and never releases on its own.
 - Each folder cycle (`docs/specs/<date>-<slug>/`) owns its `plan.md` and `tasks.md`. Flat specs share `tasks/plan.md` and `tasks/todo.md`, so only one flat cycle is planned at a time: a new one waits for the active one to close or for the user to switch.
 
 ## Day to day

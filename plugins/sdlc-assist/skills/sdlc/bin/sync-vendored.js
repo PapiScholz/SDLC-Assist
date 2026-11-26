@@ -29,7 +29,9 @@ function main(){ const a=parseArgs(process.argv.slice(2)); const up=fetchUpstrea
     fs.writeFileSync(path.join(dstDir,'LICENSE'),fs.readFileSync(path.join(up,'LICENSE')));
     fs.writeFileSync(path.join(dstDir,'VENDORED.md'),vendoredNote(name)); console.log(`vendored: ${name}`); }
   // A folder with a VENDORED.md whose name left the list is a copy nobody syncs any more.
-  if(a.mode==='check'&&fs.existsSync(a.skillsDir)) for(const d of fs.readdirSync(a.skillsDir))
-    if(!a.names.includes(d)&&fs.existsSync(path.join(a.skillsDir,d,'VENDORED.md'))){drift++; console.error(`not in the vendored list: skills/${d}`);}
+  // --fix does not delete it (remove it by hand) but fails, so it never reports success over a leftover.
+  let left=0; if(fs.existsSync(a.skillsDir)) for(const d of fs.readdirSync(a.skillsDir))
+    if(!a.names.includes(d)&&fs.existsSync(path.join(a.skillsDir,d,'VENDORED.md'))){left++; console.error(`not in the vendored list: skills/${d}`);}
+  drift+=left; if(a.mode==='fix'&&left) process.exit(1);
   if(a.mode==='check') { console.log(drift?`${drift} vendored file(s) drifted or missing`:'vendored skills in sync'); process.exit(drift?1:0); } }
 try{ main(); }catch(e){ console.error(e.message); process.exit(2); }

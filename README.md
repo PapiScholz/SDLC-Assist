@@ -206,11 +206,15 @@ Written for this repo, generic, English, Markdown only (stack detection stays in
 
 | Skill | Phase | Produces |
 |---|---|---|
+| `sdlc-spec` | initial, analysis | the spec (`feature.md` for medium work, `spec.md` for large) in `docs/specs/<date>-<slug>/` with the `Phase:`/`Status:` header, clarifications and EARS acceptance |
+| `sdlc-plan` | planning | `plan.md` and `tasks.md` beside the spec, in stages when long, a check per task |
 | `sdlc-debugging` | analysis, bug route | `Cause:` and `Evidence:` lines for the short spec; reproduce, localise, explain, hand off; never edits product code |
 | `sdlc-qa-gate` | testing | the `Layer / Verified / Not verified / Residual risk` table plus gaps; never a "green" verdict |
 | `sdlc-release` | deployment | version decision, version files and changelog, tag and release; drives an existing release mechanism; every state-changing command only on request |
 
-Section parity with their contracts is enforced by `node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.js`.
+Section parity with their contracts, and the opening line that routes through `sdlc`, are enforced by `node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.js`.
+
+**Cold review, on request.** Before each approval, `sdlc-spec` and `sdlc-plan` offer in one line a review by reviewers that were not in the conversation: `comprehension` (paraphrase first, then what a new reader cannot follow), `code-check` (claims about current code against the repository), `design` (scope, reuse, risks) and `readiness` (no design decision left to the implementer). Medium work gets one reviewer, large work up to three per document and up to three rounds. It runs only on a yes, at about 12,000 tokens per reviewer on a one-page `feature.md` (more for a longer document); findings go to the chat, nothing is written to the repository, and the approval is never blocked. In Claude Code the reviewers are plugin agents with read-only tools that start without `CLAUDE.md` (Claude Code v2.1.271 or later); on a host without subagents the agent says the review did not run. The idea and the resolution rules come from `google/elephant-goldfish-model` (Apache-2.0), rewritten here (ADR 0012).
 
 ## Bundled skills
 

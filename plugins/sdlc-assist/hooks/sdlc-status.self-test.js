@@ -153,7 +153,11 @@ check('issue #27: the sdlc-assist: prefix is stripped', () => {
 });
 check('issue #27: sdlc and non-family skills print nothing', () => {
   const root = stagedRepo();
-  for (const s of ['sdlc', 'sdlc-assist:sdlc', 'brainstorming', 'superpowers:test-driven-development']) { const r = pre(root, s, skillSid()); assert.deepStrictEqual([r.stdout, r.status], ['', 0]); }
+  for (const s of ['sdlc', 'sdlc-assist:sdlc', 'brainstorming', 'superpowers:brainstorming']) { const r = pre(root, s, skillSid()); assert.deepStrictEqual([r.stdout, r.status], ['', 0]); }
+});
+check('superpowers:test-driven-development, which development recommends first, re-states the status', () => {
+  const r = pre(stagedRepo(), 'superpowers:test-driven-development', skillSid());
+  assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /^sdlc: /);
 });
 check('issue #27: PreToolUse with malformed stdin, no skill, or no repo prints nothing, exit 0', () => {
   const a = run('not json'); const b = run(JSON.stringify({ hook_event_name: 'PreToolUse', cwd: stagedRepo() })); const c = pre(tmpDir(), 'sdlc-release', skillSid());

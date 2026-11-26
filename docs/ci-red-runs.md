@@ -2618,3 +2618,266 @@ all gates ok
 ```
 
 One earlier run in this stage failed `sdlc-status.self-test.js` "feature cycle in development" with an empty line while other processes were running; the test alone passed 4 of 4 runs and the next full run passed. Recorded as flaky under load, not fixed here.
+
+### Stage 3 (branch `visible-cycle-stage3`), task 11: plugin agents, documented and probed
+
+Official docs (https://code.claude.com/docs/en/sub-agents, read 2026-11-26), paraphrased: `tools` takes a comma-separated string or a YAML list, and an agent without it inherits every tool. `omitClaudeMd: true` starts the subagent without the user, project and local `CLAUDE.md`; managed policy files still load. It needs Claude Code v2.1.271 or later. Plugin subagents ignore `hooks`, `mcpServers` and `permissionMode` only. https://code.claude.com/docs/en/plugins-reference: agents go in `agents/` by default and are namespaced `<plugin>:<agent>`.
+
+A scratch plugin with two agents was built and validated. `probe` has `tools: Read, Grep, Glob` and `omitClaudeMd: true`. `probe-open` is the control, without `omitClaudeMd`. The scratch repo has a `CLAUDE.md` holding a canary word:
+
+```
+$ claude --version
+2.1.332 (Claude Code)
+$ claude plugin validate probe-agents/plugin
+✔ Validation passed with warnings
+```
+
+The run could not be made: the CLI has no session.
+
+```
+$ cd probe-agents/repo && claude -p --plugin-dir ../plugin "Run the subagent probeplug:probe ... then probeplug:probe-open ..."
+Failed to authenticate: OAuth session expired and could not be refreshed
+$ claude auth status
+{
+  "loggedIn": false,
+  "authMethod": "none",
+```
+
+Isolation is therefore documented and checked statically (`check-agents.js`, below), not yet observed at run time. The probe stays pending until the CLI is signed in again (`claude auth login`).
+
+### Task 12: seeded fixture, red with the checks that exist
+
+`test-fixtures/review/repo/` is a cart module with `docs/specs/2026-11-26-coupon/feature.md`, which carries three seeded gaps. The answer key is `test-fixtures/review/GAPS.md`, outside the repository root the reviewer receives:
+
+- G1 "the Ledger", undefined.
+- G2 `src/pricing.js` / `roundCents()`, cited as existing.
+- G3 T2 "a database table or a JSON file, whichever fits better".
+
+With no reviewer, nothing in the toolchain reports any of them:
+
+```
+$ cd test-fixtures/review/repo && node ../../../plugins/sdlc-assist/skills/sdlc/bin/check-acceptance.js --root .
+check-acceptance: 1 specs, 2 bullets, 0 not EARS
+$ grep -rn "Ledger" . | grep -v feature.md     # no output
+$ ls src
+cart.js
+```
+
+### Task 13: four reviewer agents and a gate that keeps them read-only
+
+`plugins/sdlc-assist/agents/{comprehension,code-check,design,readiness}.md`, each with `tools: Read, Grep, Glob`, `model: inherit` and `omitClaudeMd: true`:
+
+```
+$ claude plugin validate plugins/sdlc-assist
+✔ Validation passed
+$ wc -c plugins/sdlc-assist/agents/*.md
+1804 code-check.md
+2529 comprehension.md
+2081 design.md
+1940 readiness.md
+```
+
+`check-agents.js`, self-test first:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.self-test.js | tail -1
+1 passed, 7 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.self-test.js | tail -1    # after writing check-agents.js
+8 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.js
+check-agents: 4 agents OK
+```
+
+It runs in `scripts/gates.sh` after `check-skill-sections`.
+
+### Task 16 (partial): the fixture reviewed, cost of one medium review
+
+The `comprehension` profile ran as a fresh general-purpose subagent, the route `cold-review.md` gives hosts without plugin agents. It had the read-only instruction, the document path, the repository root and the file list, and not `GAPS.md`. Its report, trimmed to the findings:
+
+```
+REVIEW comprehension
+Document: .../test-fixtures/review/repo/docs/specs/2026-11-26-coupon/feature.md
+Read: feature.md, README.md, src/cart.js (Glob of the repo root; src/pricing.js and test/ do not exist)
+...
+Findings:
+- [Blocker] S2 Outcome (line 21) - states that `roundCents()` already exists in `src/pricing.js` ... Neither the file nor the function exists ... - evidence: ... searched `roundCents` with Grep: only match is feature.md:21 ...
+- [Major] S1 Outcome (line 16) - "the Ledger" and "when the order closes" are project terms that are never defined ... - evidence: searched `Ledger` with Grep: only match is feature.md:16 ...
+- [Major] T2 (line 32) - leaves a design decision to the implementer: "in a database table or a JSON file, whichever fits better" ... - evidence: feature.md:32 ...
+- [Major] S2 Check (line 22) / T2 - the code `TEN` and its percentage are not defined anywhere ...
+- [Major] T3 / Acceptance (lines 26-27, 33) - "show the discounted total" ... assume a cart UI or a message channel that does not exist ...
+- [Nit] S1/S2 Quote (lines 15, 20) - the stakeholder quotes are in Spanish ...
+```
+
+All three seeded gaps were found: G2 as a Blocker, G1 and G3 as Majors. `test/coupon.test.js`, which the document proposes, was not reported. Its usage line from the harness:
+
+```
+<usage><subagent_tokens>88780</subagent_tokens><tool_uses>5</tool_uses><duration_ms>21986</duration_ms></usage>
+```
+
+This subagent loaded the owner's `CLAUDE.md` files, because a general-purpose agent does not omit them. The plugin agent with `omitClaudeMd` should cost less. That figure, and the same review run as `sdlc-assist:comprehension`, are pending the CLI session (task 11).
+
+### Task 14: the offer, replayed
+
+A fresh subagent (sonnet) was told to `Read` `plugins/sdlc-assist/skills/sdlc-spec/SKILL.md` and follow it in a scratch copy of the fixture repo (`README.md`, `src/cart.js`, no specs) for the request "agregá un campo de cantidad máxima por producto...". It was not told about the review. Its report of its own tool calls: Read `sdlc-spec/SKILL.md`; Bash (router `where.js --message-file`: step 2 spec, feature, no cycles); Read `cold-review.md`; Read `feature-template.md`; Bash (`src/cart.js`, agents dir); Bash (wrote `feature.md`, ran `check-acceptance`). The harness counted 7 tool uses (those six and the hand-back), so no `Agent` call:
+
+```
+<usage><subagent_tokens>95425</subagent_tokens><tool_uses>7</tool_uses><duration_ms>43281</duration_ms></usage>
+```
+
+On disk afterwards:
+
+```
+$ find . -path ./.git -prune -o -type f -print | sort
+./README.md
+./docs/specs/2026-11-26-cart-max-quantity/feature.md
+./src/cart.js
+$ node .../check-acceptance.js --root .
+check-acceptance: 1 specs, 2 bullets, 0 not EARS
+$ grep -n "revisión en frío\|cold review" -r docs || echo "(no review text in repo files)"
+(no review text in repo files)
+```
+
+The last two lines of its message to the developer, verbatim:
+
+```
+Antes de que apruebes: ¿querés una revisión en frío? 1 revisor lee el documento sin nuestra conversación, unos 90.000 tokens.
+
+¿Aprobás el spec?
+```
+
+One line, right before the approval question, one reviewer for a medium `feature.md`, nothing run, nothing about the review written into the repository.
+
+### Task 11, run: plugin agents with `omitClaudeMd` and read-only tools, observed
+
+After `claude auth login` (`claude auth status`: `"loggedIn": true`). Claude Code 2.1.332, the scratch plugin `probeplug` loaded with `--plugin-dir`, headless with `--output-format stream-json --verbose` so the subagents' own tool calls are visible. The parent was told to pass only the prompt `run`.
+
+Run 1, with the probes as first written (canary word in the scratch repo's `CLAUDE.md`). Subagent hand-backs, verbatim (path trimmed):
+
+```
+probeplug:probe       CANARY: NONE
+                      TOOLS: Read, Grep, Glob, SubagentHandback
+                      WRITE: Failed. I don't have a tool that can create or write files (I only have Read, Grep, Glob and SubagentHandback), so .../probe-agents/repo/probe-written.txt was not created.
+                      <usage>subagent_tokens: 4686 tool_uses: 0</usage>
+probeplug:probe-open  CANARY: NONE
+                      <usage>subagent_tokens: 16094 tool_uses: 0</usage>
+$ ls repo
+CLAUDE.md
+```
+
+Read-only holds: the agent lists only `Read, Grep, Glob` (plus the harness's hand-back) and no file was written. The canary did not discriminate: the control, without `omitClaudeMd`, also answered `NONE`, though it used 11,408 more tokens.
+
+Run 2, both probes asking which `CLAUDE.md` content they were given:
+
+```
+probeplug:probe       CLAUDEMD: NONE
+                      SOURCES: NONE
+                      <usage>subagent_tokens: 4529 tool_uses: 0</usage>
+probeplug:probe-open  CLAUDEMD: PRESENT-NO-MATCH
+                      SOURCES: C:\Users\<user>\.claude\CLAUDE.md (also given, but not a CLAUDE.md file: C:\Users\<user>\AGENTS.md)
+                      <usage>subagent_tokens: 16486 tool_uses: 0</usage>
+```
+
+The control received the user's `CLAUDE.md`; the agent with `omitClaudeMd: true` received none, and costs about 12,000 tokens less here. Neither received the scratch repo's `CLAUDE.md` (the canary), so whether a project `CLAUDE.md` loads into a plugin subagent in a headless run on an untracked folder was not observed; the user-level file is what this run discriminates on. No subagent called any tool, so neither read `CLAUDE.md` from disk.
+
+Run 3, the scratch folder made a git repository (`git init`, no commit): the main session itself said it did not have the folder's `CLAUDE.md` ("mi contexto no contiene el CLAUDE.md de esta carpeta (sólo el global y `...AGENTS.md`)"), so a scratch folder under the temp directory cannot show the project case. Probes: `probe` `CLAUDEMD: NONE / SOURCES: NONE` (4712 tokens); `probe-open` `SOURCES: C:\Users\<user>\.claude\CLAUDE.md` (16516 tokens).
+
+Run 4, inside this repository, whose `CLAUDE.md` the main session does load. The probes were changed to look for "Dogfood first" instead of "project word"; the main session was told not to read files or change anything (`git status --short` before and after: ` M docs/ci-red-runs.md`, this record only). Main session's first line: "Sí, mi contexto contiene el CLAUDE.md del repo: `- **Dogfood first.** Before any work request, run the skill'`". Subagent hand-backs, verbatim (rule text trimmed):
+
+```
+probeplug:probe       CLAUDEMD: NONE
+                      SOURCES: NONE
+                      <usage>subagent_tokens: 4816 tool_uses: 0</usage>
+probeplug:probe-open  CLAUDEMD: - **Dogfood first.** Before any work request, run the skill's own protocol: ... advance it only through close mode.
+                      SOURCES: C:\Users\<user>\.claude\CLAUDE.md, C:\Users\<user>\Github\SDLC-Assist\CLAUDE.md
+                      <usage>subagent_tokens: 16834 tool_uses: 0</usage>
+```
+
+A plugin agent without `omitClaudeMd` receives both the user's and the project's `CLAUDE.md`; the same agent with `omitClaudeMd: true` receives neither. With run 1 (only `Read, Grep, Glob`, the write refused), the isolation the reviewer agents declare holds at run time on 2.1.332.
+
+### Task 16, run: the fixture reviewed by the `sdlc-assist:comprehension` plugin agent
+
+Headless from `test-fixtures/review/repo`, the plugin loaded with `--plugin-dir ../../../plugins/sdlc-assist` (init listed `sdlc-assist:code-check`, `sdlc-assist:comprehension`, `sdlc-assist:design`, `sdlc-assist:readiness`). The parent passed exactly the prompt `cold-review.md` prescribes, and nothing else:
+
+```
+Document: .../test-fixtures/review/repo/docs/specs/2026-11-26-coupon/feature.md
+Repository root: .../test-fixtures/review/repo
+Files you may read: the document, and any file under the repository root that the document cites.
+Review it.
+```
+
+Run 1. The subagent's tool calls: Read `feature.md`, Glob `**/*` (repo root), Grep `Ledger|roundCents`, Read `src/cart.js`, Read `README.md`, hand-back. Findings, trimmed:
+
+```
+- [Blocker] S2 Outcome - the document says the code has an existing `roundCents()` in `src/pricing.js` ... Neither the file nor the function exists ... - evidence: ... searched `roundCents` with Grep: matches only feature.md:21 ...
+- [Major] S1 Outcome - "the Ledger" is a project term with no definition, and nothing in the repo has it ... - evidence: searched `Ledger` with Grep: only feature.md:16 ...
+- [Major] T2 - leaves a design decision to the implementer ("in a database table or a JSON file, whichever fits better") ... - evidence: feature.md:32
+- [Major] S1/S2/T2 - the coupon catalog is never defined ... what 'TEN' means ...
+- [Major] S2 Check - the expected value is left implicit. 10.005 * 0.9 = 9.0045 ... rounding before the discount gives ... 9.01 ...
+- [Major] T3 - "Show the discounted total and the rejection message" assumes a cart UI ...
+- [Major] Acceptance line 2 (unknown coupon) - no spec covers it and no check tests it ...
+- [Nit] S1/S2 Quote - the quotes are in Spanish ...
+- [Nit] Header - "Phase: analysis" while the document already lists implementation tasks ...
+<usage>subagent_tokens: 11091 tool_uses: 5 duration_ms: 24082</usage>
+```
+
+Run 2, same command. Tool calls: Read, Glob, Grep, Read, Read, Grep, hand-back. Findings, trimmed:
+
+```
+- [Blocker] S2 Outcome - The spec says the existing `roundCents()` lives in `src/pricing.js`. That file does not exist ...
+- [Blocker] S2 Outcome - The spec says totals are "already" rounded to two decimals. The only total in the code is unrounded ...
+- [Major] S1 Outcome - "the Ledger" is a project term with no definition ...
+- [Major] T2 - The task leaves a design choice to the implementer: "in a database table or a JSON file, whichever fits better" ...
+- [Major] S2 Check / T2 - The check depends on a coupon `'TEN'` ... never defined ...
+- [Major] T3 / Acceptance - "Show the discounted total and the rejection message" assumes a cart UI ...
+- [Major] Acceptance (unknown coupon) - The unknown-coupon behaviour has no matching spec ...
+- [Major] Tasks - No task creates `test/coupon.test.js`, yet S1, S2, T1 and T3 all depend on it. The file does not exist ...
+- [Nit] S1/S2 Checks - `src/cart.js` uses ESM `export`, and the repository has no package.json ...
+- [Nit] S1, S2 Quote - The quotes are in Spanish ...
+<usage>subagent_tokens: 11483 tool_uses: 6 duration_ms: 25868</usage>
+```
+
+Against `GAPS.md`: G1, G2 and G3 are each reported at Major or above in both runs. Neither run read `GAPS.md` (it is outside the root and no Glob or Read left it). `git status --short test-fixtures` printed nothing after both runs: nothing was written.
+
+Outside the key: run 2 reported "No task creates `test/coupon.test.js`" as a Major. `GAPS.md` says the proposed test file is not a gap; the reviewer did not claim the document says it exists, it said no task writes it, which a reader can argue either way. One run in two; the profile is not changed on one sample.
+
+Cost: 11,091 and 11,483 tokens, against 88,780 for the same profile as a general-purpose subagent (task 16, partial, above). The offer line in `cold-review.md`, both READMEs and ADR 0012 now say about 12,000 tokens per reviewer on a one-page `feature.md`.
+
+### Stage 3 code review: six findings fixed
+
+`/code-review` on the branch reported one important finding and five nits. The four code fixes were written test first. Red, with the tests added and the scripts unchanged (trimmed to the failing lines and the counts):
+
+```
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js
+  FAIL superpowers:test-driven-development, which development recommends first, re-states the status
+18 passed, 1 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.self-test.js
+  FAIL an agents directory with no .md file exits 1 (nothing for the review to launch)
+       check-agents: 0 agents OK
+  FAIL a missing reviewer named by cold-review.md exits 1 naming it (--require)
+       check-agents: 1 agents OK
+9 passed, 2 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.self-test.js
+AssertionError [ERR_ASSERTION]: --fix with a leftover vendored folder must fail: vendored: incremental-implementation
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js
+  FAIL --deadline-ms=<n> form is accepted, like --root=
+41 passed, 1 failed
+```
+
+The hook self-test used to assert that `superpowers:test-driven-development` prints nothing; since ADR 0011 the development sheet recommends it first, so it moved to the positive cases and `superpowers:brainstorming` took its place among the silent ones.
+
+Green, after the fixes:
+
+```
+$ node plugins/sdlc-assist/hooks/sdlc-status.self-test.js | tail -1
+19 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.self-test.js | tail -1
+11 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.self-test.js
+sync-vendored self-test OK
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js | tail -1
+42 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-agents.js
+check-agents: 4 agents OK
+```
+
+The two documentation nits: `cold-review.md` and both READMEs now name Claude Code v2.1.271 as the floor for `omitClaudeMd`, and the offer's figure says it is for a one-page document, with the other reviewers and long documents not measured.

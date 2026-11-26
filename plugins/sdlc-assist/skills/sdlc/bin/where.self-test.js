@@ -323,6 +323,10 @@ check('--status past the git deadline says incomplete instead of a partial block
   const out = runStatus(stagedCycle(), ['--deadline-ms', '0']);
   assert.strictEqual(out.trim().split('\n').length, 1, out); assert.match(out, /^sdlc status: incomplete/);
 });
+check('--deadline-ms=<n> form is accepted, like --root=', () => {
+  const out = runStatus(stagedCycle(), ['--deadline-ms=0']);
+  assert.match(out, /^sdlc status: incomplete/);
+});
 check('--status and --brief together are refused', () => {
   const r = spawnSync(process.execPath, [WHERE, '--root', tmpDir(), '--status', '--brief'], { encoding: 'utf8' });
   assert.strictEqual(r.status, 2); assert.match(r.stderr, /--status/);

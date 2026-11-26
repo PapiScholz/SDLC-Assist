@@ -9,7 +9,7 @@ gate() { local n=$1 out; shift
 B=plugins/sdlc-assist/skills/sdlc/bin
 for t in $B/lib/*.self-test.js $B/*.self-test.js scripts/hooks/*.self-test.js plugins/sdlc-assist/hooks/*.self-test.js; do gate "$t" node "$t"; done
 if [ "$quick" = 1 ]; then echo "skip sync-vendored (--quick)"; else gate sync-vendored node $B/sync-vendored.js --check; fi
-for c in check-manifest check-sheets check-frontmatter check-skill-sections check-eol; do gate "$c" node "$B/$c.js"; done
+for c in check-manifest check-sheets check-frontmatter check-skill-sections check-agents check-eol; do gate "$c" node "$B/$c.js"; done
 # Advisory: EARS acceptance and open questions in open specs. Prints warnings, exits 0 (--strict fails).
 node "$B/check-acceptance.js" --root . | sed 's/^/  /'; echo "ok check-acceptance (advisory)"
 # Advisory: ADR numbering and Status values. Prints warnings, exits 0 (--strict fails).

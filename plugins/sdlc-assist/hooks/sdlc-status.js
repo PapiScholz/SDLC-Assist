@@ -52,7 +52,8 @@ function changed(sessionId, line, always) {
 }
 // Issue #27: loading a family skill is the moment the agent decides how to work, so the status is re-stated
 // there (PreToolUse on the Skill tool), once per session. Never a permissionDecision: it only adds context.
-const FAMILY = new Set(['sdlc-spec', 'sdlc-plan', 'incremental-implementation', 'test-driven-development', 'sdlc-debugging', 'sdlc-qa-gate', 'sdlc-release']);
+// superpowers:test-driven-development is listed by its full name: development recommends it first (ADR 0011).
+const FAMILY = new Set(['sdlc-spec', 'sdlc-plan', 'incremental-implementation', 'test-driven-development', 'superpowers:test-driven-development', 'sdlc-debugging', 'sdlc-qa-gate', 'sdlc-release']);
 function firstForSkill(sessionId) {
   if (typeof sessionId !== 'string' || !/^[\w-]{1,128}$/.test(sessionId)) return true;
   const file = stateFile(sessionId + '.skill'); if (!file) return true;
