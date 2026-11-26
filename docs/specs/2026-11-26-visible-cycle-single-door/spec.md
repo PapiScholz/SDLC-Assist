@@ -1,7 +1,7 @@
 # Spec: visible cycle, single door, cold review (issues #35, #34, #30)
 
-Phase: development
-Status: approved
+Phase: deployment
+Status: closed
 Date: 2026-11-26
 Owner: Ezequiel Scholz
 Repo: `PapiScholz/SDLC-Assist` (in production, v0.16.1)

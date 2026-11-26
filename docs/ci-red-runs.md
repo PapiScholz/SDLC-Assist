@@ -2881,3 +2881,24 @@ check-agents: 4 agents OK
 ```
 
 The two documentation nits: `cold-review.md` and both READMEs now name Claude Code v2.1.271 as the floor for `omitClaudeMd`, and the offer's figure says it is for a one-page document, with the other reviewers and long documents not measured.
+
+### Delivery and close (2026-11-26)
+
+The three stages shipped as three releases, merged in order, each after CI passed on all four jobs (`test` on ubuntu-latest and windows-latest, `install-smoke`, `plugin-validate`):
+
+- PR #36 (stage 1, `/sdlc-assist:status`) merged as `5f62458`; release v0.17.0 (`3a40ec9`).
+- PR #37 (stage 2, own `sdlc-spec` and `sdlc-plan`) retargeted to `main`; the v0.17.0 version bump conflicted in `plugin.json` and `sdlc/SKILL.md`, resolved with the version from `main` and this branch's description (`a1b8b44`), `sdlc-spec` and `sdlc-plan` aligned to 0.17.0; merged as `b3650ff`; release v0.18.0 (`4927761`).
+- PR #38 (stage 3, cold review) merged `main` without conflicts (`fc2055f`), retargeted to `main`, merged as `6cef9e3`; release v0.19.0 (`c67e56a`).
+
+```
+$ git describe --tags origin/main
+v0.19.0
+$ gh release list --limit 3
+v0.19.0	Latest	v0.19.0	2026-11-26T23:28:26Z
+v0.18.0		v0.18.0	2026-11-26T23:22:59Z
+v0.17.0		v0.17.0	2026-11-26T22:56:56Z
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-evidence.js --root .
+check-evidence: 1 task lists, 16 done tasks, 0 without evidence
+```
+
+`sdlc close` on `docs/specs/2026-11-26-visible-cycle-single-door/spec.md` used the confirmed phase, deployment (`Phase: deployment`, `Status: closed`); the header said development, so the skipped closes write the confirmed row. The three stage headings in `plan.md` carry `[x] 2026-11-26`. ADR 0011 and ADR 0012 move from `proposed` to `accepted`: both decisions shipped. The installed plugin was not updated in this session.

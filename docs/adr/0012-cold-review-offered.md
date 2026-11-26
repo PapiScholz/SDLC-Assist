@@ -1,6 +1,6 @@
 # 0012. Cold review of spec and plan: offered, run by isolated read-only reviewers, reported in the chat
 
-Status: proposed
+Status: accepted
 Date: 2026-11-26
 
 ## Context

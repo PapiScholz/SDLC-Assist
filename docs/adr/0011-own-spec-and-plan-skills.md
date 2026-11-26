@@ -1,6 +1,6 @@
 # 0011. Own spec and plan skills replace the vendored ones
 
-Status: proposed
+Status: accepted
 Date: 2026-11-26
 
 ## Context
