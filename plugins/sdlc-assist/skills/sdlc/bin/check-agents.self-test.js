@@ -3,6 +3,10 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// Every temp dir this test makes is removed when it exits, pass or fail.
+const tmpDirs = [];
+function mkTmp(prefix) { const d = fs.mkdtempSync(prefix); tmpDirs.push(d); return d; }
+process.on('exit', () => { for (const d of tmpDirs) try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
 const { spawnSync } = require('child_process');
 let passed = 0, failed = 0;
 function check(label, fn) {
@@ -11,7 +15,7 @@ function check(label, fn) {
 }
 const GOOD = '---\nname: comprehension\ndescription: d\ntools: Read, Grep, Glob\nmodel: inherit\nomitClaudeMd: true\n---\nbody\n';
 function tree(files) {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-'));
+  const d = mkTmp(path.join(os.tmpdir(), 'agents-'));
   fs.mkdirSync(path.join(d, 'agents'));
   for (const [name, text] of Object.entries(files)) fs.writeFileSync(path.join(d, 'agents', name), text);
   return d;
@@ -58,7 +62,7 @@ check('CRLF file is read correctly', () => {
   assert.strictEqual(r.status, 0, out(r));
 });
 check('no agents directory exits 1', () => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-'));
+  const d = mkTmp(path.join(os.tmpdir(), 'agents-'));
   assert.strictEqual(run(d).status, 1);
 });
 check('an agents directory with no .md file exits 1 (nothing for the review to launch)', () => {

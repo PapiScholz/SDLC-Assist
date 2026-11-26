@@ -3,6 +3,10 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// Every temp dir this test makes is removed when it exits, pass or fail.
+const tmpDirs = [];
+function mkTmp(prefix) { const d = fs.mkdtempSync(prefix); tmpDirs.push(d); return d; }
+process.on('exit', () => { for (const d of tmpDirs) try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
 const { spawnSync } = require('child_process');
 let passed = 0, failed = 0;
 function check(label, fn) {
@@ -10,7 +14,7 @@ function check(label, fn) {
   catch (err) { console.log('  FAIL ' + label); console.log('       ' + err.message); failed++; }
 }
 const HOOK = path.join(__dirname, 'git-authorization.js');
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gitauth-'));
+const dir = mkTmp(path.join(os.tmpdir(), 'gitauth-'));
 let n = 0;
 function writeJsonl(records) {
   const p = path.join(dir, 't' + (n++) + '.jsonl');

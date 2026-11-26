@@ -2902,3 +2902,44 @@ check-evidence: 1 task lists, 16 done tasks, 0 without evidence
 ```
 
 `sdlc close` on `docs/specs/2026-11-26-visible-cycle-single-door/spec.md` used the confirmed phase, deployment (`Phase: deployment`, `Status: closed`); the header said development, so the skipped closes write the confirmed row. The three stage headings in `plan.md` carry `[x] 2026-11-26`. ADR 0011 and ADR 0012 move from `proposed` to `accepted`: both decisions shipped. The installed plugin was not updated in this session.
+
+### Self-tests and sync-vendored leave nothing in the temp dir (2026-11-26)
+
+Small fix, no spec (under the threshold in `SKILL.md`: one test helper repeated, no contract changes). Found while removing stale sdlc-assist copies on the owner's machine: 976 fixture folders and 16 upstream clones had piled up in `%TEMP%`.
+
+Red: a probe runs one self-test and counts the new entries in the temp dir (trimmed to the tests that left any):
+
+```
+exit 0 | left 11: agents-A90vOk agents-abxwT1 agents-eGXgOY | .../bin/check-agents.self-test.js
+exit 0 | left 6: eol-1F7Mqo eol-cWo2Ix eol-jasU9C | .../bin/check-eol.self-test.js
+exit 0 | left 10: fm-0ln5NT fm-3xSgUZ fm-7pMlhs | .../bin/check-frontmatter.self-test.js
+exit 0 | left 12: sheets-3wHhCG sheets-6lAKGe sheets-95wBrU | .../bin/check-sheets.self-test.js
+exit 0 | left 9: sections-27A7Nf sections-4js50E sections-a2yNqN | .../bin/check-skill-sections.self-test.js
+exit 0 | left 13: eolg-8wisqU eolg-fUXkM2 eolg-hIza6U | scripts/hooks/eol-guard.self-test.js
+exit 0 | left 1: gitauth-u3l9BY | scripts/hooks/git-authorization.self-test.js
+```
+
+The other sixteen self-tests left 0. After the fix (each of the seven makes its temp dirs through `mkTmp`, removed on exit):
+
+```
+exit 0 | left 0 | .../bin/check-agents.self-test.js
+exit 0 | left 0 | .../bin/check-eol.self-test.js
+exit 0 | left 0 | .../bin/check-frontmatter.self-test.js
+exit 0 | left 0 | .../bin/check-sheets.self-test.js
+exit 0 | left 0 | .../bin/check-skill-sections.self-test.js
+exit 0 | left 0 | scripts/hooks/eol-guard.self-test.js
+exit 0 | left 0 | scripts/hooks/git-authorization.self-test.js
+```
+
+A full gate run then still added a `sdlc-upstream-*` folder: `sync-vendored --check` cloned upstream into the temp dir and never removed it. The clone is now removed on exit (also when the clone fails); a dir given with `--upstream-dir` is left alone.
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.js --check | tail -1    # before
+vendored skills in sync
+before fix: sdlc-upstream dirs 16 -> 17
+$ node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.js --check | tail -1    # after
+vendored skills in sync
+after fix: sdlc-upstream dirs 17 -> 17
+$ node plugins/sdlc-assist/skills/sdlc/bin/sync-vendored.self-test.js
+sync-vendored self-test OK
+```

@@ -15,6 +15,8 @@ function parseArgs(argv){ const a={mode:null,upstreamDir:null,skillsDir:path.joi
   if(!a.mode) throw new Error('usage: --check | --fix'); return a; }
 function fetchUpstream(a){ if(a.upstreamDir) return a.upstreamDir;
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sdlc-upstream-'));
+  // The clone is ours: removed on exit, also when the clone or the checkout fails (--upstream-dir is the caller's).
+  process.on('exit',()=>{ try{ fs.rmSync(dir,{recursive:true,force:true,maxRetries:3}); }catch{ /* best effort */ } });
   execFileSync('git',['clone','--quiet','--filter=blob:none','--no-checkout',UPSTREAM,dir],{stdio:'ignore'});
   execFileSync('git',['-C',dir,'checkout','--quiet',UPSTREAM_COMMIT],{stdio:'ignore'}); return dir; }
 function vendoredNote(name){ return `# Vendored skill\n\nSource: ${UPSTREAM}\nPath: skills/${name}/SKILL.md\nCommit: ${UPSTREAM_COMMIT}\nLicense: MIT (see LICENSE)\n\nDo not edit. Update with: node skills/sdlc/bin/sync-vendored.js --fix\n`; }

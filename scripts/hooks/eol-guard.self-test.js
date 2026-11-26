@@ -3,13 +3,17 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// Every temp dir this test makes is removed when it exits, pass or fail.
+const tmpDirs = [];
+function mkTmp(prefix) { const d = fs.mkdtempSync(prefix); tmpDirs.push(d); return d; }
+process.on('exit', () => { for (const d of tmpDirs) try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
 const { spawnSync } = require('child_process');
 let passed = 0, failed = 0;
 function check(label, fn) {
   try { fn(); console.log('  ok   ' + label); passed++; }
   catch (err) { console.log('  FAIL ' + label); console.log('       ' + err.message); failed++; }
 }
-function project() { return fs.mkdtempSync(path.join(os.tmpdir(), 'eolg-')); }
+function project() { return mkTmp(path.join(os.tmpdir(), 'eolg-')); }
 function put(d, name, content) {
   const p = path.join(d, name);
   fs.mkdirSync(path.dirname(p), { recursive: true });
