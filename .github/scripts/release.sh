@@ -10,7 +10,7 @@
 # Version sources rewritten here (keep each on one line):
 #   plugins/sdlc-assist/.claude-plugin/plugin.json   "version": "X.Y.Z"   (the only "version" key)
 #   plugins/sdlc-assist/skills/sdlc/SKILL.md         version: X.Y.Z       (frontmatter)
-#   plugins/sdlc-assist/skills/{sdlc-debugging,sdlc-qa-gate,sdlc-release}/SKILL.md  (same line)
+#   plugins/sdlc-assist/skills/{sdlc-spec,sdlc-plan,sdlc-debugging,sdlc-qa-gate,sdlc-release}/SKILL.md  (same line)
 #
 # Requires GNU sed (-i with no suffix); preflight() checks for it rather than
 # letting a BSD sed corrupt the version files halfway through.
@@ -115,7 +115,7 @@ echo "Releasing $NEW_TAG (bump: $BUMP, from $LAST_TAG)"
 # plugin.json has exactly one "version" key, so an unanchored substitution is safe.
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" plugins/sdlc-assist/.claude-plugin/plugin.json
 sed -i "s/^version: .*/version: $NEW_VERSION/" plugins/sdlc-assist/skills/sdlc/SKILL.md
-for own in sdlc-debugging sdlc-qa-gate sdlc-release; do
+for own in sdlc-spec sdlc-plan sdlc-debugging sdlc-qa-gate sdlc-release; do
   sed -i "s/^version: .*/version: $NEW_VERSION/" "plugins/sdlc-assist/skills/$own/SKILL.md"
 done
 
@@ -151,7 +151,7 @@ node plugins/sdlc-assist/skills/sdlc/bin/check-manifest.js
 node plugins/sdlc-assist/skills/sdlc/bin/check-frontmatter.js
 node plugins/sdlc-assist/skills/sdlc/bin/check-eol.js
 
-git add plugins/sdlc-assist/.claude-plugin/plugin.json plugins/sdlc-assist/skills/sdlc/SKILL.md plugins/sdlc-assist/skills/sdlc-debugging/SKILL.md plugins/sdlc-assist/skills/sdlc-qa-gate/SKILL.md plugins/sdlc-assist/skills/sdlc-release/SKILL.md CHANGELOG.md
+git add plugins/sdlc-assist/.claude-plugin/plugin.json plugins/sdlc-assist/skills/sdlc/SKILL.md plugins/sdlc-assist/skills/sdlc-spec/SKILL.md plugins/sdlc-assist/skills/sdlc-plan/SKILL.md plugins/sdlc-assist/skills/sdlc-debugging/SKILL.md plugins/sdlc-assist/skills/sdlc-qa-gate/SKILL.md plugins/sdlc-assist/skills/sdlc-release/SKILL.md CHANGELOG.md
 if git diff --cached --quiet; then
   echo "Version files and CHANGELOG already at $NEW_VERSION. Tagging existing HEAD."
 else

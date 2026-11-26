@@ -457,6 +457,14 @@ check('spec-like files under docs/ outside docs/specs/ are orphans, never cycles
   assert.deepStrictEqual(s.orphanSpecs.list.filter(o => o.hasHeader).map(o => o.path), ['docs/spec-h.md']);
   assert.ok(s.orphanSpecs.list.every(o => typeof o.lastActivity === 'number'));
 });
+check('an ADR whose name holds "spec" is not an orphan spec (docs/adr, docs/decisions)', () => {
+  const root = tmpDir();
+  write(root, 'docs/adr/0011-own-spec-and-plan-skills.md', '# 0011\n\nStatus: proposed\n');
+  write(root, 'docs/decisions/0002-spec-layout.md', '# 0002\n');
+  write(root, 'docs/notes/spec-x.md', '# X\n');
+  const s = collectSignals(root, { runTests: false });
+  assert.deepStrictEqual(s.orphanSpecs.list.map(o => o.path), ['docs/notes/spec-x.md']);
+});
 check('orphans: newest first by git date, capped at 20 with the full total', () => {
   const root = initRepo();
   write(root, 'docs/spec-old.md', '# O\n'); commit(root, 'one', T1);

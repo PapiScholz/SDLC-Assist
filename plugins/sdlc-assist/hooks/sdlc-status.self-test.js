@@ -140,7 +140,7 @@ process.on('exit', () => { for (const f of skillStates) try { fs.rmSync(f, { for
 function pre(root, skill, sid) { return run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill }, cwd: root, session_id: sid })); }
 check('issue #27: family skill in a cycle prints one PreToolUse JSON line starting with sdlc:, once per session', () => {
   const root = stagedRepo(); const sid = skillSid();
-  const a = pre(root, 'planning-and-task-breakdown', sid); const b = pre(root, 'planning-and-task-breakdown', sid);
+  const a = pre(root, 'sdlc-plan', sid); const b = pre(root, 'sdlc-plan', sid);
   assert.strictEqual(a.status, 0); assert.strictEqual(a.stdout.trim().split('\n').length, 1);
   const o = JSON.parse(a.stdout);
   assert.strictEqual(o.hookSpecificOutput.hookEventName, 'PreToolUse'); assert.match(o.hookSpecificOutput.additionalContext, /^sdlc: /);
@@ -148,7 +148,7 @@ check('issue #27: family skill in a cycle prints one PreToolUse JSON line starti
   assert.ok(!/permissionDecision/.test(a.stdout));
 });
 check('issue #27: the sdlc-assist: prefix is stripped', () => {
-  const r = pre(stagedRepo(), 'sdlc-assist:spec-driven-development', skillSid());
+  const r = pre(stagedRepo(), 'sdlc-assist:sdlc-spec', skillSid());
   assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /^sdlc: /);
 });
 check('issue #27: sdlc and non-family skills print nothing', () => {

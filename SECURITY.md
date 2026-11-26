@@ -3,7 +3,7 @@
 This policy is intended for public repositories.
 
 ## Scope
-This repository provides the `sdlc` agent skill (Markdown instructions plus zero-dependency Node scripts), three own skills (`sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and five vendored skills from `addyosmani/agent-skills`.
+This repository provides the `sdlc` agent skill (Markdown instructions plus zero-dependency Node scripts), five own skills (`sdlc-spec`, `sdlc-plan`, `sdlc-debugging`, `sdlc-qa-gate`, `sdlc-release`) and two vendored skills from `addyosmani/agent-skills`.
 
 Security scope includes:
 - integrity of the behavior defined in `plugins/sdlc-assist/skills/sdlc/SKILL.md` and its reference sheets

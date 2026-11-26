@@ -4,7 +4,8 @@ const fs = require('fs'); const path = require('path'); const os = require('os')
 const { execFileSync } = require('child_process');
 const UPSTREAM = 'https://github.com/addyosmani/agent-skills.git';
 const UPSTREAM_COMMIT = 'bc97fd46fdb294dc3518d0e94edb989a38894f31';
-const NAMES = ['spec-driven-development','planning-and-task-breakdown','incremental-implementation','test-driven-development','context-engineering'];
+// Three copies left in v0.18: the spec and plan skills became the own sdlc-spec and sdlc-plan (ADR 0011).
+const NAMES = ['incremental-implementation','test-driven-development'];
 function parseArgs(argv){ const a={mode:null,upstreamDir:null,skillsDir:path.join(__dirname,'..','..'),names:NAMES};
   for(let i=0;i<argv.length;i++){const x=argv[i];
     if(x==='--check'||x==='--fix')a.mode=x.slice(2);
@@ -27,5 +28,8 @@ function main(){ const a=parseArgs(process.argv.slice(2)); const up=fetchUpstrea
     fs.mkdirSync(dstDir,{recursive:true}); fs.writeFileSync(dst,want);
     fs.writeFileSync(path.join(dstDir,'LICENSE'),fs.readFileSync(path.join(up,'LICENSE')));
     fs.writeFileSync(path.join(dstDir,'VENDORED.md'),vendoredNote(name)); console.log(`vendored: ${name}`); }
+  // A folder with a VENDORED.md whose name left the list is a copy nobody syncs any more.
+  if(a.mode==='check'&&fs.existsSync(a.skillsDir)) for(const d of fs.readdirSync(a.skillsDir))
+    if(!a.names.includes(d)&&fs.existsSync(path.join(a.skillsDir,d,'VENDORED.md'))){drift++; console.error(`not in the vendored list: skills/${d}`);}
   if(a.mode==='check') { console.log(drift?`${drift} vendored file(s) drifted or missing`:'vendored skills in sync'); process.exit(drift?1:0); } }
 try{ main(); }catch(e){ console.error(e.message); process.exit(2); }

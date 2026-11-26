@@ -11,13 +11,13 @@ function check(label, fn) {
   catch (err) { console.log('  FAIL ' + label); console.log('       ' + err.message); failed++; }
 }
 const SCRIPT = path.join(__dirname, 'check-sheets.js');
-const DEFAULT_KNOWN = 'spec-driven-development,planning-and-task-breakdown,incremental-implementation,test-driven-development,context-engineering,sdlc,sdlc-debugging,sdlc-qa-gate,sdlc-release,systematic-debugging,debugging-strategies,release-engineer,qa-push';
+const DEFAULT_KNOWN = 'sdlc-spec,sdlc-plan,incremental-implementation,test-driven-development,sdlc,sdlc-debugging,sdlc-qa-gate,sdlc-release,systematic-debugging,debugging-strategies,release-engineer,qa-push';
 function sheet(slug, rec, alt) {
   return '---\nslug: ' + slug + '\ntitle: T ' + slug + '\nrecommends: [' + rec.join(', ') + ']\nalternatives: [' + alt.join(', ') + ']\ndesign: none\n---\n# T\n**Governance:** g.\n**Measure:** m.\n';
 }
 function tmpDir(slugs, overrides) {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sheets-'));
-  for (const s of slugs) fs.writeFileSync(path.join(d, s + '.md'), (overrides && overrides[s]) || sheet(s, ['spec-driven-development'], []));
+  for (const s of slugs) fs.writeFileSync(path.join(d, s + '.md'), (overrides && overrides[s]) || sheet(s, ['sdlc-spec'], []));
   return d;
 }
 function run(dir, known) {
@@ -38,12 +38,22 @@ check('unknown skill => exit 1 "unknown skill"', () => {
   assert.ok((r.stdout + r.stderr).includes('unknown skill'));
   assert.ok((r.stdout + r.stderr).includes('ghost-skill'));
 });
+check('removed vendored names are unknown (#34): spec-driven-development => exit 1', () => {
+  const d = tmpDir(PHASES, { analysis: sheet('analysis', ['spec-driven-development'], []) });
+  const r = run(d);
+  assert.strictEqual(r.status, 1);
+  assert.ok((r.stdout + r.stderr).includes('spec-driven-development'));
+});
+check('own sdlc-spec and sdlc-plan are known by default', () => {
+  const d = tmpDir(PHASES, { planning: sheet('planning', ['sdlc-plan'], []) });
+  assert.strictEqual(run(d).status, 0, run(d).stderr);
+});
 check('--known including it => exit 0', () => {
   const d = tmpDir(PHASES, { deployment: sheet('deployment', ['ghost-skill'], []) });
   assert.strictEqual(run(d, DEFAULT_KNOWN + ',ghost-skill').status, 0);
 });
 check('plugin prefix is normalised', () => {
-  const d = tmpDir(PHASES, { analysis: sheet('analysis', ['spec-driven-development'], ['superpowers:systematic-debugging']) });
+  const d = tmpDir(PHASES, { analysis: sheet('analysis', ['sdlc-assist:sdlc-spec'], ['superpowers:systematic-debugging']) });
   assert.strictEqual(run(d).status, 0);
 });
 check('extra sheet => exit 1', () => {

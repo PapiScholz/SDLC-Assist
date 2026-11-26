@@ -3,7 +3,7 @@
   "owner": {
     "name": "Ezequiel Scholz"
   },
-  "description": "Plugins by Ezequiel Scholz: sdlc-assist (SDLC router with the spec-driven-development family) and search-visibility-kit (Search Console, GA4, IndexNow).",
+  "description": "Plugins by Ezequiel Scholz: sdlc-assist (SDLC router with its own spec, plan, QA and release skills) and search-visibility-kit (Search Console, GA4, IndexNow).",
   "plugins": [
     {
       "name": "sdlc-assist",

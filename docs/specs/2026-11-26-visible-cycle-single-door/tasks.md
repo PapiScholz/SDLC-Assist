@@ -11,12 +11,12 @@ Spec: `spec.md`. Plan: `plan.md`. One branch and PR per stage, `[minor]` each. A
 
 ## Stage 2: own spec and plan skills
 
-- [ ] 5 `sdlc-spec/SKILL.md`, route first, header, sizes, approval rule, under 6 KB
-- [ ] 6 `sdlc-plan/SKILL.md`, route first, cycle paths, stages, approval rule, under 6 KB
-- [ ] 7 Remove the spec, plan and context-engineering vendored copies and their `sync-vendored.js` entries; self-tests first
-- [ ] 8 Rewire names: sheets, `check-sheets`, `which` TDD order, hook `FAMILY`, SKILL.md, references, release script, constitution, CI, manifests, docs; self-tests first
-- [ ] 9 ADR 0011
-- [ ] 10 Replay #35 with a `Read` of `sdlc-spec/SKILL.md` in a scratch repo; grep for old names; gates; `SKILL.md` words
+- [x] 5 `sdlc-spec/SKILL.md`, route first, header, sizes, approval rule, under 6 KB — evidence: `check-skill-sections.js` 5 skills OK (self-test seen red, 3 failed); 5211 bytes; `docs/ci-red-runs.md` "Stage 2 ... tasks 5 and 6"
+- [x] 6 `sdlc-plan/SKILL.md`, route first, cycle paths, stages, approval rule, under 6 KB — evidence: same check; 4616 bytes; stage claims run against `lib/stages.js`
+- [x] 7 Remove the spec, plan and context-engineering vendored copies and their `sync-vendored.js` entries; self-tests first — evidence: `sync-vendored.js --check` reported the 3 leftovers, then "vendored skills in sync"; `docs/ci-red-runs.md` "Task 7"
+- [x] 8 Rewire names: sheets, `check-sheets`, `which` TDD order, hook `FAMILY`, SKILL.md, references, release script, constitution, CI, manifests, docs; self-tests first — evidence: which 17/0, check-sheets 12/0, hook 18/0, each seen red; `docs/ci-red-runs.md` "Task 8"
+- [x] 9 ADR 0011 — evidence: `docs/adr/0011-own-spec-and-plan-skills.md` (proposed)
+- [x] 10 Replay #35 with a `Read` of `sdlc-spec/SKILL.md` in a scratch repo; grep for old names; gates; `SKILL.md` words — evidence: `docs/ci-red-runs.md` "Task 10" (router ran first, header and cycle path on disk); grep leaves records only; all gates ok; 2567 to 2548 words
 
 ## Stage 3: cold review, offered
 

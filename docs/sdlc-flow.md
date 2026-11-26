@@ -8,9 +8,9 @@ One cycle is one spec file with a `Phase:` / `Status:` header. Each phase has on
 
 ```mermaid
 flowchart TD
-    A["<b>initial</b><br/>spec-driven-development"]
-    B["<b>analysis</b><br/>sdlc-debugging for bugs,<br/>then spec-driven-development"]
-    C["<b>planning</b><br/>planning-and-task-breakdown"]
+    A["<b>initial</b><br/>sdlc-spec"]
+    B["<b>analysis</b><br/>sdlc-debugging for bugs,<br/>then sdlc-spec"]
+    C["<b>planning</b><br/>sdlc-plan"]
     D["<b>development</b><br/>incremental-implementation<br/>test-driven-development"]
     E["<b>testing</b><br/>sdlc-qa-gate"]
     F["<b>deployment</b><br/>sdlc-release"]

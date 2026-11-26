@@ -15,7 +15,7 @@
 
 An agent skill, `sdlc`, that tells the agent where work on a code repository stands, in four plain steps and per stage of a staged plan, and points to the skill that does the next step.
 
-It reads the repo (spec headers, the cycle's `plan.md` and `tasks.md`, read-only git queries) and never blocks a transition. Three own phase skills (sdlc-debugging, sdlc-qa-gate, sdlc-release) and five skills from `addyosmani/agent-skills` (the spec-driven-development family) are bundled so the recommendations work out of the box.
+It reads the repo (spec headers, the cycle's `plan.md` and `tasks.md`, read-only git queries) and never blocks a transition. Five own phase skills (sdlc-spec, sdlc-plan, sdlc-debugging, sdlc-qa-gate, sdlc-release) and two skills from `addyosmani/agent-skills` (incremental-implementation, test-driven-development) are bundled so the recommendations work out of the box. With `superpowers` installed, development names its `test-driven-development` first.
 
 ## Who this is for
 
@@ -38,9 +38,9 @@ In the usual taxonomy of spec-driven development (spec-first: the spec is writte
 
 | Slug | Phase | Recommended skill |
 |---|---|---|
-| `initial` | Initial planning | spec-driven-development |
-| `analysis` | Requirements analysis | spec-driven-development; sdlc-debugging on the bug route |
-| `planning` | Planning | planning-and-task-breakdown |
+| `initial` | Initial planning | sdlc-spec |
+| `analysis` | Requirements analysis | sdlc-spec; sdlc-debugging on the bug route |
+| `planning` | Planning | sdlc-plan |
 | `development` | Development | incremental-implementation, test-driven-development |
 | `testing` | Testing | sdlc-qa-gate (alternative: qa-push) |
 | `deployment` | Deployment | sdlc-release (alternative: release-engineer) |
@@ -55,9 +55,9 @@ Then open any repo with your agent and describe the work, or say "where are we".
 
 ```mermaid
 flowchart TD
-    A["<b>initial</b><br/>spec-driven-development"]
-    B["<b>analysis</b><br/>sdlc-debugging for bugs,<br/>then spec-driven-development"]
-    C["<b>planning</b><br/>planning-and-task-breakdown"]
+    A["<b>initial</b><br/>sdlc-spec"]
+    B["<b>analysis</b><br/>sdlc-debugging for bugs,<br/>then sdlc-spec"]
+    C["<b>planning</b><br/>sdlc-plan"]
     D["<b>development</b><br/>incremental-implementation<br/>test-driven-development"]
     E["<b>testing</b><br/>sdlc-qa-gate"]
     F["<b>deployment</b><br/>sdlc-release"]
@@ -77,9 +77,9 @@ Where each kind of request enters the cycle, and what the router does on every r
 
 | Path | Command | Skill by intent | Explicit command | Notes |
 |---|---|---|---|---|
-| skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the nine skills (router + three own + five vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
-| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc-assist@papischolz` | Claude Code | `/sdlc-assist:phase` | Also registers the three own and five vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
-| Manual | `cp -r plugins/sdlc-assist/skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all nine skills. |
+| skills.sh | `cd ~ && npx skills add PapiScholz/SDLC-Assist` | Claude Code, OpenCode, Codex, Cursor | none | Installs the eight skills (router + five own + two vendored) with all files. `--skill sdlc` (or `-s sdlc`) installs only the router. Overwrites same-named skills in `~/.agents/skills`. |
+| Claude Code plugin | `claude plugin marketplace add PapiScholz/SDLC-Assist` then `claude plugin install sdlc-assist@papischolz` | Claude Code | `/sdlc-assist:phase` | Also registers the five own and two vendored skills. Duplicates with user-scope copies are reported by `which.js --verbose`. |
+| Manual | `cp -r plugins/sdlc-assist/skills/* ~/.claude/skills/` | Claude Code, OpenCode | `/sdlc` (user-scope) | Copies all eight skills. |
 | OpenCode command | `cp .opencode/command/sdlc-phase.md ~/.config/opencode/command/` | (any of the above) | `/sdlc-phase` | Manual step on every path. |
 
 Run the skills.sh command from `~`, not from inside a project: the CLI installs into the current directory's scope when it finds a repo there. The CLI copies each skill folder whole and links it into `~/.claude/skills`, `~/.codex/skills`, `~/.cursor/skills` and `~/.config/opencode/skills`.
@@ -107,7 +107,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
 
 0. **Day one (optional): constitution, architecture, repo hygiene.** `docs/constitution.md` (or root `CONSTITUTION.md`) holds the rules every spec, plan and change obeys; `ARCHITECTURE.md` is the current shape of the repo (template in `plugins/sdlc-assist/skills/sdlc/references/architecture-template.md`); the nine hygiene files (`LICENSE`, `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, `ARCHITECTURE.md`) are listed when missing, in `initial` and before a first release only (`references/repo-hygiene.md`). The router detects all three, cites them, and never writes them. Constitution: template in `plugins/sdlc-assist/skills/sdlc/references/constitution-template.md`. The router reports it as `signals.constitution` and every phase sheet cites it; without one it says nothing.
 1. **Describe the work.** A new idea, a bug, a complaint someone else reported, a feature, a hotfix. The router writes your text to a temp file, runs `where.js`, and the agent tells you in one sentence where the work is (stage, step) and what comes next, then proceeds. It asks only when the request looks like a new topic while a stage is in flight: keep it apart as a new cycle, or fold it into the current stage. A complaint first goes through the request card (who asks, what happens, expected, where, urgency); the router asks for any missing line.
-2. **Write the spec** with the skill the router names (`spec-driven-development`; `sdlc-debugging` first on the bug route). A `## Decisions` bullet that amends a principle, adds or removes a technology or changes a public contract gets `[ADR]` and its own file in `docs/adr/` (`references/adr-template.md`). Right after the H1:
+2. **Write the spec** with the skill the router names (`sdlc-spec`; `sdlc-debugging` first on the bug route). A `## Decisions` bullet that amends a principle, adds or removes a technology or changes a public contract gets `[ADR]` and its own file in `docs/adr/` (`references/adr-template.md`). Right after the H1:
 
    ```
    Phase: analysis
@@ -127,7 +127,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
    | deployment | `Phase: deployment`, `Status: closed` |
 
    In a staged plan, closing a stage that is not the last one writes `[x]` and the date on that stage's line in `plan.md` and leaves the header alone. It edits only the active spec; with no spec it writes nothing and says so. It never touches the CHANGELOG and never runs state-changing git commands.
-4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
+4. **Plan, build, test, release** with the recommended skill of each phase: `sdlc-plan` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and test-driven development (`superpowers:test-driven-development` when installed, the bundled copy otherwise) carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
 5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. Small work (unambiguous, contained risk, no new dependency or contract change, resumable from the request plus `git diff`) enters at `development` with no spec and leaves no trace; line counts never decide (ADR 0007).
 
 Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. `/sdlc-assist:status` (plugin) shows the active cycle (spec, plan, stage, next task) computed by `where.js --status`, without loading the skill; on other hosts run `node <skills>/sdlc/bin/where.js --status`. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
@@ -218,11 +218,10 @@ Vendored unmodified from `https://github.com/addyosmani/agent-skills` at commit 
 
 | Skill | Upstream path |
 |---|---|
-| spec-driven-development | `plugins/sdlc-assist/skills/spec-driven-development` |
-| planning-and-task-breakdown | `plugins/sdlc-assist/skills/planning-and-task-breakdown` |
 | incremental-implementation | `plugins/sdlc-assist/skills/incremental-implementation` |
 | test-driven-development | `plugins/sdlc-assist/skills/test-driven-development` |
-| context-engineering | `plugins/sdlc-assist/skills/context-engineering` |
+
+The own `sdlc-spec` and `sdlc-plan` replaced the vendored spec and plan skills in v0.18 (ADR 0011); `addyosmani/agent-skills` is their origin.
 
 ## Development
 

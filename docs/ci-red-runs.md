@@ -2447,3 +2447,174 @@ all gates ok
 ```
 
 `SKILL.md` is unchanged in stage 1 (2567 words by `wc -w`; the 2563 in the plan was counted another way).
+
+### Stage 2 (branch `visible-cycle-stage2`), tasks 5 and 6: own skills, route line checked
+
+Self-test written first, before either skill existed (two new contracts and the "Route first" rule):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.self-test.js
+check-skill-sections
+  FAIL all contracts present exits 0 and counts 5 skills
+  FAIL first body line not "Route first" exits 1 and names the skill (#35)
+       0 !== 1
+  FAIL missing sdlc-plan exits 1 (#34)
+       0 !== 1
+  ...
+6 passed, 3 failed
+```
+
+After the checker change, before the skills were written:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.self-test.js | tail -1
+9 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/check-skill-sections.js
+check-skill-sections: sdlc-spec: SKILL.md not found
+check-skill-sections: sdlc-plan: SKILL.md not found
+```
+
+After writing both skills (the three older own skills already open with "Route first"):
+
+```
+$ wc -c sdlc-spec/SKILL.md sdlc-plan/SKILL.md
+5211 sdlc-spec/SKILL.md
+4616 sdlc-plan/SKILL.md
+$ node sdlc/bin/check-skill-sections.js
+check-skill-sections: 5 skills OK
+```
+
+The stage claims in `sdlc-plan` were run against `lib/stages.js` before keeping them (calls trimmed):
+
+```
+$ node -e "...parseStages('### Stage 1: a [x] 2026-11-02 / ### Stage 2: b')..."
+[{"number":1,"name":"a","closed":true},{"number":2,"name":"b","closed":false}]
+$ node -e "...stageOfTasks('# Tasks: Stage 2 b'), stageOfTasks('# Tasks: visible cycle'), stageOfTasks('# Tareas de la Etapa 3: x')..."
+2 null 3
+```
+
+### Task 7: three vendored copies removed
+
+Self-test first (fixture moved to `incremental-implementation`; a leftover vendored folder must fail):
+
+```
+$ node sync-vendored.self-test.js
+AssertionError [ERR_ASSERTION]: leftover vendored folder must fail
+```
+
+After the change, the real tree reported the three leftovers before they were deleted, then passed:
+
+```
+$ node sync-vendored.self-test.js
+sync-vendored self-test OK
+$ node sync-vendored.js --check
+not in the vendored list: skills/context-engineering
+not in the vendored list: skills/planning-and-task-breakdown
+not in the vendored list: skills/spec-driven-development
+3 vendored file(s) drifted or missing
+$ rm -r context-engineering planning-and-task-breakdown spec-driven-development && node sdlc/bin/sync-vendored.js --check
+vendored skills in sync
+```
+
+### Task 8: names rewired
+
+`which.js`, TDD by presence (scratch homes, test first). Red for the predicted reason: without superpowers the bundled copy was listed twice (trimmed to the failing check):
+
+```
+$ node which.self-test.js
+  FAIL superpowers missing: development names the bundled test-driven-development, once
+       same skill listed twice: [{"name":"test-driven-development",...,"form":"sdlc-assist:test-driven-development"},{"name":"incremental-implementation",...},{"name":"test-driven-development",...,"form":"sdlc-assist:test-driven-development"}]
+16 passed, 1 failed
+```
+
+After deduplicating by path: `17 passed, 0 failed`. On this machine (superpowers 7.0.2 installed) the real sheet gives (trimmed):
+
+```
+$ node which.js --phase development
+      "installed": [
+          "form": "superpowers:test-driven-development"
+          "form": "incremental-implementation"
+          "form": "test-driven-development"
+```
+
+`check-sheets`: red first (`8 passed, 4 failed`), then `12 passed, 0 failed`; the real sheets were red until rewired:
+
+```
+$ node check-sheets.js
+check-sheets: analysis.md: unknown skill "spec-driven-development" in recommends
+check-sheets: initial.md: unknown skill "spec-driven-development" in recommends
+check-sheets: planning.md: unknown skill "planning-and-task-breakdown" in recommends
+$ node check-sheets.js     # after the four sheets
+check-sheets: 6 sheets OK
+```
+
+Hook `FAMILY`: tests renamed to `sdlc-plan` and `sdlc-assist:sdlc-spec` first (`16 passed, 2 failed`, "Unexpected end of JSON input"), then `18 passed, 0 failed`.
+
+Old names left after the rewire (closed specs, `CHANGELOG.md` and this file excluded, lines trimmed); each is a record or the regression test:
+
+```
+$ git grep -n -E "spec-driven-development|planning-and-task-breakdown|context-engineering" -- . ':!CHANGELOG.md' ':!docs/specs' ':!docs/ci-red-runs.md'
+docs/adr/0010-route-without-asking.md:8:Issue #27 (Almacén, 2026-11-10): with a cycle in progress the agent invoked `spec-driven-...
+docs/ideas/sdlc-skill.md:7:...
+docs/plans/plan-ears.md:7:...
+docs/plans/plan-ears.md:23:...
+plugins/sdlc-assist/skills/sdlc/bin/check-sheets.self-test.js:41:check('removed vendored names are unknown (#34): spec-driven-development => ...
+plugins/sdlc-assist/skills/sdlc/bin/check-sheets.self-test.js:42:...
+plugins/sdlc-assist/skills/sdlc/bin/check-sheets.self-test.js:45:...
+```
+
+`sdlc/SKILL.md`: 2567 words before, 2548 after (`wc -w`); the header rule moved into `sdlc-spec`.
+
+### Found while dogfooding: an ADR named "...-spec-..." read as an orphan spec
+
+Writing `docs/adr/0011-own-spec-and-plan-skills.md` turned the hook line low-confidence in this repository:
+
+```
+sdlc: cycle 2026-11-26-visible-cycle-single-door (today) · not sure this is the current work: newer spec outside docs/specs/: docs/adr/0011-own-spec-and-plan-skills.md · run /sdlc for the detail
+```
+
+Test first, then `findOrphanSpecs` skips `docs/adr` and `docs/decisions`:
+
+```
+$ node lib/signals.self-test.js
+  FAIL an ADR whose name holds "spec" is not an orphan spec (docs/adr, docs/decisions)
+73 passed, 1 failed
+$ node lib/signals.self-test.js | tail -1     # after
+74 passed, 0 failed
+```
+
+### Task 10: replay of #35 through a `Read` of `sdlc-spec/SKILL.md`
+
+Scratch repository with an approved cycle in development (`docs/specs/2026-11-20-csv-export/`, one open task; not committed, since the git guard blocks a commit there too, and the router reads it all the same). A Sonnet subagent was told only: open `sdlc-spec/SKILL.md` with the Read tool and follow it, write the spec for "quiero poder aplicar un código de descuento al carrito, con validación y que se vea el total con descuento". The router was not named in the prompt. Its third command (report excerpt):
+
+```
+node "C:/Users/ezesc/Github/SDLC-Assist/plugins/sdlc-assist/skills/sdlc/bin/where.js" --root "$PWD/replay35" --message-file "$PWD/req35.txt"
+```
+
+The request file went to the scratchpad, outside the analysed repository. Checked on disk afterwards:
+
+```
+$ sed -n 1,5p replay35/docs/specs/2026-11-26-discount-code/spec.md
+# Spec: Discount code on the cart
+
+Phase: analysis
+Status: draft
+Date: 2026-11-26
+$ node where.js --root replay35 --status
+cycle  docs/specs/2026-11-26-discount-code/
+spec   spec.md · Phase: analysis · Status: draft
+plan   plan.md: no · tasks.md: no
+step   2/4 spec
+doubt  2026-11-20-csv-export is also open and was touched within a day of 2026-11-26-discount-code
+```
+
+No other file in the repository was written; it left 8 questions under `## Open Questions` and said the spec was not approved. One gap: its first draft wrote the EARS bullets without the comma after the trigger (`check-acceptance.js` reported 10 "not EARS"; it fixed them). The sentence in `sdlc-spec` that caused it ("holds no comma") now says a comma ends the trigger, as in the shapes.
+
+### Gates
+
+```
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```
+
+One earlier run in this stage failed `sdlc-status.self-test.js` "feature cycle in development" with an empty line while other processes were running; the test alone passed 4 of 4 runs and the next full run passed. Recorded as flaky under load, not fixed here.

@@ -1,6 +1,6 @@
 # Request card
 
-Five lines, plus two optional ones that `sdlc-debugging` fills on the bug route. Fill them from the complaint; the spec-driven-development flow turns the card into a short spec that carries the header (`spec-header.md`: `Phase: analysis`, `Status: draft`).
+Five lines, plus two optional ones that `sdlc-debugging` fills on the bug route. Fill them from the complaint; `sdlc-spec` turns the card into a short spec that carries the header (`spec-header.md`: `Phase: analysis`, `Status: draft`).
 
 ## Template
 

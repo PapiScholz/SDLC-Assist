@@ -7,11 +7,10 @@ const { PHASES } = require('./lib/header');
 const { unfencedLines } = require('./lib/unfenced');
 const BODY_LABELS = ['**Governance:**', '**Measure:**'];
 
-// sdlc-debugging, sdlc-qa-gate and sdlc-release ship since v1.1: they are known because the sheets recommend them.
+// Own skills are known because the sheets recommend them; the vendored spec and plan skills left in v0.18 (ADR 0011).
 const DEFAULT_KNOWN = [
-  'spec-driven-development', 'planning-and-task-breakdown', 'incremental-implementation',
-  'test-driven-development', 'context-engineering',
-  'sdlc', 'sdlc-debugging', 'sdlc-qa-gate', 'sdlc-release',
+  'incremental-implementation', 'test-driven-development',
+  'sdlc', 'sdlc-spec', 'sdlc-plan', 'sdlc-debugging', 'sdlc-qa-gate', 'sdlc-release',
   'systematic-debugging', 'debugging-strategies', 'release-engineer', 'qa-push',
 ];
 

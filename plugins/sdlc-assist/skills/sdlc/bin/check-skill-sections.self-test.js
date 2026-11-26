@@ -13,9 +13,12 @@ const CONTRACTS = {
   'sdlc-debugging': ['Reproduce', 'Localise', 'Explain', 'Hand off', 'Never'],
   'sdlc-qa-gate': ['Diff map', 'Layers', 'Report', 'Never'],
   'sdlc-release': ['Detect', 'Classify', 'Update', 'Validate', 'Commit tag push publish', 'Publish guidance', 'Never'],
+  'sdlc-spec': ['Size', 'Where it goes', 'Clarify', 'Acceptance', 'Approval', 'Never'],
+  'sdlc-plan': ['Where it goes', 'Stages', 'Tasks', 'Approval', 'Never'],
 };
+const ROUTE = 'Route first: run the sdlc router.\n';
 function body(sections, prefix) {
-  return '---\nname: x\n---\n# T\n' + sections.map((s, i) => (prefix ? '## ' + (i + 1) + '. ' + s : '## ' + s) + '\n\ntext\n').join('');
+  return '---\nname: x\n---\n# T\n## Overview\n\n' + ROUTE + sections.map((s, i) => (prefix ? '## ' + (i + 1) + '. ' + s : '## ' + s) + '\n\ntext\n').join('');
 }
 function tree(overrides) {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sections-'));
@@ -32,10 +35,20 @@ function run(d) {
 }
 const out = (r) => r.stderr + r.stdout;
 console.log('check-skill-sections');
-check('all contracts present exits 0 and counts 3 skills', () => {
+check('all contracts present exits 0 and counts 5 skills', () => {
   const r = run(tree());
   assert.strictEqual(r.status, 0, out(r));
-  assert.ok(r.stdout.includes('3 skills OK'));
+  assert.ok(r.stdout.includes('5 skills OK'));
+});
+check('first body line not "Route first" exits 1 and names the skill (#35)', () => {
+  const r = run(tree({ 'sdlc-spec': body(CONTRACTS['sdlc-spec'], false).replace(ROUTE, 'Writes the spec.\n' + ROUTE) }));
+  assert.strictEqual(r.status, 1);
+  assert.ok(out(r).includes('sdlc-spec') && out(r).includes('Route first'), out(r));
+});
+check('missing sdlc-plan exits 1 (#34)', () => {
+  const r = run(tree({ 'sdlc-plan': null }));
+  assert.strictEqual(r.status, 1);
+  assert.ok(out(r).includes('sdlc-plan') && out(r).includes('not found'));
 });
 check('missing section exits 1 and names skill and section', () => {
   const r = run(tree({ 'sdlc-qa-gate': body(['Diff map', 'Layers', 'Never'], false) }));

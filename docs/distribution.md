@@ -83,7 +83,7 @@ A plugin page left open goes stale: before the reload it still said "The live ve
 
 | List | Entry type | Status |
 |---|---|---|
-| `hesreallyhim/awesome-claude-code` | Link only, through the issue form `issues/new?template=recommend-resource.yml`. Pull requests are refused. Requires 14+ days of activity after the first commit, or 100+ stars. One-line factual description, no marketing. | Apply on or after 2026-10-13. Suggested line: "SDLC phase router skill: infers the phase from the repo, asks one question, hands off to spec-driven-development, sdlc-qa-gate and sdlc-release." |
+| `hesreallyhim/awesome-claude-code` | Link only, through the issue form `issues/new?template=recommend-resource.yml`. Pull requests are refused. Requires 14+ days of activity after the first commit, or 100+ stars. One-line factual description, no marketing. | Apply on or after 2026-10-13. Suggested line: "SDLC phase router skill: infers the phase from the repo, asks one question, hands off to sdlc-spec, sdlc-plan, sdlc-qa-gate and sdlc-release." |
 | `composio-community/awesome-claude-plugins` | Copies the plugin folder into their repository | Not pursued: a second copy of the plugin with no sync check drifts silently. |
 | `GiladShoham/awesome-claude-plugins` | Copies the plugin folder into `plugins/` of their marketplace | Not pursued, same reason. |
 | skills.sh, awesomeclaudeplugins.com | Automatic index of public GitHub repositories | Listed already; nothing to do. |

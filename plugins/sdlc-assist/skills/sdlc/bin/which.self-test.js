@@ -16,12 +16,12 @@ const home = path.join(tmp, 'home');
 const cwd = path.join(tmp, 'proj');
 const sheets = path.join(tmp, 'sheets');
 fs.mkdirSync(cwd, { recursive: true });
-put(path.join(home, '.claude', 'skills', 'spec-driven-development', 'SKILL.md'), '# a\n');
-put(path.join(home, '.agents', 'skills', 'spec-driven-development', 'SKILL.md'), '# b\n');
+put(path.join(home, '.claude', 'skills', 'sdlc-spec', 'SKILL.md'), '# a\n');
+put(path.join(home, '.agents', 'skills', 'sdlc-spec', 'SKILL.md'), '# b\n');
 put(path.join(home, '.claude', 'plugins', 'cache', 'official', 'superpowers', '1.0.0', 'skills', 'systematic-debugging', 'SKILL.md'), '# c\n');
 put(path.join(cwd, '.claude', 'skills', 'project-skill', 'SKILL.md'), '# p\n');
 put(path.join(sheets, 'analysis.md'),
-  '---\nrecommends: [spec-driven-development]\nalternatives: [superpowers:systematic-debugging, debugging-strategies]\n---\n# Analysis\n');
+  '---\nrecommends: [sdlc-spec]\nalternatives: [superpowers:systematic-debugging, debugging-strategies]\n---\n# Analysis\n');
 put(path.join(sheets, 'planning.md'),
   '---\nrecommends:\n  - project-skill\n  - nope-skill\nalternatives:\n---\n# Planning\r\n');
 
@@ -36,16 +36,16 @@ try { out = JSON.parse(res.stdout); } catch (e) { /* asserted below */ }
 
 console.log('which.js');
 check('exit 0 and JSON on stdout', () => { assert.strictEqual(res.status, 0, res.stderr); assert.ok(out, 'no JSON: ' + res.stdout); });
-check('installed includes spec-driven-development and plugin form', () => {
+check('installed includes sdlc-spec and plugin form', () => {
   const inst = out.phases.analysis.installed;
-  assert.ok(inst.some(i => i.name === 'spec-driven-development'));
+  assert.ok(inst.some(i => i.name === 'sdlc-spec'));
   const sd = inst.find(i => i.name === 'systematic-debugging');
   assert.ok(sd, 'systematic-debugging missing');
   assert.strictEqual(sd.form, 'superpowers:systematic-debugging');
 });
 check('missing includes debugging-strategies', () => {
   assert.ok(out.phases.analysis.missing.includes('debugging-strategies'));
-  assert.ok(!out.phases.analysis.missing.includes('spec-driven-development'));
+  assert.ok(!out.phases.analysis.missing.includes('sdlc-spec'));
 });
 check('without --verbose: duplicates [] and duplicatesOmitted true', () => {
   assert.deepStrictEqual(out.duplicates, []);
@@ -54,7 +54,7 @@ check('without --verbose: duplicates [] and duplicatesOmitted true', () => {
 check('--verbose: duplicates has one entry with two paths, no omitted flag', () => {
   const o = JSON.parse(run([...base, '--verbose']).stdout);
   assert.strictEqual(o.duplicates.length, 1);
-  assert.strictEqual(o.duplicates[0].name, 'spec-driven-development');
+  assert.strictEqual(o.duplicates[0].name, 'sdlc-spec');
   assert.strictEqual(o.duplicates[0].paths.length, 2);
   assert.strictEqual(o.duplicatesOmitted, undefined);
 });
@@ -132,6 +132,34 @@ check('same real path via symlink is not a duplicate', () => {
   catch (e) { return; }
   const r = run(['--root', h2, '--sheets-dir', sheets, '--verbose']);
   assert.strictEqual(JSON.parse(r.stdout).duplicates.length, 0);
+});
+// TDD by presence (issue #34, Decision 5): the development sheet lists superpowers' TDD first, then the bundled one.
+const devSheets = path.join(tmp, 'dev-sheets');
+put(path.join(devSheets, 'development.md'),
+  '---\nrecommends: [superpowers:test-driven-development, incremental-implementation, test-driven-development]\nalternatives: []\n---\n# Development\n');
+function tddHome(dir, withSuperpowers) {
+  const sdlcRoot = path.join(dir, '.claude', 'plugins', 'cache', 'papischolz', 'sdlc-assist', '0.18.0', 'skills');
+  put(path.join(sdlcRoot, 'test-driven-development', 'SKILL.md'), '# bundled\n');
+  put(path.join(sdlcRoot, 'incremental-implementation', 'SKILL.md'), '# inc\n');
+  if (withSuperpowers) put(path.join(dir, '.claude', 'plugins', 'cache', 'official', 'superpowers', '7.0.2', 'skills', 'test-driven-development', 'SKILL.md'), '# sp\n');
+  return dir;
+}
+function devPhase(dir) {
+  const r = run(['--root', dir, '--sheets-dir', devSheets, '--phase', 'development']);
+  assert.strictEqual(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout).phases.development;
+}
+check('superpowers installed: development names superpowers:test-driven-development first', () => {
+  const p = devPhase(tddHome(path.join(tmp, 'home-sp'), true));
+  assert.strictEqual(p.installed[0].form, 'superpowers:test-driven-development', JSON.stringify(p.installed));
+  assert.ok(p.installed.some(i => i.form === 'sdlc-assist:incremental-implementation'));
+});
+check('superpowers missing: development names the bundled test-driven-development, once', () => {
+  const p = devPhase(tddHome(path.join(tmp, 'home-nosp'), false));
+  assert.strictEqual(p.installed[0].form, 'sdlc-assist:test-driven-development', JSON.stringify(p.installed));
+  const paths = p.installed.map(i => i.path);
+  assert.strictEqual(new Set(paths).size, paths.length, 'same skill listed twice: ' + JSON.stringify(p.installed));
+  assert.deepStrictEqual(p.missing, []);
 });
 
 fs.rmSync(tmp, { recursive: true, force: true });

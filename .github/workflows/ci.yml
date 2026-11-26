@@ -28,8 +28,7 @@ jobs:
           # -g: without it the CLI installs into <cwd>/.agents/skills (project scope)
           npx -y skills add "$GITHUB_WORKSPACE" -y -g --copy
           test -f "$HOME/.agents/skills/sdlc/bin/where.js"
-          test -f "$HOME/.agents/skills/spec-driven-development/SKILL.md"
-          for s in sdlc-debugging sdlc-qa-gate sdlc-release; do test -f "$HOME/.agents/skills/$s/SKILL.md" || { echo "missing $s"; exit 1; }; done
+          for s in sdlc-spec sdlc-plan sdlc-debugging sdlc-qa-gate sdlc-release incremental-implementation test-driven-development; do test -f "$HOME/.agents/skills/$s/SKILL.md" || { echo "missing $s"; exit 1; }; done
       - name: Installed copy infers a production complaint as analysis
         run: |
           export HOME="$RUNNER_TEMP/home"
