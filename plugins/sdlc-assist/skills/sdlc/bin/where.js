@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Collects repo signals and infers the SDLC phase. Prints one JSON object to stdout.
-//   node bin/where.js [--message "<request>" | --message-file <path> | --message -] [--run-tests] [--root <dir>] [--brief]
+//   node bin/where.js [--message "<request>" | --message-file <path> | --message -] [--run-tests] [--root <dir>]
+//                     [--brief | --status [--deadline-ms <n>]]
 // --message-file reads UTF-8 (a leading BOM is dropped); `--message -` reads stdin.
-// --brief prints one status line instead of JSON.
+// --brief prints one status line instead of JSON. --status prints the developer's view of the active cycle
+// (issue #35), with the git queries bounded by --deadline-ms (default 3000).
 // Exit 0 on success (warnings included); exit 2 on unexpected error, message on stderr.
 // Read-only: the only child processes are git queries and, with --run-tests, the test runner.
 const fs = require('fs');
@@ -11,7 +13,7 @@ const { infer } = require('./lib/infer');
 const { classifyRequest } = require('./lib/keywords');
 const readMessage = file => fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
 function parseArgs(argv) {
-  const args = { message: '', runTests: false, root: process.cwd(), brief: false };
+  const args = { message: '', runTests: false, root: process.cwd(), brief: false, status: false, deadlineMs: 3000 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--message' && argv[i + 1] === '-') { args.message = readMessage(0); i++; continue; }
@@ -21,19 +23,24 @@ function parseArgs(argv) {
     if (a.startsWith('--message-file=')) { args.message = readMessage(a.slice(15)); continue; }
     if (a === '--run-tests') { args.runTests = true; continue; }
     if (a === '--brief') { args.brief = true; continue; }
+    if (a === '--status') { args.status = true; continue; }
+    if (a === '--deadline-ms') { args.deadlineMs = Number(argv[++i]); continue; }
     if (a === '--root') { args.root = argv[++i]; continue; }
     if (a.startsWith('--root=')) { args.root = a.slice(7); continue; }
     throw new Error('unknown argument: ' + a);
   }
+  if (args.brief && args.status) throw new Error('--status and --brief are exclusive');
+  if (!Number.isFinite(args.deadlineMs) || args.deadlineMs < 0) throw new Error('--deadline-ms needs a number of milliseconds');
   return args;
 }
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.root || !fs.existsSync(args.root) || !fs.statSync(args.root).isDirectory()) throw new Error('--root is not a directory: ' + args.root);
-  const signals = collectSignals(args.root, { runTests: args.runTests });
+  const signals = collectSignals(args.root, args.status ? { runTests: false, deadlineMs: args.deadlineMs } : { runTests: args.runTests });
   const request = { message: args.message, type: classifyRequest(args.message) };
   const r = infer(signals, request);
   const out = { signals, cycles: r.cycles, active: r.active, inferred: r.inferred, step: r.step, stage: r.stage, module: r.module, nextTask: r.nextTask, evidence: r.evidence, alternatives: r.alternatives, warnings: [...r.warnings, ...signals.notes], confidence: r.confidence, request };
+  if (args.status) { process.stdout.write(require('./lib/status').statusBlock(out) + '\n'); return 0; }
   if (args.brief) { process.stdout.write(require('./lib/brief').briefLine({ ...out, now: signals.now }) + '\n'); return 0; }
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
   return 0;

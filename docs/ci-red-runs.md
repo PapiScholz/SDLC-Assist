@@ -2302,3 +2302,148 @@ v0.16.1	Latest	v0.16.1	2026-11-23T21:41:26Z
 ```
 
 The installed plugin was not updated in this session: the copy in the cache is still 0.16.0. `sdlc close` on `docs/specs/2026-11-23-status-hook-latency/feature.md` used the confirmed phase, deployment; the header said development, so the skipped closes write the confirmed row.
+
+## 2026-11-26 — visible cycle, single door, cold review (issues #35, #34, #30), branch `visible-cycle-stage1`
+
+### Spec probes: where the status can be shown in the desktop app (Clarifications)
+
+A `statusLine` in `.claude/settings.local.json` whose command appended a line to a log on each run. After a reply in the running session and a prompt in a new session (desktop app, Claude Code 2.1.332):
+
+```
+$ ls -la <scratchpad>/sl-probe.log
+ls: cannot access '<scratchpad>/sl-probe.log': No such file or directory
+```
+
+A `UserPromptSubmit` hook printing `{"systemMessage":"[PRUEBA sdlc] ciclo: visible-cycle-single-door - spec: borrador - plan: no"}` and logging each run:
+
+```
+$ cat <scratchpad>/sm-probe.log   (stdin trimmed to the session id)
+2026-11-26T20:28:21.262Z {"session_id":"02000a80-ce94-4c24-9cd9-a1b66c6f6ed5", ...
+2026-11-26T20:29:47.872Z {"session_id":"2c9a14e0-bd6c-49fd-8168-716eb3d12a1d", ...
+```
+
+The desktop app drew it as a collapsed row "Aviso de Claude Code" that opens to `UserPromptSubmit says: [PRUEBA sdlc] ...` (owner's screenshot). The owner rejected a collapsed notice. Both settings were restored from the backup.
+
+### Task 1: probe the command's shell expansion
+
+Docs (https://code.claude.com/docs/en/skills#inject-dynamic-context): the `` !`<command>` `` placeholder runs before the content is sent to Claude and its output replaces it; `${CLAUDE_PLUGIN_ROOT}` is substituted in plugin content. Scratch plugin `probeplug`, `commands/probe.md`:
+
+```
+---
+description: probe the shell expansion
+allowed-tools: Bash(node:*)
+---
+Result:
+!`node "${CLAUDE_PLUGIN_ROOT}/probe.js"`
+
+Reply with the Result line above verbatim and nothing else.
+```
+
+`probe.js` appends the time and `cwd` to `probe.log` and prints `PROBE-OUT root=<its dir>`.
+
+CLI, from the scratchpad:
+
+```
+$ claude -p --plugin-dir <scratchpad>/probeplug "/probeplug:probe"
+Failed to authenticate: OAuth session expired and could not be refreshed
+exit=1
+$ cat <scratchpad>/probeplug/probe.log
+2026-11-26T20:48:42.578Z cwd=<scratchpad>
+```
+
+The expansion ran with `${CLAUDE_PLUGIN_ROOT}` resolved before the request failed on the CLI's expired login; the model's reply was not seen there.
+
+Desktop app: the same body as a project command `.claude/commands/probe-status.md` (absolute path in place of the variable, since project commands are not plugin content), typed as `/probe-status` in a session on this repository. The reply, from the owner's screenshot, was the line alone, with no tool call:
+
+```
+PROBE-OUT root=C:/Users/ezesc/AppData/Local/Temp/claude/330d9ac73c2a2f4d/2c9a14e0-bd6c-49fd-8168-716eb3d12a1d/scratchpad/probeplug
+```
+
+```
+$ cat <scratchpad>/probeplug/probe.log
+2026-11-26T20:48:42.578Z cwd=<scratchpad>
+2026-11-26T20:53:51.001Z cwd=C:\Users\ezesc\Github\SDLC-Assist
+```
+
+Result: the expansion runs in the desktop app with the session's repository as `cwd`, so `where.js` needs no `--root`. `${CLAUDE_PLUGIN_ROOT}` resolution was seen in the CLI only; task 4 sees it in the desktop app through the installed command. The probe command was deleted.
+
+### Task 2: `where.js --status`
+
+Seven cases added to `where.self-test.js` before the code. Red run (trimmed to the new block):
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js
+  ...
+  FAIL --status outside a git repository prints one line and exits 0
+       where.js exit 2
+where.js: unknown argument: --status
+  FAIL --status past the git deadline says incomplete instead of a partial block
+       where.js exit 2
+where.js: unknown argument: --status
+  ok   --status and --brief together are refused
+35 passed, 6 failed
+```
+
+The seventh case passed red for the wrong reason (the flag did not exist); after the code it is refused by the exclusivity check:
+
+```
+$ node where.js --root <tmp> --status --brief; echo "exit=$?"
+where.js: --status and --brief are exclusive
+exit=2
+```
+
+First green run failed the deadline case: a git that never answered read as "not a repository". The timed-out check moved first:
+
+```
+  FAIL --status past the git deadline says incomplete instead of a partial block
+       The input did not match the regular expression /^sdlc status: incomplete/.
+40 passed, 1 failed
+```
+
+Green, and the block on this repository:
+
+```
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.self-test.js | tail -9
+--status (issue #35)
+  ok   --status on an active cycle prints a fenced block: cycle, spec, plan, stage, next, tasks
+  ok   --status without plan says plan.md: no and gives no stage line
+  ok   --status on a feature cycle reads the tasks inside feature.md
+  ok   --status with no active cycle prints one line
+  ok   --status outside a git repository prints one line and exits 0
+  ok   --status past the git deadline says incomplete instead of a partial block
+  ok   --status and --brief together are refused
+
+41 passed, 0 failed
+$ node plugins/sdlc-assist/skills/sdlc/bin/where.js --status
+cycle  docs/specs/2026-11-26-visible-cycle-single-door/
+spec   spec.md · Phase: development · Status: approved
+plan   plan.md: yes · tasks.md: yes, 1 of 16 done
+stage  1 of 3, status on demand (#35)
+step   4/4 implement
+next   2 `where.js --status`: block, no-cycle, outside-git and deadline lines; self-tests first
+```
+
+(The block's own fence lines are omitted above so this record's fence stays intact.) The stage comes from the plan's first open stage: the router does not enter staged mode for this plan, since `tasks.md` names no stage in its H1 and no stage is closed (`lib/infer.js`, `stagedView`).
+
+### Task 4: the command in the desktop app
+
+The plugin installed in the app is 0.16.1, without the command, so the owner chose a temporary project command `.claude/commands/status-test.md` with the body of `commands/status.md` and the absolute path of this branch's `where.js` in place of `${CLAUDE_PLUGIN_ROOT}` (that variable was seen resolving in task 1, CLI). Typed `/status-test` in a session on this repository; the reply, from the owner's screenshot, was the block alone in a code box, with no tool call:
+
+    cycle  docs/specs/2026-11-26-visible-cycle-single-door/
+    spec   spec.md · Phase: development · Status: approved
+    plan   plan.md: yes · tasks.md: yes, 3 of 16 done
+    stage  1 of 3, status on demand (#35)
+    step   4/4 implement
+    next   4 `/sdlc-assist:status` run in the desktop app pasted in `docs/ci-red-runs.md`; gates; `SKILL.md` words
+
+Not covered: the installed command with `${CLAUDE_PLUGIN_ROOT}` in the desktop app; checked after the release installs it. The temporary command was deleted.
+
+```
+$ wc -w < plugins/sdlc-assist/skills/sdlc/SKILL.md
+2567
+$ git diff --stat v0.16.1 -- plugins/sdlc-assist/skills/sdlc/SKILL.md
+$ bash scripts/gates.sh | tail -1
+all gates ok
+```
+
+`SKILL.md` is unchanged in stage 1 (2567 words by `wc -w`; the 2563 in the plan was counted another way).

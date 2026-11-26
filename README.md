@@ -130,7 +130,7 @@ The developer's workflow has four steps: (1) state the situation, (2) the agent 
 4. **Plan, build, test, release** with the recommended skill of each phase: `planning-and-task-breakdown` writes the cycle's `plan.md` and `tasks.md` (legacy: `tasks/plan.md`, `tasks/todo.md`); `incremental-implementation` and `test-driven-development` carry development; `sdlc-qa-gate` reports what was verified and the residual risk; `sdlc-release` bumps, tags and publishes only when you ask in that turn.
 5. **Close the cycle.** After the tag, "sdlc close" writes `Status: closed`. A production signal (alert, finding, monitoring ticket) re-enters through `plugins/sdlc-assist/skills/sdlc/references/maintain.md`, which writes an intent and opens a new cycle in `analysis`. Small work (unambiguous, contained risk, no new dependency or contract change, resumable from the request plus `git diff`) enters at `development` with no spec and leaves no trace; line counts never decide (ADR 0007).
 
-Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
+Commands: `/sdlc-assist:phase` (plugin), `/sdlc` (user-scope skill), `/sdlc-phase` (OpenCode). Add `close` to run close mode. `/sdlc-assist:status` (plugin) shows the active cycle (spec, plan, stage, next task) computed by `where.js --status`, without loading the skill; on other hosts run `node <skills>/sdlc/bin/where.js --status`. Entry rules by request type are in `plugins/sdlc-assist/skills/sdlc/references/entry-points.md`.
 
 ### What the router sees
 

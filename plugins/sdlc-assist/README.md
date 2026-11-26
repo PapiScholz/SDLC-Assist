@@ -19,6 +19,8 @@ claude plugin install sdlc-assist@papischolz
 
 Then, in any repository, describe the work or say "where are we". The command form is `/sdlc-assist:phase`, and `/sdlc-assist:phase close` runs close mode.
 
+**See the cycle yourself.** `/sdlc-assist:status` prints the active cycle's folder, the spec's `Phase`/`Status`, whether `plan.md` and `tasks.md` exist, the stage, the step, the next open task and the tasks done. A script computes it from the files and git before the agent sees it, so it does not depend on the agent reporting, and the `sdlc` skill is not loaded. It shows file state, not intent: "next" is the first open task.
+
 **Runs on its own in Claude Code.** Installing the plugin from the marketplace enables a `UserPromptSubmit` hook that adds one line (stage, step, next action) to the agent's context on every prompt inside a repository with an active cycle, and prints nothing anywhere else. Installing the skills with `npx skills add` does not install the hook; then the skill is invoked by name.
 
 Other hosts (OpenCode, Codex, Cursor) install the same skills through the skills CLI; the commands, the phase table and the full documentation are in the repository: https://github.com/PapiScholz/SDLC-Assist
