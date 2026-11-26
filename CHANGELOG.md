@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0] - 2026-11-26
+
+- Merge pull request #38 from PapiScholz/visible-cycle-stage3
+- Merge origin/main (v0.18.0) into visible-cycle-stage3
+- fix(sdlc): cold review measured at run time; review findings fixed
+- feat(sdlc): cold review of spec and plan, offered before approval [minor]
+
 ## [0.18.0] - 2026-11-26
 
 - Merge pull request #37 from PapiScholz/visible-cycle-stage2

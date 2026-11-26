@@ -1,6 +1,6 @@
 ---
 name: sdlc-spec
-version: 0.18.0
+version: 0.19.0
 description: Writes the spec of a piece of work on a code repository, sized to it (none for small, one feature.md for medium, spec.md for large), with the cycle folder, the Phase/Status header, clarifications and EARS acceptance. Use when the sdlc router reports step 2 (spec), when a feature, bug, complaint or idea needs a spec before code, when requirements are vague or bundle several capabilities, or when asked to write or revise a spec under docs/specs.
 ---
 
