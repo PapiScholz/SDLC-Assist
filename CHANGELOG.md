@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0] - 2026-11-26
+
+- Merge pull request #36 from PapiScholz/visible-cycle-stage1
+- feat(sdlc): /sdlc-assist:status shows the active cycle from the files [minor]
+- Merge pull request #33 from PapiScholz/close-status-hook-latency [skip release]
+- docs: close the status-hook-latency cycle (v0.16.1)
+
 ## [0.16.1] - 2026-11-23
 
 - Merge pull request #32 from PapiScholz/fix/status-hook-latency
