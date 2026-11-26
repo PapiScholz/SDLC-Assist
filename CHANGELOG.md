@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.0] - 2026-11-26
+
+- Merge pull request #37 from PapiScholz/visible-cycle-stage2
+- Merge origin/main (v0.17.0) into visible-cycle-stage2
+- feat(sdlc): own sdlc-spec and sdlc-plan replace the vendored spec and plan skills [minor]
+
 ## [0.17.0] - 2026-11-26
 
 - Merge pull request #36 from PapiScholz/visible-cycle-stage1
