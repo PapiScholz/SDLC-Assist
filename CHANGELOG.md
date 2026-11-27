@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1] - 2026-11-27
+
+- Merge pull request #40 from PapiScholz/selftests-clean-tmp
+- fix(sdlc): self-tests and sync-vendored leave nothing in the temp dir
+- Merge pull request #39 from PapiScholz/close-visible-cycle [skip release]
+- docs: close the visible-cycle cycle (v0.17.0-v0.19.0)
+
 ## [0.19.0] - 2026-11-26
 
 - Merge pull request #38 from PapiScholz/visible-cycle-stage3
