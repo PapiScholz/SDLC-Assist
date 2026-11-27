@@ -44,6 +44,8 @@ Dogfood your change: run `node plugins/sdlc-assist/skills/sdlc/bin/where.js --me
 ## Releases
 Every push to `main` runs `.github/workflows/release.yml`, which calls `.github/scripts/release.sh`: it bumps the version in `plugins/sdlc-assist/.claude-plugin/plugin.json` and `plugins/sdlc-assist/skills/sdlc/SKILL.md`, turns the `## [Unreleased]` section of `CHANGELOG.md` into the version entry, commits with `[skip ci]`, tags `vX.Y.Z` and creates the GitHub release. The bump is patch by default; put `[minor]` or `[major]` (or `BREAKING CHANGE`) in a commit subject to change it; put `[skip release]` in the merge commit to hold a release back. A version pinned higher in `plugin.json` wins over the auto-bump. `bash .github/scripts/release.sh --dry-run` shows the plan without changing anything and is the escape hatch when Actions is down.
 
+Stacked PRs (each one based on the previous branch) release one by one: merge the bottom PR, wait for its release, then merge the fetched `main` into the next branch before retargeting it to `main`. The release commit rewrites the `version` lines that the next branch also touches, so that merge conflicts on them; keep the version from `main` and the rest of the branch, and align any new own skill's `version:` to it. (2026-11)
+
 ## Commit and Review Guidance
 - keep commits focused and reviewable
 - prefer small, incremental changes
