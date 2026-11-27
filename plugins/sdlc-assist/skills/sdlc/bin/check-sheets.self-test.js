@@ -3,6 +3,10 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// Every temp dir this test makes is removed when it exits, pass or fail.
+const tmpDirs = [];
+function mkTmp(prefix) { const d = fs.mkdtempSync(prefix); tmpDirs.push(d); return d; }
+process.on('exit', () => { for (const d of tmpDirs) try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
 const { spawnSync } = require('child_process');
 const { PHASES } = require('./lib/header');
 let passed = 0, failed = 0;
@@ -16,7 +20,7 @@ function sheet(slug, rec, alt) {
   return '---\nslug: ' + slug + '\ntitle: T ' + slug + '\nrecommends: [' + rec.join(', ') + ']\nalternatives: [' + alt.join(', ') + ']\ndesign: none\n---\n# T\n**Governance:** g.\n**Measure:** m.\n';
 }
 function tmpDir(slugs, overrides) {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sheets-'));
+  const d = mkTmp(path.join(os.tmpdir(), 'sheets-'));
   for (const s of slugs) fs.writeFileSync(path.join(d, s + '.md'), (overrides && overrides[s]) || sheet(s, ['sdlc-spec'], []));
   return d;
 }

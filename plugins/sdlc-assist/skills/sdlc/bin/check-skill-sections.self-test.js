@@ -3,6 +3,10 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// Every temp dir this test makes is removed when it exits, pass or fail.
+const tmpDirs = [];
+function mkTmp(prefix) { const d = fs.mkdtempSync(prefix); tmpDirs.push(d); return d; }
+process.on('exit', () => { for (const d of tmpDirs) try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
 const { spawnSync } = require('child_process');
 let passed = 0, failed = 0;
 function check(label, fn) {
@@ -21,7 +25,7 @@ function body(sections, prefix) {
   return '---\nname: x\n---\n# T\n## Overview\n\n' + ROUTE + sections.map((s, i) => (prefix ? '## ' + (i + 1) + '. ' + s : '## ' + s) + '\n\ntext\n').join('');
 }
 function tree(overrides) {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sections-'));
+  const d = mkTmp(path.join(os.tmpdir(), 'sections-'));
   for (const [name, sections] of Object.entries(CONTRACTS)) {
     const content = overrides && name in overrides ? overrides[name] : body(sections, false);
     if (content === null) continue;
